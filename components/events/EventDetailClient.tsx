@@ -6,6 +6,7 @@ import { useUser } from '@/context/UserContext';
 import Loader from '@/components/ui/Loader';
 import UserEventDetailClient from '@/components/events/UserEventDetailClient';
 import AdminEventDetailClient from '@/components/admin/events/AdminEventDetailClient';
+import EventDescription from '@/components/events/EventDescription';
 import Link from 'next/link';
 import type { Event as PrismaEvent, PublicCategory, SchoolGrade, AgeRange } from '@/types/api';
 import { Accessibility as AccessibilityType } from '@/app/generated/prisma/enums';
@@ -234,7 +235,10 @@ export default function EventDetailClient({
 
           {/* Description */}
           <div>
-            <p className="text-sm sm:text-base text-gray-700 font-ibm">{event.description}</p>
+            <EventDescription
+              description={event.description}
+              className="text-sm sm:text-base text-gray-700 font-ibm"
+            />
             {event.slug && (
               <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-none">
                 <p className="text-sm text-justify font-poppins font-semibold text-blue-900 mb-1">

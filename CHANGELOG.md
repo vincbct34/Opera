@@ -2,6 +2,32 @@
 
 All notable changes to the Opéra de Montpellier Registration Platform will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- **Rich Text Event Descriptions**: Admin event descriptions now use a restricted rich text editor
+  - Supports bold, italic, underline, unordered/ordered lists, links, and clearing formatting
+  - Stores descriptions as sanitized HTML in the existing `Event.description` field
+  - Public event cards render plain-text previews while detail pages render sanitized rich text
+  - Added `lib/richText.ts`, `components/ui/RichTextEditor.tsx`, and `components/events/EventDescription.tsx`
+
+### Fixed
+
+- **Event Protected Fields False Positives**: Saving an unchanged admin event no longer auto-checks scraping protection fields
+  - `protected_fields` only counts as changed when the submitted list differs from the existing list
+  - `image_url` comparison treats empty string and `null` as equivalent
+  - rich text descriptions are compared after sanitization/normalization
+  - event dates are compared at minute precision to match the `datetime-local` admin input
+  - unchanged normalized fields are omitted from the Prisma update payload
+
+### Security
+
+- **Rich Text Sanitization**: Event descriptions are sanitized on create/update and again before rich HTML rendering
+  - Allowed tags are limited to paragraphs, line breaks, basic emphasis, lists, and links
+  - Unsafe link targets such as `javascript:` are stripped
+  - Script/style tags and unsupported attributes are removed
+
 ## [1.7.0] - 2026-06-30
 
 ### Changed

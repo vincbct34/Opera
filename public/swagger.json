@@ -321,7 +321,8 @@
             "type": "string"
           },
           "description": {
-            "type": "string"
+            "type": "string",
+            "description": "Description de l'événement. Peut contenir du HTML enrichi restreint et sanitizé (p, br, strong/b, em/i, u, ul, ol, li, a[href])."
           },
           "type": {
             "type": "array",
@@ -3488,7 +3489,7 @@
       "post": {
         "tags": ["Admin – Events"],
         "summary": "Créer un événement",
-        "description": "Crée un événement avec accessibilité. Admin uniquement.",
+        "description": "Crée un événement avec accessibilité. La description peut contenir du HTML enrichi restreint et sera sanitizée côté serveur. Admin uniquement.",
         "security": [
           {
             "BearerAuth": []
@@ -3509,7 +3510,8 @@
                     "type": "string"
                   },
                   "description": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Description HTML enrichie restreinte. Le serveur conserve uniquement les balises autorisées et supprime les liens ou attributs dangereux."
                   },
                   "type": {
                     "type": "array",
@@ -3643,7 +3645,7 @@
       "put": {
         "tags": ["Admin – Events"],
         "summary": "Modifier un événement",
-        "description": "Met à jour un événement. Supporte les mises à jour partielles. Gère les protected_fields vis-à-vis du scraper.",
+        "description": "Met à jour un événement. Supporte les mises à jour partielles. Gère les protected_fields vis-à-vis du scraper après normalisation des champs (description sanitizée, image_url vide/null, dates à la précision minute).",
         "security": [
           {
             "BearerAuth": []
@@ -3672,7 +3674,8 @@
                     "type": "string"
                   },
                   "description": {
-                    "type": "string"
+                    "type": "string",
+                    "description": "Description HTML enrichie restreinte. Le serveur conserve uniquement les balises autorisées et supprime les liens ou attributs dangereux."
                   },
                   "type": {
                     "type": "array",

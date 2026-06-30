@@ -57,7 +57,7 @@ The system handles multi-institution user management, automated event scraping f
 - ✅ Progressive event opening and automatic archival one year after the latest event date
 - ✅ Registration management with automatic scoring algorithms (14 criteria including `EVENT_CATEGORY_MATCH` and `AESH_COUNT`)
 - ✅ Admin dashboard with comprehensive statistics, analytics, and event management (full CRUD)
-- ✅ Admin event management with create, edit, and delete capabilities
+- ✅ Admin event management with create, edit, delete, rich text descriptions, and normalized manual edit tracking
 - ✅ Dynamic configuration system for customizable labels (accessibility, event types, public categories, school grades, age ranges, statuses)
 - ✅ Async label retrieval system for server components with database integration
 - ✅ Redis distributed caching with 5-minute TTL and immediate invalidation across instances
@@ -154,6 +154,7 @@ The system handles multi-institution user management, automated event scraping f
 - **[ioredis](https://github.com/redis/ioredis)**: High-performance Redis client with cluster support and automatic reconnection
 - \*\*[lib/utils/excelExportService.ts](lib/utils/excelExportService.ts)(lib/excelExportService.ts)
 - **[xss](https://github.com/leizongmin/js-xss)**: User-generated content sanitization to prevent XSS attacks
+- **Rich text event descriptions**: Admin descriptions are stored as restricted sanitized HTML; list cards use plain-text previews and detail pages render sanitized rich HTML
 - **[@tailwindcss/postcss](https://tailwindcss.com/docs/installation/framework-guides)**: Tailwind CSS 4 PostCSS plugin (new architecture)
 - **[@deemlol/next-icons](https://www.npmjs.com/package/@deemlol/next-icons)**: Optimized icon library for Next.js
 - **[ts-jest](https://kulshekhar.github.io/ts-jest/)**: TypeScript preprocessor for Jest with type checking

@@ -10,6 +10,40 @@ body {
   color: #000000;
 }
 
+.rich-text-content p {
+  margin: 0 0 0.75rem;
+}
+
+.rich-text-content p:last-child,
+.rich-text-content ul:last-child,
+.rich-text-content ol:last-child {
+  margin-bottom: 0;
+}
+
+.rich-text-content ul,
+.rich-text-content ol {
+  margin: 0 0 0.75rem 1.25rem;
+  padding-left: 1rem;
+}
+
+.rich-text-content ul {
+  list-style: disc;
+}
+
+.rich-text-content ol {
+  list-style: decimal;
+}
+
+.rich-text-content li {
+  margin: 0.2rem 0;
+}
+
+.rich-text-content a {
+  color: #1d4ed8;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
 /* Ensure interactive elements show pointer cursor */
 button,
 a,

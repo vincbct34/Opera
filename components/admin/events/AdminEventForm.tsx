@@ -11,6 +11,7 @@ import {
   AdminEventFormData,
 } from '@/types/api';
 import MultiSelect from '@/components/ui/MultiSelect';
+import RichTextEditor from '@/components/ui/RichTextEditor';
 import { X, Plus } from '@deemlol/next-icons';
 import {
   EVENT_TYPE_LABELS as DEFAULT_EVENT_TYPE_LABELS,
@@ -210,11 +211,9 @@ export default function AdminEventForm({
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-            <textarea
-              rows={3}
+            <RichTextEditor
               value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full p-2 border border-gray-300 rounded-none focus:outline-none focus:ring-2 focus:ring-black"
+              onChange={(description) => setFormData({ ...formData, description })}
             />
           </div>
 

@@ -4,6 +4,7 @@ import prisma from '@/lib/middleware/prismaConfig';
 import { logger } from '@/lib/middleware/logger';
 import { sanitizeLogArgs } from '@/lib/security/logSanitization';
 import { logDataModification } from '@/lib/security/securityLogger';
+import { sanitizeRichText } from '@/lib/richText';
 import { z } from 'zod';
 import {
   EventStatus,
@@ -121,6 +122,13 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
         return NextResponse.json({ error: 'Événement non trouvé' }, { status: 404 });
       }
 
+      const sanitizedDescription =
+        validatedData.description === undefined
+          ? undefined
+          : sanitizeRichText(validatedData.description);
+      const normalizedImageUrl =
+        validatedData.image_url === undefined ? undefined : validatedData.image_url || null;
+
       // Helper function to compare arrays (order-independent)
       const arraysEqual = (a: unknown[] | undefined, b: unknown[] | undefined): boolean => {
         if (!a && !b) return true;
@@ -136,10 +144,20 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
         if (!a && !b) return true;
         if (!a || !b) return false;
         if (a.length !== b.length) return false;
-        const sortedA = [...a].map((d) => new Date(d).getTime()).sort();
-        const sortedB = [...b].map((d) => d.getTime()).sort();
+        const toEditableMinute = (date: string | Date) =>
+          Math.floor(new Date(date).getTime() / 60000);
+        const sortedA = [...a].map(toEditableMinute).sort((left, right) => left - right);
+        const sortedB = [...b].map(toEditableMinute).sort((left, right) => left - right);
         return sortedA.every((val, index) => val === sortedB[index]);
       };
+
+      const richTextEqual = (a: string | null | undefined, b: string | null | undefined): boolean =>
+        sanitizeRichText(a) === sanitizeRichText(b);
+
+      const nullableStringEqual = (
+        a: string | null | undefined,
+        b: string | null | undefined,
+      ): boolean => (a || null) === (b || null);
 
       // Determine which fields were modified in this request
       const modifiedFields: string[] = [];
@@ -147,8 +165,8 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
         modifiedFields.push('title');
       }
       if (
-        validatedData.description !== undefined &&
-        validatedData.description !== existingEvent.description
+        sanitizedDescription !== undefined &&
+        !richTextEqual(sanitizedDescription, existingEvent.description)
       ) {
         modifiedFields.push('description');
       }
@@ -204,8 +222,8 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
         modifiedFields.push('caretaker');
       }
       if (
-        validatedData.image_url !== undefined &&
-        validatedData.image_url !== existingEvent.image_url
+        normalizedImageUrl !== undefined &&
+        !nullableStringEqual(normalizedImageUrl, existingEvent.image_url)
       ) {
         modifiedFields.push('image_url');
       }
@@ -243,6 +261,9 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
 
       // Check if user explicitly provided a new protected_fields list
       const userProvidedProtectedList = validatedData.protected_fields !== undefined;
+      const protectedFieldsChanged =
+        userProvidedProtectedList &&
+        !arraysEqual(validatedData.protected_fields, currentProtectedFields);
 
       let updatedProtectedFields: string[];
       if (userProvidedProtectedList) {
@@ -259,20 +280,43 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
       }
 
       // Mark event as manually edited if any field was modified or protected fields changed
-      const manuallyEdited = modifiedFields.length > 0 || userProvidedProtectedList;
+      const manuallyEdited =
+        existingEvent.manually_edited || modifiedFields.length > 0 || protectedFieldsChanged;
+
+      const descriptionForUpdate =
+        sanitizedDescription === undefined ||
+        richTextEqual(sanitizedDescription, existingEvent.description)
+          ? undefined
+          : sanitizedDescription || null;
+      const imageUrlForUpdate =
+        normalizedImageUrl === undefined ||
+        nullableStringEqual(normalizedImageUrl, existingEvent.image_url)
+          ? undefined
+          : normalizedImageUrl;
+      const eventDatesForUpdate =
+        validatedData.event_dates === undefined ||
+        datesEqual(validatedData.event_dates, existingEvent.event_dates as Date[] | undefined)
+          ? undefined
+          : validatedData.event_dates;
+      const sanitizedData = {
+        ...validatedData,
+        description: descriptionForUpdate,
+        image_url: imageUrlForUpdate,
+        event_dates: eventDatesForUpdate,
+      };
 
       // Update event
       const event = await prisma.event.update({
         where: { id },
         data: {
-          ...validatedData,
-          event_dates: validatedData.event_dates
-            ? validatedData.event_dates.map((d) => new Date(d))
+          ...sanitizedData,
+          event_dates: sanitizedData.event_dates
+            ? sanitizedData.event_dates.map((d) => new Date(d))
             : undefined,
-          accessibility: validatedData.accessibility
+          accessibility: sanitizedData.accessibility
             ? {
                 deleteMany: {},
-                create: validatedData.accessibility.map((type: string) => ({
+                create: sanitizedData.accessibility.map((type: string) => ({
                   type: type as Accessibility,
                 })),
               }

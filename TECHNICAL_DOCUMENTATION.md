@@ -745,12 +745,12 @@ npx prisma db seed
 
 ### 5.8 Endpoints Cron
 
-| Méthode | Endpoint                     | Description           | Auth        |
-| ------- | ---------------------------- | --------------------- | ----------- |
-| GET     | `/api/cron/events/scraping`  | Lancer le scraping    | CRON_SECRET |
-| GET     | `/api/cron/events/reminders` | Envoyer rappels       | CRON_SECRET |
+| Méthode | Endpoint                         | Description           | Auth        |
+| ------- | -------------------------------- | --------------------- | ----------- |
+| GET     | `/api/cron/events/scraping`      | Lancer le scraping    | CRON_SECRET |
+| GET     | `/api/cron/events/reminders`     | Envoyer rappels       | CRON_SECRET |
 | GET     | `/api/cron/events/status-update` | Mettre à jour statuts | CRON_SECRET |
-| GET     | `/api/cron/backup`           | Créer une sauvegarde  | CRON_SECRET |
+| GET     | `/api/cron/backup`               | Créer une sauvegarde  | CRON_SECRET |
 
 ### 5.10 Autres Endpoints
 
@@ -1249,7 +1249,7 @@ Cette logique est gérée par `HolidaysService` qui :
 
 Le système de protection des champs permet aux administrateurs de protéger certains champs d'un événement contre les modifications automatiques lors du scraping.
 
-**Fichiers** : `prisma/schema.prisma`, `app/api/admin/events/[id]/route.ts`
+**Fichiers** : `prisma/schema.prisma`, `app/api/admin/events/[id]/route.ts`, `components/admin/events/AdminEventForm.tsx`
 
 **Champs Protégeables** (15 champs) :
 
@@ -1278,6 +1278,8 @@ Le système de protection des champs permet aux administrateurs de protéger cer
 - `protected_fields` : Tableau des noms de champs protégés contre le scraping
 - Le scraping route (`/api/cron/events/scraping`) vérifie les champs protégés avant de mettre à jour
 - Interface admin dans le formulaire d'événement pour sélectionner les champs à protéger
+- Lors d'un `PUT /api/admin/events/[id]`, les champs sont comparés après normalisation avant d'être ajoutés à `protected_fields`
+- Les descriptions enrichies sont comparées après sanitation, `image_url` traite `''` et `null` comme équivalents, et `event_dates` est comparé à la précision minute pour correspondre au champ `datetime-local`
 
 ```typescript
 // Exemple d'utilisation
@@ -1290,6 +1292,35 @@ const event = {
 
 // Lors du scraping, ces champs ne seront PAS mis à jour
 ```
+
+### 9.7 Descriptions Enrichies des Événements
+
+Les administrateurs disposent d'un éditeur de texte enrichi limité pour la description des événements.
+
+**Fichiers** : `components/ui/RichTextEditor.tsx`, `components/events/EventDescription.tsx`, `lib/richText.ts`, `app/api/admin/events/route.ts`, `app/api/admin/events/[id]/route.ts`
+
+**Stockage** :
+
+- Le champ `Event.description` existant stocke le contenu en HTML sanitizé
+- Aucune migration de schéma n'est nécessaire
+- Les anciennes descriptions en texte brut restent compatibles ; les retours à la ligne sont normalisés en `<br>` à l'édition
+
+**Balises autorisées** :
+
+| Balise                        | Usage                             |
+| ----------------------------- | --------------------------------- |
+| `p`, `br`                     | Paragraphes et sauts de ligne     |
+| `strong`, `b`, `em`, `i`, `u` | Mise en forme de base             |
+| `ul`, `ol`, `li`              | Listes                            |
+| `a[href]`                     | Liens HTTP(S), mailto ou relatifs |
+
+**Sécurité** :
+
+- `sanitizeRichText()` utilise `xss` avec une allowlist stricte
+- Les balises `script`/`style`, attributs non autorisés et liens `javascript:` sont supprimés
+- L'API sanitise à la création et à la mise à jour
+- Le composant `EventDescription` sanitise à nouveau avant `dangerouslySetInnerHTML`
+- Les cartes événements affichent un aperçu texte via `richTextToPlainText()` pour éviter d'injecter du HTML dans les listes
 
 ---
 

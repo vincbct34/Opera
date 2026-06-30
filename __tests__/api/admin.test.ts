@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { GET as ListEvents, POST as CreateEvent } from '@/app/api/admin/events/route';
+import { PUT as UpdateEvent } from '@/app/api/admin/events/[id]/route';
 import { GET as GetStats } from '@/app/api/admin/stats/route';
 import { POST as CreateScoringConfig } from '@/app/api/admin/scoring-config/route';
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/middleware/prismaConfig';
-import { Role, EventType, PublicCategory } from '@/app/generated/prisma/enums';
+import { Role, EventType, PublicCategory, EventStatus } from '@/app/generated/prisma/enums';
 import { getDashboardStats } from '@/lib/middleware/admin';
 
 // Mock NextRequest/NextResponse
@@ -30,6 +31,7 @@ jest.mock('@/lib/middleware/prismaConfig', () => ({
       findMany: jest.fn(),
       create: jest.fn(),
       findUnique: jest.fn(),
+      update: jest.fn(),
     },
     scoringConfiguration: {
       findMany: jest.fn(),
@@ -149,6 +151,80 @@ describe('Admin API', () => {
 
       const res = await CreateEvent(req);
       expect(res.status).toBe(400);
+    });
+  });
+
+  describe('PUT /api/admin/events/[id]', () => {
+    it('should not auto-protect fields when saving an unchanged event', async () => {
+      const eventDate = new Date('2026-09-15T10:00:30.500Z');
+      const submittedEventDate = '2026-09-15T10:00:00.000Z';
+      const existingEvent = {
+        id: 'evt-1',
+        title: 'Existing Event',
+        description: 'Line one\nLine two',
+        type: [EventType.OPERA],
+        location: 'Paris',
+        duration: 120,
+        total_seats: 100,
+        caretaker: null,
+        status: EventStatus.OPEN,
+        image_url: null,
+        event_dates: [eventDate],
+        category: [PublicCategory.LYCEE],
+        grades: [],
+        age_ranges: [],
+        has_initial_formation: false,
+        has_musical_preparation: false,
+        slug: null,
+        manually_edited: false,
+        protected_fields: [],
+        accessibility: [],
+      };
+
+      (prisma.event.findUnique as unknown as jest.Mock<any>).mockResolvedValue(existingEvent);
+      (prisma.event.update as unknown as jest.Mock<any>).mockResolvedValue(existingEvent);
+
+      const req = createMockRequest('http://localhost/api/admin/events/evt-1', {
+        method: 'PUT',
+        body: {
+          title: existingEvent.title,
+          description: existingEvent.description,
+          type: existingEvent.type,
+          location: existingEvent.location,
+          duration: existingEvent.duration,
+          total_seats: existingEvent.total_seats,
+          status: existingEvent.status,
+          image_url: '',
+          event_dates: [submittedEventDate],
+          category: existingEvent.category,
+          grades: existingEvent.grades,
+          age_ranges: existingEvent.age_ranges,
+          has_initial_formation: existingEvent.has_initial_formation,
+          has_musical_preparation: existingEvent.has_musical_preparation,
+          accessibility: [],
+          protected_fields: [],
+        },
+        user: { id: 'admin-1', role: Role.ADMIN },
+      });
+
+      const res = await UpdateEvent(req, { params: Promise.resolve({ id: 'evt-1' }) });
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.modified_fields).toEqual([]);
+      expect(data.protected_fields).toEqual([]);
+      expect(prisma.event.update).toHaveBeenCalledWith(
+        expect.objectContaining({
+          where: { id: 'evt-1' },
+          data: expect.objectContaining({
+            description: undefined,
+            image_url: undefined,
+            event_dates: undefined,
+            manually_edited: false,
+            protected_fields: [],
+          }),
+        }),
+      );
     });
   });
 

@@ -4,6 +4,7 @@ import prisma from '@/lib/middleware/prismaConfig';
 import { logger } from '@/lib/middleware/logger';
 import { sanitizeLogArgs } from '@/lib/security/logSanitization';
 import { logAdminAccess, logDataModification } from '@/lib/security/securityLogger';
+import { sanitizeRichText } from '@/lib/richText';
 import { z } from 'zod';
 import {
   EventStatus,
@@ -86,7 +87,7 @@ export async function POST(req: NextRequest) {
       const event = await prisma.event.create({
         data: {
           title: validatedData.title,
-          description: validatedData.description,
+          description: sanitizeRichText(validatedData.description) || null,
           type: validatedData.type,
           location: validatedData.location,
           duration: validatedData.duration,

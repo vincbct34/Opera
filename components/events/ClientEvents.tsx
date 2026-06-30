@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import Loader from '@/components/ui/Loader';
+import EventDescription from '@/components/events/EventDescription';
 import useImagesLoaded from '@/hooks/useImagesLoaded';
 import CalendarView from './CalendarView';
 import MultiSelect from '@/components/ui/MultiSelect';
@@ -457,13 +458,13 @@ export default function ClientEvents({
             );
           })()}
         {ev.description && (
-          <p
+          <EventDescription
+            description={ev.description}
+            preview
             className={`mt-3 text-xs sm:text-sm text-justify line-clamp-3 ${
               isPast ? 'text-gray-500' : 'text-gray-600'
             }`}
-          >
-            {ev.description}
-          </p>
+          />
         )}
         <div className="mt-3 sm:mt-4 flex items-center justify-end">
           {!isAdmin && ev.status === 'CLOSED' ? (
