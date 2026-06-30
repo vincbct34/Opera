@@ -111,8 +111,7 @@ export async function POST(req: NextRequest) {
       const registrationBlocks = validatedData.registrationBlocks ?? [];
       const hasRegistrationBlocks = registrationBlocks.some((block) => block.enabled !== false);
       const hasMandatoryRegistrationBlock = registrationBlocks.some(
-        (block) =>
-          block.enabled !== false && block.registration_enabled !== false && block.mandatory,
+        (block) => block.enabled !== false && block.mandatory,
       );
 
       // Create event
@@ -147,8 +146,8 @@ export async function POST(req: NextRequest) {
               description: sanitizeRichText(block.description) || null,
               dates: (block.dates || []).map((date) => new Date(date)),
               enabled: block.enabled ?? true,
-              registration_enabled: block.registration_enabled ?? true,
-              mandatory: block.mandatory ?? false,
+              registration_enabled: block.enabled !== false,
+              mandatory: block.enabled !== false && (block.mandatory ?? false),
               order: block.order ?? index,
             })),
           },

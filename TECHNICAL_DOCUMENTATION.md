@@ -371,7 +371,7 @@ import prisma from '@/lib/middleware/prismaConfig';
 
 Les blocs pédagogiques permettent à l'admin d'ajouter plusieurs contenus autour d'un événement :
 formations, ateliers, rencontres ou autres activités. Chaque bloc porte son propre titre, texte
-explicatif, liste de dates, option d'inscription et indicateur obligatoire.
+explicatif, liste de dates et mode côté utilisateur.
 
 - `EventRegistrationBlock` stocke les blocs configurés sur un événement.
 - `RegistrationBlockSelection` stocke la réponse d'une inscription à un bloc, avec la date choisie.
@@ -379,8 +379,13 @@ explicatif, liste de dates, option d'inscription et indicateur obligatoire.
   `Registration.want_formation` restent en base pour compatibilité et exports.
 - Un événement ancien avec `has_initial_formation = true` mais sans bloc réel est exposé via un
   bloc synthétique "Formation initiale" par `lib/events/registrationBlocks.ts`.
+- L'admin choisit un mode par bloc : masqué, inscription optionnelle ou inscription obligatoire.
+  Un bloc visible accepte toujours une réponse d'inscription ; le mode "information seule" n'est
+  pas supporté.
 - Le serveur refuse une inscription si un bloc obligatoire n'est pas sélectionné ou si la date
   choisie ne fait pas partie des dates du bloc.
+- Le serveur ignore les blocs masqués dans la validation des obligations et refuse toute réponse
+  envoyée pour un bloc masqué.
 
 ### 4.3 Configuration Dynamique avec Cache Distribué
 

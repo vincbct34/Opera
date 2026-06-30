@@ -346,6 +346,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ slug: 
               id: true,
               title: true,
               dates: true,
+              enabled: true,
               registration_enabled: true,
               mandatory: true,
               order: true,
@@ -378,6 +379,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ slug: 
                 id: true,
                 title: true,
                 dates: true,
+                enabled: true,
                 registration_enabled: true,
                 mandatory: true,
                 order: true,
@@ -504,7 +506,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ slug: 
         }
 
         const block = blocksById.get(selection.block_id);
-        if (!block || !block.registration_enabled) {
+        if (!block || block.enabled === false || !block.registration_enabled) {
           return NextResponse.json(
             { error: "Ce bloc pédagogique n'accepte pas d'inscription" },
             { status: 400 },
@@ -524,7 +526,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ slug: 
       }
 
       for (const block of eventRegistrationBlocks) {
-        if (!block.registration_enabled || !block.mandatory) continue;
+        if (block.enabled === false || !block.registration_enabled || !block.mandatory) continue;
 
         const selection = selectionsByBlockId.get(block.id);
         if (!selection?.wants_to_attend) {

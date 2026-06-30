@@ -342,10 +342,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
         ? registrationBlocks.some((block) => block.enabled !== false)
         : undefined;
       const hasMandatoryRegistrationBlock = registrationBlocks
-        ? registrationBlocks.some(
-            (block) =>
-              block.enabled !== false && block.registration_enabled !== false && block.mandatory,
-          )
+        ? registrationBlocks.some((block) => block.enabled !== false && block.mandatory)
         : undefined;
 
       // Update event
@@ -410,8 +407,8 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
             description: sanitizeRichText(block.description) || null,
             dates: (block.dates || []).map((date) => new Date(date)),
             enabled: block.enabled ?? true,
-            registration_enabled: block.registration_enabled ?? true,
-            mandatory: block.mandatory ?? false,
+            registration_enabled: block.enabled !== false,
+            mandatory: block.enabled !== false && (block.mandatory ?? false),
             order: block.order ?? index,
           };
 

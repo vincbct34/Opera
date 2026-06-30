@@ -61,7 +61,7 @@ The system handles multi-institution user management, automated event scraping f
 - ✅ Registration management with automatic scoring algorithms (14 criteria including `EVENT_CATEGORY_MATCH` and `AESH_COUNT`)
 - ✅ Admin dashboard with comprehensive statistics, analytics, and event management (full CRUD)
 - ✅ Admin event management with create, edit, delete, rich text descriptions, and normalized manual edit tracking
-- ✅ Reusable pedagogical registration blocks on events (formations, ateliers, etc.) with custom title/text/dates, optional registration, and mandatory participation rules
+- ✅ Reusable pedagogical registration blocks on events (formations, ateliers, etc.) with custom title/text/dates, hidden/optional/mandatory user modes
 - ✅ Dynamic configuration system for customizable labels (accessibility, event types, public categories, school grades, age ranges, statuses)
 - ✅ Async label retrieval system for server components with database integration
 - ✅ Redis distributed caching with 5-minute TTL and immediate invalidation across instances

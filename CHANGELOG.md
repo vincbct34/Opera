@@ -29,6 +29,11 @@ All notable changes to the Opéra de Montpellier Registration Platform will be d
 
 ### Changed
 
+- **Pedagogical Block User Modes**: Admin event blocks now expose a single user-facing mode
+  - Replaced separate visibility/registration/mandatory toggles with hidden, optional registration, and mandatory registration modes
+  - Visible pedagogical blocks now always collect an inscription answer
+  - Admin event saves normalize visible blocks as registration-enabled and hidden blocks as non-mandatory
+
 - **Public Event List Performance**: Optimized the `/events` listing page load path
   - Removed the global image preloader that blocked the page until every event image loaded or timed out
   - Preloads only the first visible upcoming event images through `next/image`
@@ -38,6 +43,10 @@ All notable changes to the Opéra de Montpellier Registration Platform will be d
   - Added a Prisma index on `Event.status` for the default non-archived event listing
 
 ### Fixed
+
+- **Hidden Mandatory Pedagogical Blocks**: Hidden event blocks no longer block public registration even if older data marked them mandatory
+  - Registration API ignores hidden blocks when validating mandatory pedagogical selections
+  - Explicit selections for hidden blocks are rejected as non-inscribable
 
 - **Event Protected Fields False Positives**: Saving an unchanged admin event no longer auto-checks scraping protection fields
   - `protected_fields` only counts as changed when the submitted list differs from the existing list

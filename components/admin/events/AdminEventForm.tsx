@@ -50,6 +50,8 @@ type LocalRegistrationBlock = {
   order: number;
 };
 
+type RegistrationBlockMode = 'hidden' | 'optional' | 'required';
+
 interface AdminEventFormProps {
   initialData?: Partial<AdminEventFormData>;
   onSubmit: (data: AdminEventFormData) => Promise<void>;
@@ -122,8 +124,8 @@ export default function AdminEventForm({
           description: block.description ?? '',
           dates: (block.dates || []).map((date) => utcToDatetimeLocal(date)),
           enabled: block.enabled ?? true,
-          registration_enabled: block.registration_enabled ?? true,
-          mandatory: block.mandatory ?? false,
+          registration_enabled: block.enabled !== false,
+          mandatory: block.enabled !== false && (block.mandatory ?? false),
           order: block.order ?? index,
         }))
       : initialData?.has_initial_formation
@@ -173,6 +175,8 @@ export default function AdminEventForm({
     e.preventDefault();
     const registrationBlocks = formData.registrationBlocks.map((block, index) => ({
       ...block,
+      registration_enabled: block.enabled,
+      mandatory: block.enabled && block.mandatory,
       order: index,
       dates: block.dates.map((date) => datetimeLocalToUtc(date)),
     }));
@@ -245,6 +249,19 @@ export default function AdminEventForm({
         blockIndex === index ? { ...block, ...updates } : block,
       ),
     }));
+  };
+
+  const getRegistrationBlockMode = (block: LocalRegistrationBlock): RegistrationBlockMode => {
+    if (!block.enabled) return 'hidden';
+    return block.mandatory ? 'required' : 'optional';
+  };
+
+  const updateRegistrationBlockMode = (index: number, mode: RegistrationBlockMode) => {
+    updateRegistrationBlock(index, {
+      enabled: mode !== 'hidden',
+      registration_enabled: mode !== 'hidden',
+      mandatory: mode === 'required',
+    });
   };
 
   const removeRegistrationBlock = (index: number) => {
@@ -533,44 +550,23 @@ export default function AdminEventForm({
             <div key={block.id || blockIndex} className="border border-gray-200 p-4 bg-gray-50">
               <div className="flex items-start justify-between gap-3 mb-4">
                 <div className="flex flex-wrap gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={block.enabled}
+                  <label className="flex items-center gap-2">
+                    <span className="text-sm text-gray-700">Mode côté utilisateur</span>
+                    <select
+                      value={getRegistrationBlockMode(block)}
                       onChange={(e) =>
-                        updateRegistrationBlock(blockIndex, { enabled: e.target.checked })
+                        updateRegistrationBlockMode(
+                          blockIndex,
+                          e.target.value as RegistrationBlockMode,
+                        )
                       }
-                      className="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
-                    />
-                    <span className="text-sm text-gray-700">Afficher le bloc</span>
+                      className="p-2 border border-gray-300 rounded-none focus:outline-none focus:ring-2 focus:ring-black bg-white text-sm"
+                    >
+                      <option value="hidden">Masqué</option>
+                      <option value="optional">Inscription optionnelle</option>
+                      <option value="required">Inscription obligatoire</option>
+                    </select>
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={block.registration_enabled}
-                      onChange={(e) =>
-                        updateRegistrationBlock(blockIndex, {
-                          registration_enabled: e.target.checked,
-                          mandatory: e.target.checked ? block.mandatory : false,
-                        })
-                      }
-                      className="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
-                    />
-                    <span className="text-sm text-gray-700">Inscription possible</span>
-                  </label>
-                  {block.registration_enabled && (
-                    <label className="flex items-center gap-2 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={block.mandatory}
-                        onChange={(e) =>
-                          updateRegistrationBlock(blockIndex, { mandatory: e.target.checked })
-                        }
-                        className="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
-                      />
-                      <span className="text-sm text-gray-700">Obligatoire</span>
-                    </label>
-                  )}
                 </div>
                 <button
                   type="button"
