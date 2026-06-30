@@ -1,0 +1,6132 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Service culturel - Plateforme web API",
+    "description": "API de gestion des inscriptions scolaires aux événements de l'Opéra Orchestre National Montpellier Occitanie.",
+    "version": "1.6.7",
+    "contact": {
+      "name": "Service culturel - Plateforme web",
+      "url": "https://github.com/vincbct34/service-culturel-plateforme-web"
+    }
+  },
+  "servers": [
+    {
+      "url": "/",
+      "description": "Serveur courant"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Auth",
+      "description": "Authentification, JWT, CSRF, vérification email, reset mot de passe"
+    },
+    {
+      "name": "Events",
+      "description": "Événements publics (lecture seule)"
+    },
+    {
+      "name": "Users",
+      "description": "Gestion des utilisateurs et profils"
+    },
+    {
+      "name": "Institutions",
+      "description": "Établissements scolaires et structures"
+    },
+    {
+      "name": "Registrations",
+      "description": "Inscriptions aux événements"
+    },
+    {
+      "name": "Groups",
+      "description": "Groupes d'élèves"
+    },
+    {
+      "name": "Notifications",
+      "description": "Notifications in-app"
+    },
+    {
+      "name": "Admin",
+      "description": "Administration (ADMIN / SUPERADMIN)"
+    },
+    {
+      "name": "Admin – Events",
+      "description": "Gestion admin des événements"
+    },
+    {
+      "name": "Admin – Scoring",
+      "description": "Configuration de scoring"
+    },
+    {
+      "name": "Admin – Security",
+      "description": "Logs et rapports de sécurité"
+    },
+    {
+      "name": "Admin – Export",
+      "description": "Exports de données"
+    },
+    {
+      "name": "Cron",
+      "description": "Tâches planifiées (Bearer CRON_SECRET)"
+    },
+    {
+      "name": "Misc",
+      "description": "Divers (CSP reports, etc.)"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "BearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Access token JWT (header Authorization: Bearer <token>)"
+      },
+      "CronAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "description": "CRON_SECRET token pour les tâches planifiées"
+      },
+      "CSRFToken": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-CSRF-Token",
+        "description": "Jeton CSRF requis pour POST/PUT/PATCH/DELETE authentifiés"
+      }
+    },
+    "schemas": {
+      "Role": {
+        "type": "string",
+        "enum": ["USER", "ADMIN", "SUPERADMIN"]
+      },
+      "PublicCategory": {
+        "type": "string",
+        "enum": [
+          "CRECHE",
+          "MATERNELLE",
+          "ELEMENTAIRE",
+          "COLLEGE",
+          "LYCEE",
+          "SUPERIEUR",
+          "CONSERVATOIRE",
+          "ASSOCIATION",
+          "PERISCOLAIRE",
+          "PUBLICS_EMPECHES",
+          "AUTRE"
+        ]
+      },
+      "SchoolGrade": {
+        "type": "string",
+        "enum": [
+          "PS",
+          "MS",
+          "GS",
+          "CP",
+          "CE1",
+          "CE2",
+          "CM1",
+          "CM2",
+          "SIXIEME",
+          "CINQUIEME",
+          "QUATRIEME",
+          "TROISIEME",
+          "SECONDE",
+          "PREMIERE",
+          "TERMINALE"
+        ]
+      },
+      "AgeRange": {
+        "type": "string",
+        "enum": ["AGE_0_3", "AGE_3_6", "AGE_6_11", "AGE_11_15", "AGE_15_18", "AGE_18_PLUS"]
+      },
+      "EventType": {
+        "type": "string",
+        "enum": [
+          "OPERA",
+          "CONCERT_LYRIQUE",
+          "SYMPHONIQUE",
+          "CHAMBRE_BAROQUE",
+          "EN_FAMILLE",
+          "OPERA_JUNIOR",
+          "CINE_CONCERT",
+          "INSOLITE",
+          "THEATRE_MUSICAL",
+          "DANSE",
+          "CONTE_MUSICAL",
+          "CONCERT_DECENTRALISE",
+          "ELECTRO_ACOUSTIQUE",
+          "MUSIQUE_ELECTRONIQUE",
+          "CONCERT_LECTURE",
+          "PLEIN_AIR",
+          "JAZZ",
+          "LITTERATURE",
+          "MASTERCLASS",
+          "MUSIQUE_ET_BIEN_ETRE",
+          "MUSIQUE_ACTUELLE",
+          "PARTICIPATIF",
+          "PROMENADE_SONORE",
+          "ATELIER",
+          "GALA",
+          "EXPOSITION",
+          "PORTES_OUVERTES",
+          "INTERDISCIPLINAIRE",
+          "SPECTACLE_EDUCATIF",
+          "CARITATIF",
+          "THEATRE",
+          "RENDEZ_VOUS",
+          "MUSIQUES_DAILLEURS",
+          "BAROQUE"
+        ]
+      },
+      "EventStatus": {
+        "type": "string",
+        "enum": ["OPEN", "CLOSED", "ARCHIVED"]
+      },
+      "Accessibility": {
+        "type": "string",
+        "enum": ["VISUAL", "AUDITORY", "MOTOR", "PSYCHIC", "NEUROATYPICAL", "OTHER"]
+      },
+      "RegistrationStatus": {
+        "type": "string",
+        "enum": ["PENDING", "CONFIRMED", "CANCELLED", "REJECTED", "ATTENDED", "NO_SHOW"]
+      },
+      "NotificationType": {
+        "type": "string",
+        "enum": [
+          "REGISTRATION_CONFIRMED",
+          "REGISTRATION_CANCELLED",
+          "REGISTRATION_REJECTED",
+          "EVENT_REMINDER",
+          "NEW_EVENT",
+          "SYSTEM_UPDATE",
+          "SECURITY_ALERT"
+        ]
+      },
+      "SecurityLogType": {
+        "type": "string",
+        "enum": [
+          "LOGIN_SUCCESS",
+          "LOGIN_FAILED",
+          "LOGOUT",
+          "REGISTER",
+          "PASSWORD_CHANGE",
+          "PASSWORD_RESET_REQUEST",
+          "PASSWORD_RESET_SUCCESS",
+          "EMAIL_VERIFICATION",
+          "ADMIN_ACCESS",
+          "DATA_MODIFIED",
+          "SUSPICIOUS_ACTIVITY",
+          "RATE_LIMIT_EXCEEDED",
+          "UNAUTHORIZED_ACCESS",
+          "CSRF_TOKEN_INVALID",
+          "CORS_VIOLATION",
+          "TOKEN_REFRESH",
+          "TOKEN_EXPIRED",
+          "ACCOUNT_LOCKED"
+        ]
+      },
+      "SecuritySeverity": {
+        "type": "string",
+        "enum": ["INFO", "WARNING", "CRITICAL"]
+      },
+      "ScoringCriterionType": {
+        "type": "string",
+        "enum": [
+          "ATTENDANCE_RATE",
+          "MONTHS_SINCE_LAST",
+          "TOTAL_PARTICIPATIONS",
+          "RECENT_NO_SHOW",
+          "IS_REP_INSTITUTION",
+          "FIRST_TIME_APPLICANT",
+          "ACCESSIBILITY_NEEDS",
+          "EARLY_REGISTRATION",
+          "INSTITUTION_TYPE",
+          "REQUESTED_SEATS_COUNT",
+          "CARETAKER_RATIO",
+          "GEOGRAPHIC_ZONE",
+          "EVENT_CATEGORY_MATCH",
+          "AESH_COUNT"
+        ]
+      },
+      "ConfigCategory": {
+        "type": "string",
+        "enum": [
+          "accessibility_labels",
+          "event_type_labels",
+          "public_category_labels",
+          "registration_status_labels",
+          "event_status_labels",
+          "school_grade_labels",
+          "age_range_labels"
+        ]
+      },
+      "Address": {
+        "type": "object",
+        "properties": {
+          "street": {
+            "type": "string"
+          },
+          "zip_code": {
+            "type": "string",
+            "pattern": "^[0-9]{5}$"
+          },
+          "city": {
+            "type": "string"
+          }
+        },
+        "required": ["street", "zip_code", "city"]
+      },
+      "Disability": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/Accessibility"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "details": {
+            "type": "string"
+          }
+        },
+        "required": ["type", "count"]
+      },
+      "Pagination": {
+        "type": "object",
+        "properties": {
+          "page": {
+            "type": "integer"
+          },
+          "limit": {
+            "type": "integer"
+          },
+          "total": {
+            "type": "integer"
+          },
+          "totalPages": {
+            "type": "integer"
+          }
+        }
+      },
+      "Event": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "slug": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string"
+          },
+          "type": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventType"
+            }
+          },
+          "category": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicCategory"
+            }
+          },
+          "grades": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchoolGrade"
+            }
+          },
+          "age_ranges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgeRange"
+            }
+          },
+          "location": {
+            "type": "string"
+          },
+          "duration": {
+            "type": "number"
+          },
+          "total_seats": {
+            "type": "integer"
+          },
+          "booked_seats": {
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/EventStatus"
+          },
+          "image_url": {
+            "type": "string",
+            "nullable": true
+          },
+          "event_dates": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "accessibility": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Accessibility"
+            }
+          },
+          "has_initial_formation": {
+            "type": "boolean"
+          },
+          "is_formation_mandatory": {
+            "type": "boolean"
+          },
+          "has_musical_preparation": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "format": "email"
+          },
+          "first_name": {
+            "type": "string"
+          },
+          "last_name": {
+            "type": "string"
+          },
+          "phone_number": {
+            "type": "string"
+          },
+          "role": {
+            "$ref": "#/components/schemas/Role"
+          },
+          "email_notifications_enabled": {
+            "type": "boolean"
+          },
+          "events_reminders_enabled": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "institution_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        }
+      },
+      "Institution": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string",
+            "nullable": true
+          },
+          "phone_number": {
+            "type": "string",
+            "nullable": true
+          },
+          "type": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicCategory"
+            }
+          },
+          "grades": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchoolGrade"
+            }
+          },
+          "age_ranges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgeRange"
+            }
+          },
+          "not_listed": {
+            "type": "string",
+            "nullable": true
+          },
+          "address": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Registration": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          },
+          "institution_id": {
+            "type": "string"
+          },
+          "event_id": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "booked_seats": {
+            "type": "integer"
+          },
+          "caretaker_count": {
+            "type": "integer"
+          },
+          "aesh_count": {
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/RegistrationStatus"
+          },
+          "manager_first_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "manager_last_name": {
+            "type": "string",
+            "nullable": true
+          },
+          "manager_email": {
+            "type": "string",
+            "nullable": true
+          },
+          "manager_phone_number": {
+            "type": "string",
+            "nullable": true
+          },
+          "comments": {
+            "type": "string",
+            "nullable": true
+          },
+          "was_present_comment": {
+            "type": "string",
+            "nullable": true
+          },
+          "category": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicCategory"
+            }
+          },
+          "grades": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchoolGrade"
+            }
+          },
+          "age_ranges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgeRange"
+            }
+          },
+          "want_formation": {
+            "type": "boolean"
+          },
+          "want_preparation": {
+            "type": "boolean"
+          },
+          "disabilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Disability"
+            }
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Group": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          },
+          "category": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PublicCategory"
+            }
+          },
+          "grades": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SchoolGrade"
+            }
+          },
+          "age_ranges": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AgeRange"
+            }
+          },
+          "students_count": {
+            "type": "integer"
+          },
+          "disabilities": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Disability"
+            }
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Notification": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "user_id": {
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/NotificationType"
+          },
+          "title": {
+            "type": "string"
+          },
+          "message": {
+            "type": "string"
+          },
+          "read": {
+            "type": "boolean"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/api/auth/csrf": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Obtenir un jeton CSRF",
+        "description": "Génère un jeton CSRF lié à l'utilisateur authentifié ou à l'IP/User-Agent du client.",
+        "responses": {
+          "200": {
+            "description": "Jeton CSRF généré",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "csrfToken": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/login": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Connexion",
+        "description": "Authentifie un utilisateur. Retourne un access token JWT et pose un cookie httpOnly avec le refresh token.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "maxLength": 254
+                  },
+                  "password": {
+                    "type": "string",
+                    "maxLength": 128
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Connexion réussie",
+            "headers": {
+              "Set-Cookie": {
+                "description": "Cookie httpOnly jwt (refresh token, 7j)",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-CSRF-Token": {
+                "description": "Nouveau jeton CSRF",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": {
+                      "type": "string"
+                    },
+                    "csrfToken": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "$ref": "#/components/schemas/Role"
+                        },
+                        "institution_ids": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Identifiants invalides"
+          },
+          "403": {
+            "description": "Compte verrouillé ou email non vérifié"
+          },
+          "429": {
+            "description": "Trop de tentatives (5/15min)"
+          }
+        }
+      }
+    },
+    "/api/auth/logout": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Déconnexion",
+        "description": "Blackliste le refresh token et supprime le cookie jwt.",
+        "responses": {
+          "200": {
+            "description": "Déconnecté",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Déconnecté"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/register": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Inscription",
+        "description": "Crée un compte utilisateur. Envoie un email de vérification (token valide 24h).",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password",
+                  "first_name",
+                  "last_name",
+                  "phone_number",
+                  "institution_ids"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "maxLength": 254
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 10,
+                    "description": "Min 10 chars, 1 majuscule, 1 minuscule, 1 chiffre, 1 spécial"
+                  },
+                  "first_name": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "last_name": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "phone_number": {
+                    "type": "string",
+                    "maxLength": 20
+                  },
+                  "institution_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 1,
+                    "maxItems": 10
+                  },
+                  "email_notifications_enabled": {
+                    "type": "boolean",
+                    "default": true
+                  },
+                  "events_reminders_enabled": {
+                    "type": "boolean",
+                    "default": true
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Compte créé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "$ref": "#/components/schemas/User"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Email déjà utilisé"
+          },
+          "429": {
+            "description": "Trop de tentatives"
+          }
+        }
+      }
+    },
+    "/api/auth/refresh": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Rafraîchir le token",
+        "description": "Rotation du refresh token (cookie jwt) et génération d'un nouvel access token + CSRF token.",
+        "responses": {
+          "200": {
+            "description": "Tokens rafraîchis",
+            "headers": {
+              "Set-Cookie": {
+                "description": "Nouveau cookie jwt",
+                "schema": {
+                  "type": "string"
+                }
+              },
+              "X-CSRF-Token": {
+                "description": "Nouveau jeton CSRF",
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "accessToken": {
+                      "type": "string"
+                    },
+                    "csrfToken": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Pas de refresh token"
+          },
+          "403": {
+            "description": "Token blacklisté, invalide ou expiré"
+          }
+        }
+      }
+    },
+    "/api/auth/verify-email": {
+      "get": {
+        "tags": ["Auth"],
+        "summary": "Vérifier email (lien)",
+        "description": "Vérifie l'email via le lien envoyé. Redirige vers /auth/verify-email avec success ou error.",
+        "parameters": [
+          {
+            "name": "token",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "302": {
+            "description": "Redirection vers /auth/verify-email"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Vérifier email (API)",
+        "description": "Vérifie l'email via token dans le body.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["token"],
+                "properties": {
+                  "token": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Email vérifié",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    },
+                    "user": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "email": {
+                          "type": "string"
+                        },
+                        "first_name": {
+                          "type": "string"
+                        },
+                        "last_name": {
+                          "type": "string"
+                        },
+                        "role": {
+                          "$ref": "#/components/schemas/Role"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Token invalide ou expiré"
+          }
+        }
+      }
+    },
+    "/api/auth/resend-verification": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Renvoyer l'email de vérification",
+        "description": "Renvoie le lien de vérification email. Message générique pour éviter l'énumération.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email"],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Message générique",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/reset-password": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Demander un reset de mot de passe",
+        "description": "Envoie un email de réinitialisation (token valide 1h). Message générique pour éviter l'énumération.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email"],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email",
+                    "maxLength": 254
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Message générique",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Si un compte existe, un email a été envoyé."
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/auth/reset-password/reset": {
+      "post": {
+        "tags": ["Auth"],
+        "summary": "Réinitialiser le mot de passe",
+        "description": "Exécute la réinitialisation du mot de passe avec le token reçu par email. Vérifie l'historique des 5 derniers mots de passe.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["token", "password"],
+                "properties": {
+                  "token": {
+                    "type": "string",
+                    "maxLength": 500
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 10
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Mot de passe réinitialisé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Mot de passe réinitialisé avec succès."
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Token invalide/expiré ou mot de passe déjà utilisé"
+          }
+        }
+      }
+    },
+    "/api/events": {
+      "get": {
+        "tags": ["Events"],
+        "summary": "Lister les événements",
+        "description": "Retourne tous les événements avec leurs informations d'accessibilité. Endpoint public.",
+        "responses": {
+          "200": {
+            "description": "Liste des événements",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Event"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/{slug}": {
+      "get": {
+        "tags": ["Events"],
+        "summary": "Détail d'un événement",
+        "description": "Retourne les informations détaillées d'un événement par slug (ou ID en fallback). Endpoint public.",
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Détail de l'événement",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "event": {
+                      "$ref": "#/components/schemas/Event"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Événement non trouvé"
+          }
+        }
+      }
+    },
+    "/api/events/{slug}/registrations": {
+      "get": {
+        "tags": ["Events"],
+        "summary": "Lister les inscriptions d'un événement",
+        "description": "Liste les inscriptions avec scoring optionnel. Admin uniquement.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "configId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID de la config de scoring"
+          },
+          {
+            "name": "includeScores",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"],
+              "default": "true"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "0 = pas de pagination"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inscriptions avec scoring",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "registrations": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Registration"
+                      }
+                    },
+                    "scoringConfig": {
+                      "type": "object",
+                      "nullable": true,
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "isDefault": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "pagination": {
+                      "$ref": "#/components/schemas/Pagination"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Registrations"],
+        "summary": "Créer une inscription",
+        "description": "Crée une inscription pour un événement. L'utilisateur doit appartenir à l'institution choisie. Un email de confirmation (template 2180336) est envoyé automatiquement à l'utilisateur.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["institution_id", "date", "booked_seats"],
+                "properties": {
+                  "institution_id": {
+                    "type": "string"
+                  },
+                  "date": {
+                    "type": "string",
+                    "format": "date-time"
+                  },
+                  "booked_seats": {
+                    "type": "integer",
+                    "minimum": 1
+                  },
+                  "manager_first_name": {
+                    "type": "string"
+                  },
+                  "manager_last_name": {
+                    "type": "string"
+                  },
+                  "manager_email": {
+                    "type": "string"
+                  },
+                  "manager_phone_number": {
+                    "type": "string"
+                  },
+                  "caretaker_count": {
+                    "type": "integer"
+                  },
+                  "aesh_count": {
+                    "type": "integer"
+                  },
+                  "category": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/PublicCategory"
+                    }
+                  },
+                  "grades": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/SchoolGrade"
+                    }
+                  },
+                  "age_ranges": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AgeRange"
+                    }
+                  },
+                  "comments": {
+                    "type": "string"
+                  },
+                  "disabilities": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Disability"
+                    }
+                  },
+                  "want_formation": {
+                    "type": "boolean"
+                  },
+                  "want_preparation": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Inscription créée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "registration": {
+                      "$ref": "#/components/schemas/Registration"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation échouée ou places insuffisantes"
+          },
+          "403": {
+            "description": "L'utilisateur n'appartient pas à cette institution"
+          }
+        }
+      }
+    },
+    "/api/events/{slug}/registrations/me": {
+      "get": {
+        "tags": ["Registrations"],
+        "summary": "Mes inscriptions pour un événement",
+        "description": "Retourne les inscriptions non-annulées de l'utilisateur connecté pour un événement.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inscriptions de l'utilisateur",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "registrations": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Registration"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/events/{slug}/registrations/{registrationId}": {
+      "patch": {
+        "tags": ["Admin – Events"],
+        "summary": "Modifier le statut d'une inscription",
+        "description": "Met à jour le statut d'une inscription (admin). Gère le compteur de places et envoie les notifications.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "registrationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "$ref": "#/components/schemas/RegistrationStatus"
+                  },
+                  "was_present_comment": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Inscription mise à jour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "registration": {
+                      "$ref": "#/components/schemas/Registration"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Admin – Events"],
+        "summary": "Supprimer une inscription (admin)",
+        "description": "Supprime une inscription et libère les places si elle était confirmée.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "slug",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "registrationId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inscription supprimée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Lister les utilisateurs",
+        "description": "Liste les utilisateurs avec pagination et recherche. Admin uniquement.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Recherche par email, prénom ou nom"
+          },
+          {
+            "name": "email",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filtre exact par email"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liste des utilisateurs",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "users": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/User"
+                      }
+                    },
+                    "pagination": {
+                      "$ref": "#/components/schemas/Pagination"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Users"],
+        "summary": "Créer un utilisateur (admin)",
+        "description": "Crée un utilisateur. SUPERADMIN peut assigner tout rôle, ADMIN ne peut créer que des USER.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "email",
+                  "password",
+                  "first_name",
+                  "last_name",
+                  "phone_number",
+                  "institution_ids"
+                ],
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "password": {
+                    "type": "string",
+                    "minLength": 10
+                  },
+                  "first_name": {
+                    "type": "string"
+                  },
+                  "last_name": {
+                    "type": "string"
+                  },
+                  "phone_number": {
+                    "type": "string"
+                  },
+                  "institution_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    },
+                    "minItems": 1
+                  },
+                  "role": {
+                    "$ref": "#/components/schemas/Role"
+                  },
+                  "skip_email_verification": {
+                    "type": "boolean"
+                  },
+                  "email_notifications_enabled": {
+                    "type": "boolean"
+                  },
+                  "events_reminders_enabled": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Utilisateur créé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "$ref": "#/components/schemas/User"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/me": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Mon profil",
+        "description": "Retourne le profil de l'utilisateur authentifié avec ses institution_ids.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Profil utilisateur",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Users"],
+        "summary": "Supprimer mon compte",
+        "description": "Supprime le compte de l'utilisateur connecté et toutes ses données associées.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Compte supprimé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Compte supprimé avec succès"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/{id}": {
+      "get": {
+        "tags": ["Users"],
+        "summary": "Détail d'un utilisateur",
+        "description": "Retourne les détails complets d'un utilisateur (groupes, inscriptions, institutions). Accessible par l'utilisateur lui-même ou un admin.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Détail de l'utilisateur",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Utilisateur non trouvé"
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Users"],
+        "summary": "Modifier un utilisateur",
+        "description": "Met à jour les informations d'un utilisateur. SUPERADMIN peut modifier le rôle.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "first_name": {
+                    "type": "string"
+                  },
+                  "last_name": {
+                    "type": "string"
+                  },
+                  "phone_number": {
+                    "type": "string"
+                  },
+                  "email_notifications_enabled": {
+                    "type": "boolean"
+                  },
+                  "events_reminders_enabled": {
+                    "type": "boolean"
+                  },
+                  "role": {
+                    "$ref": "#/components/schemas/Role"
+                  },
+                  "institution_ids": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Utilisateur mis à jour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "user": {
+                      "$ref": "#/components/schemas/User"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Users"],
+        "summary": "Supprimer un utilisateur (admin)",
+        "description": "Supprime un utilisateur et toutes ses données. Admin uniquement.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Utilisateur supprimé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Utilisateur supprimé avec succès"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/{id}/groups": {
+      "get": {
+        "tags": ["Groups"],
+        "summary": "Lister les groupes d'un utilisateur",
+        "description": "Retourne les groupes d'un utilisateur avec les handicaps associés. Accessible par l'utilisateur ou un admin.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liste des groupes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "groups": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Group"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Groups"],
+        "summary": "Créer un groupe",
+        "description": "Crée un groupe pour un utilisateur avec catégorie, niveaux, tranches d'âge et handicaps.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["category", "students_count"],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "category": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/PublicCategory"
+                    },
+                    "minItems": 1
+                  },
+                  "grades": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/SchoolGrade"
+                    }
+                  },
+                  "age_ranges": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AgeRange"
+                    }
+                  },
+                  "students_count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "disabilities": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Disability"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Groupe créé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "group": {
+                      "$ref": "#/components/schemas/Group"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/{id}/registrations": {
+      "get": {
+        "tags": ["Registrations"],
+        "summary": "Inscriptions d'un utilisateur",
+        "description": "Liste toutes les inscriptions d'un utilisateur spécifique. Admin uniquement.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "0 = pas de pagination"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inscriptions de l'utilisateur",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "registrations": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Registration"
+                      }
+                    },
+                    "pagination": {
+                      "$ref": "#/components/schemas/Pagination"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users/change-password": {
+      "post": {
+        "tags": ["Users"],
+        "summary": "Changer son mot de passe",
+        "description": "Change le mot de passe de l'utilisateur connecté. Vérifie l'historique des 5 derniers mots de passe.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["currentPassword", "newPassword"],
+                "properties": {
+                  "currentPassword": {
+                    "type": "string",
+                    "maxLength": 128
+                  },
+                  "newPassword": {
+                    "type": "string",
+                    "minLength": 10
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Mot de passe changé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Mot de passe changé avec succès"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Mot de passe identique ou déjà utilisé"
+          }
+        }
+      }
+    },
+    "/api/institutions": {
+      "get": {
+        "tags": ["Institutions"],
+        "summary": "Lister les institutions",
+        "description": "Liste les institutions avec pagination, recherche et filtres. Admin uniquement.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/PublicCategory"
+            }
+          },
+          {
+            "name": "hasRegistrations",
+            "in": "query",
+            "schema": {
+              "type": "boolean"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liste des institutions",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "institutions": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Institution"
+                      }
+                    },
+                    "pagination": {
+                      "$ref": "#/components/schemas/Pagination"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Institutions"],
+        "summary": "Créer une institution",
+        "description": "Crée une institution avec détection de doublons (similarité > 80%). Endpoint public. Utiliser force_create pour forcer la création.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "address", "type"],
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "phone_number": {
+                    "type": "string"
+                  },
+                  "address": {
+                    "$ref": "#/components/schemas/Address"
+                  },
+                  "type": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/PublicCategory"
+                    },
+                    "minItems": 1
+                  },
+                  "grades": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/SchoolGrade"
+                    }
+                  },
+                  "age_ranges": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AgeRange"
+                    }
+                  },
+                  "not_listed": {
+                    "type": "string"
+                  },
+                  "force_create": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Institution créée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "institution": {
+                      "$ref": "#/components/schemas/Institution"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Doublons détectés",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string"
+                    },
+                    "similarInstitutions": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Institution"
+                      }
+                    },
+                    "suggestion": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/institutions/{id}": {
+      "get": {
+        "tags": ["Institutions"],
+        "summary": "Détail d'une institution",
+        "description": "Retourne une institution avec adresse et compteurs (utilisateurs, inscriptions).",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Détail de l'institution",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "institution": {
+                      "$ref": "#/components/schemas/Institution"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Institution non trouvée"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Institutions"],
+        "summary": "Modifier une institution",
+        "description": "Met à jour une institution. Admin uniquement.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "email": {
+                    "type": "string",
+                    "format": "email"
+                  },
+                  "phone_number": {
+                    "type": "string"
+                  },
+                  "address": {
+                    "$ref": "#/components/schemas/Address"
+                  },
+                  "type": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/PublicCategory"
+                    }
+                  },
+                  "grades": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/SchoolGrade"
+                    }
+                  },
+                  "age_ranges": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AgeRange"
+                    }
+                  },
+                  "not_listed": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Institution mise à jour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "institution": {
+                      "$ref": "#/components/schemas/Institution"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Institutions"],
+        "summary": "Supprimer une institution",
+        "description": "Supprime une institution. Bloqué si elle a des utilisateurs ou inscriptions. Admin uniquement.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Institution supprimée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Institution supprimée avec succès"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Institution avec utilisateurs ou inscriptions"
+          }
+        }
+      }
+    },
+    "/api/institutions/{id}/registrations": {
+      "get": {
+        "tags": ["Institutions"],
+        "summary": "Inscriptions d'une institution",
+        "description": "Liste les inscriptions liées à une institution avec événement, utilisateur et handicaps.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "0 = pas de pagination"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inscriptions de l'institution",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "registrations": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Registration"
+                      }
+                    },
+                    "pagination": {
+                      "$ref": "#/components/schemas/Pagination"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/institutions/{id}/history": {
+      "get": {
+        "tags": ["Institutions"],
+        "summary": "Historique d'une institution",
+        "description": "Retourne l'historique analytics complet d'une institution (taux de présence, confirmations, no-shows, etc.). Admin uniquement. Résultat mis en cache.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "detailed",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"],
+              "default": "true"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Historique de l'institution",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "institution": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "history": {
+                      "type": "object",
+                      "properties": {
+                        "totalRegistrations": {
+                          "type": "integer"
+                        },
+                        "confirmedCount": {
+                          "type": "integer"
+                        },
+                        "attendedCount": {
+                          "type": "integer"
+                        },
+                        "noShowCount": {
+                          "type": "integer"
+                        },
+                        "cancelledCount": {
+                          "type": "integer"
+                        },
+                        "attendanceRate": {
+                          "type": "number"
+                        },
+                        "confirmationRate": {
+                          "type": "number"
+                        },
+                        "summary": {
+                          "type": "string"
+                        },
+                        "health": {
+                          "type": "object"
+                        },
+                        "report": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/institutions/search": {
+      "get": {
+        "tags": ["Institutions"],
+        "summary": "Rechercher des institutions",
+        "description": "Recherche d'institutions par nom et ville avec matching flou et scoring de pertinence. Endpoint public.",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "minLength": 2
+            }
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "minLength": 2
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10,
+              "maximum": 50
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Résultats de recherche",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "institutions": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "type": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/components/schemas/PublicCategory"
+                            }
+                          },
+                          "address": {
+                            "$ref": "#/components/schemas/Address"
+                          },
+                          "score": {
+                            "type": "number"
+                          }
+                        }
+                      }
+                    },
+                    "resultsCount": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Paramètre name requis (min 2 caractères)"
+          }
+        }
+      }
+    },
+    "/api/registrations": {
+      "get": {
+        "tags": ["Registrations"],
+        "summary": "Mes inscriptions",
+        "description": "Liste toutes les inscriptions de l'utilisateur connecté avec événements, institutions et handicaps.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 10
+            },
+            "description": "0 = pas de pagination"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inscriptions de l'utilisateur",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "registrations": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Registration"
+                      }
+                    },
+                    "pagination": {
+                      "$ref": "#/components/schemas/Pagination"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/registrations/{id}": {
+      "get": {
+        "tags": ["Registrations"],
+        "summary": "Détail d'une inscription",
+        "description": "Retourne une inscription. L'utilisateur ne voit que les siennes, les admins toutes.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Détail de l'inscription",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "registration": {
+                      "$ref": "#/components/schemas/Registration"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Accès refusé"
+          },
+          "404": {
+            "description": "Inscription non trouvée"
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Registrations"],
+        "summary": "Modifier une inscription",
+        "description": "Met à jour une inscription. Les utilisateurs peuvent annuler une inscription PENDING ou modifier les champs sur PENDING/CONFIRMED. Les admins peuvent tout modifier.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "$ref": "#/components/schemas/RegistrationStatus"
+                  },
+                  "booked_seats": {
+                    "type": "integer"
+                  },
+                  "caretaker_count": {
+                    "type": "integer"
+                  },
+                  "aesh_count": {
+                    "type": "integer"
+                  },
+                  "want_formation": {
+                    "type": "boolean"
+                  },
+                  "want_preparation": {
+                    "type": "boolean"
+                  },
+                  "comments": {
+                    "type": "string"
+                  },
+                  "manager_first_name": {
+                    "type": "string"
+                  },
+                  "manager_last_name": {
+                    "type": "string"
+                  },
+                  "manager_email": {
+                    "type": "string"
+                  },
+                  "manager_phone_number": {
+                    "type": "string"
+                  },
+                  "was_present_comment": {
+                    "type": "string",
+                    "description": "Admin uniquement"
+                  },
+                  "disabilities": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Disability"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Inscription mise à jour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "registration": {
+                      "$ref": "#/components/schemas/Registration"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Registrations"],
+        "summary": "Supprimer une inscription",
+        "description": "Supprime une inscription. Propriétaire ou admin. Libère les places si l'inscription était confirmée.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Inscription supprimée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Demande supprimée avec succès"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/groups/{groupId}": {
+      "patch": {
+        "tags": ["Groups"],
+        "summary": "Modifier un groupe",
+        "description": "Met à jour un groupe. Propriétaire ou admin uniquement.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "category": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/PublicCategory"
+                    }
+                  },
+                  "grades": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/SchoolGrade"
+                    }
+                  },
+                  "age_ranges": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AgeRange"
+                    }
+                  },
+                  "students_count": {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  "disabilities": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/Disability"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Groupe mis à jour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "group": {
+                      "$ref": "#/components/schemas/Group"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Groups"],
+        "summary": "Supprimer un groupe",
+        "description": "Supprime un groupe. Propriétaire ou admin.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Groupe supprimé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Groupe supprimé avec succès"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/notifications": {
+      "get": {
+        "tags": ["Notifications"],
+        "summary": "Lister mes notifications",
+        "description": "Retourne les notifications de l'utilisateur connecté avec compteur non-lues et pagination.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "unreadOnly",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 0
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Notifications",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "notifications": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Notification"
+                      }
+                    },
+                    "unreadCount": {
+                      "type": "integer"
+                    },
+                    "hasMore": {
+                      "type": "boolean"
+                    },
+                    "total": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Notifications"],
+        "summary": "Marquer notifications comme lues",
+        "description": "Marque des notifications spécifiques ou toutes comme lues.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "notificationIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "markAllAsRead": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Notifications mises à jour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "updatedCount": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Notifications"],
+        "summary": "Supprimer des notifications",
+        "description": "Supprime des notifications par IDs.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["notificationIds"],
+                "properties": {
+                  "notificationIds": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Notifications supprimées",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "deletedCount": {
+                      "type": "integer"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/stats": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Statistiques résumées",
+        "description": "Retourne les statistiques du dashboard (événements à venir, utilisateurs, institutions, inscriptions en attente).",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statistiques",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "stats": {
+                      "type": "object",
+                      "properties": {
+                        "upcomingEvents": {
+                          "type": "integer"
+                        },
+                        "totalUsers": {
+                          "type": "integer"
+                        },
+                        "totalInstitutions": {
+                          "type": "integer"
+                        },
+                        "pendingRegistrations": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/stats/detailed": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Statistiques détaillées",
+        "description": "Statistiques détaillées : répartition par statut, rôle, capacité, tendances, top institutions/événements.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "period",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["all", "week", "month", "year"],
+              "default": "month"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statistiques détaillées",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/events": {
+      "get": {
+        "tags": ["Admin – Events"],
+        "summary": "Lister les événements (admin)",
+        "description": "Liste tous les événements avec accessibilité et compteurs d'inscriptions. Admin uniquement.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liste des événements",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Event"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Admin – Events"],
+        "summary": "Créer un événement",
+        "description": "Crée un événement avec accessibilité. Admin uniquement.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title", "type", "location", "duration", "total_seats", "event_dates"],
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/EventType"
+                    }
+                  },
+                  "location": {
+                    "type": "string"
+                  },
+                  "duration": {
+                    "type": "number"
+                  },
+                  "total_seats": {
+                    "type": "integer"
+                  },
+                  "status": {
+                    "$ref": "#/components/schemas/EventStatus"
+                  },
+                  "image_url": {
+                    "type": "string"
+                  },
+                  "event_dates": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "category": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/PublicCategory"
+                    }
+                  },
+                  "grades": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/SchoolGrade"
+                    }
+                  },
+                  "age_ranges": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AgeRange"
+                    }
+                  },
+                  "has_initial_formation": {
+                    "type": "boolean"
+                  },
+                  "is_formation_mandatory": {
+                    "type": "boolean"
+                  },
+                  "has_musical_preparation": {
+                    "type": "boolean"
+                  },
+                  "accessibility": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Événement créé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "event": {
+                      "$ref": "#/components/schemas/Event"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/events/{id}": {
+      "get": {
+        "tags": ["Admin – Events"],
+        "summary": "Détail d'un événement (admin)",
+        "description": "Retourne les informations détaillées d'un événement avec accessibilité et compteurs.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Détail de l'événement",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "event": {
+                      "$ref": "#/components/schemas/Event"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Événement non trouvé"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Admin – Events"],
+        "summary": "Modifier un événement",
+        "description": "Met à jour un événement. Supporte les mises à jour partielles. Gère les protected_fields vis-à-vis du scraper.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": {
+                    "type": "string"
+                  },
+                  "description": {
+                    "type": "string"
+                  },
+                  "type": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/EventType"
+                    }
+                  },
+                  "location": {
+                    "type": "string"
+                  },
+                  "duration": {
+                    "type": "number"
+                  },
+                  "total_seats": {
+                    "type": "integer"
+                  },
+                  "status": {
+                    "$ref": "#/components/schemas/EventStatus"
+                  },
+                  "image_url": {
+                    "type": "string"
+                  },
+                  "event_dates": {
+                    "type": "array",
+                    "items": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  },
+                  "category": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/PublicCategory"
+                    }
+                  },
+                  "grades": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/SchoolGrade"
+                    }
+                  },
+                  "age_ranges": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/AgeRange"
+                    }
+                  },
+                  "has_initial_formation": {
+                    "type": "boolean"
+                  },
+                  "is_formation_mandatory": {
+                    "type": "boolean"
+                  },
+                  "has_musical_preparation": {
+                    "type": "boolean"
+                  },
+                  "accessibility": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "slug": {
+                    "type": "string"
+                  },
+                  "protected_fields": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Événement mis à jour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "event": {
+                      "$ref": "#/components/schemas/Event"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "modified_fields": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    },
+                    "protected_fields": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Admin – Events"],
+        "summary": "Supprimer un événement",
+        "description": "Supprime un événement. Bloqué si l'événement a des inscriptions.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Événement supprimé",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "message": {
+                      "type": "string",
+                      "example": "Événement supprimé avec succès"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Événement avec inscriptions"
+          }
+        }
+      }
+    },
+    "/api/admin/events/{id}/archive": {
+      "patch": {
+        "tags": ["Admin – Events"],
+        "summary": "Archiver / désarchiver un événement",
+        "description": "Change le statut d'un événement (ARCHIVED, OPEN ou CLOSED).",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["status"],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["ARCHIVED", "OPEN", "CLOSED"]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Statut modifié",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "event": {
+                      "$ref": "#/components/schemas/Event"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/events/{id}/export-scored": {
+      "get": {
+        "tags": ["Admin – Export"],
+        "summary": "Exporter les inscriptions scorées (Excel)",
+        "description": "Exporte les inscriptions d'un événement avec scoring en fichier Excel (.xlsx). Inclut le score, le détail par critère et l'historique institution.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "configId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "ID de la config de scoring"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Fichier Excel",
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Pas d'inscriptions"
+          },
+          "404": {
+            "description": "Événement ou config non trouvé"
+          }
+        }
+      }
+    },
+    "/api/admin/export": {
+      "post": {
+        "tags": ["Admin – Export"],
+        "summary": "Export général de données (Excel)",
+        "description": "Génère un export Excel par type : users, events, registrations, institutions ou complet, avec filtres avancés et options (anonymisation, sélection de feuilles, page de résumé).",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["exportType"],
+                "properties": {
+                  "exportType": {
+                    "type": "string",
+                    "enum": ["users", "events", "registrations", "institutions", "complete"]
+                  },
+                  "filters": {
+                    "type": "object",
+                    "description": "Filtres optionnels pour l'export",
+                    "properties": {
+                      "dateFrom": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "dateTo": {
+                        "type": "string",
+                        "format": "date"
+                      },
+                      "role": {
+                        "$ref": "#/components/schemas/Role"
+                      },
+                      "registrationStatus": {
+                        "$ref": "#/components/schemas/RegistrationStatus"
+                      },
+                      "eventStatus": {
+                        "$ref": "#/components/schemas/EventStatus"
+                      },
+                      "institutionId": {
+                        "type": "string"
+                      },
+                      "eventId": {
+                        "type": "string"
+                      },
+                      "publicCategory": {
+                        "$ref": "#/components/schemas/PublicCategory"
+                      },
+                      "eventType": {
+                        "$ref": "#/components/schemas/EventType"
+                      },
+                      "schoolGrade": {
+                        "$ref": "#/components/schemas/SchoolGrade"
+                      },
+                      "ageRange": {
+                        "$ref": "#/components/schemas/AgeRange"
+                      }
+                    }
+                  },
+                  "options": {
+                    "type": "object",
+                    "description": "Options d'export",
+                    "properties": {
+                      "sheets": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "enum": [
+                            "users",
+                            "events",
+                            "registrations",
+                            "institutions",
+                            "groups",
+                            "statistics"
+                          ]
+                        }
+                      },
+                      "anonymize": {
+                        "type": "boolean"
+                      },
+                      "includeCoverSheet": {
+                        "type": "boolean"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Fichier Excel",
+            "content": {
+              "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/config": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Lire la configuration des labels",
+        "description": "Retourne les mappings de labels pour une catégorie donnée.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ConfigCategory"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Configuration",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "category": {
+                      "$ref": "#/components/schemas/ConfigCategory"
+                    },
+                    "config": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Admin"],
+        "summary": "Modifier la configuration des labels",
+        "description": "Met à jour les labels pour une catégorie. Revalide le cache /admin/settings.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["category", "values"],
+                "properties": {
+                  "category": {
+                    "$ref": "#/components/schemas/ConfigCategory"
+                  },
+                  "values": {
+                    "type": "object",
+                    "additionalProperties": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Configuration mise à jour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "$ref": "#/components/schemas/ConfigCategory"
+                    },
+                    "config": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Admin"],
+        "summary": "Réinitialiser les labels",
+        "description": "Réinitialise une catégorie de labels aux valeurs par défaut.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "category",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "$ref": "#/components/schemas/ConfigCategory"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Configuration réinitialisée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "category": {
+                      "$ref": "#/components/schemas/ConfigCategory"
+                    },
+                    "config": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/backups": {
+      "get": {
+        "tags": ["Admin – Backups"],
+        "summary": "Lister les sauvegardes",
+        "description": "Liste toutes les sauvegardes de la base de données disponibles.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Liste des sauvegardes",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "backups": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "filename": {
+                            "type": "string"
+                          },
+                          "date": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "size": {
+                            "type": "integer"
+                          },
+                          "tables": {
+                            "type": "integer"
+                          },
+                          "metadata": {
+                            "type": "object",
+                            "properties": {
+                              "version": {
+                                "type": "string"
+                              },
+                              "timestamp": {
+                                "type": "string"
+                              },
+                              "environment": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Admin – Backups"],
+        "summary": "Créer une sauvegarde",
+        "description": "Déclenche la création d'une nouvelle sauvegarde manuellement.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Sauvegarde créée avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "filename": {
+                      "type": "string"
+                    },
+                    "size": {
+                      "type": "integer"
+                    },
+                    "tables": {
+                      "type": "integer"
+                    },
+                    "retention": {
+                      "type": "object",
+                      "properties": {
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "deleted": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/backups/compare": {
+      "post": {
+        "tags": ["Admin – Backups"],
+        "summary": "Comparer une sauvegarde",
+        "description": "Compare une sauvegarde avec l'état actuel de la base de données.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["filename"],
+                "properties": {
+                  "filename": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Résultat de la comparaison",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "comparison": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "object",
+                        "properties": {
+                          "table": {
+                            "type": "string"
+                          },
+                          "backupCount": {
+                            "type": "integer"
+                          },
+                          "currentCount": {
+                            "type": "integer"
+                          },
+                          "added": {
+                            "type": "integer"
+                          },
+                          "removed": {
+                            "type": "integer"
+                          },
+                          "modified": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    },
+                    "hasDifferences": {
+                      "type": "boolean"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/backups/restore": {
+      "post": {
+        "tags": ["Admin – Backups"],
+        "summary": "Restaurer une sauvegarde",
+        "description": "Restaure la base de données à partir d'une sauvegarde. C'est une opération destructive.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["filename"],
+                "properties": {
+                  "filename": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Restauration réussie",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "restoredFrom": {
+                      "type": "string"
+                    },
+                    "safetyBackup": {
+                      "type": "string"
+                    },
+                    "recordCounts": {
+                      "type": "object",
+                      "additionalProperties": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/upcoming-events": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Événements à venir",
+        "description": "Retourne les événements à venir avec pagination (4 par page).",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Événements à venir",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "events": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Event"
+                      }
+                    },
+                    "total": {
+                      "type": "integer"
+                    },
+                    "page": {
+                      "type": "integer"
+                    },
+                    "limit": {
+                      "type": "integer",
+                      "example": 4
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/security-report": {
+      "get": {
+        "tags": ["Admin – Security"],
+        "summary": "Rapport de conformité sécurité",
+        "description": "Génère un rapport de conformité sécurité sur une période. Supporte l'export CSV.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Défaut : 30 jours"
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Défaut : maintenant"
+          },
+          {
+            "name": "format",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["json", "csv"],
+              "default": "json"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rapport de sécurité",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "reportDate": {
+                          "type": "string"
+                        },
+                        "period": {
+                          "type": "object"
+                        },
+                        "summary": {
+                          "type": "object",
+                          "properties": {
+                            "totalSecurityEvents": {
+                              "type": "integer"
+                            },
+                            "criticalEvents": {
+                              "type": "integer"
+                            },
+                            "warningEvents": {
+                              "type": "integer"
+                            },
+                            "failedLoginAttempts": {
+                              "type": "integer"
+                            },
+                            "suspiciousPatternsDetected": {
+                              "type": "integer"
+                            }
+                          }
+                        },
+                        "eventTypeBreakdown": {
+                          "type": "object"
+                        },
+                        "topSourceIPs": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        },
+                        "suspiciousPatterns": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        },
+                        "recommendations": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "text/csv": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/security-logs": {
+      "get": {
+        "tags": ["Admin – Security"],
+        "summary": "Logs de sécurité",
+        "description": "Retourne les logs de sécurité avec filtrage et pagination.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "page",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 1
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 50,
+              "maximum": 100
+            }
+          },
+          {
+            "name": "type",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/SecurityLogType"
+            }
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "schema": {
+              "$ref": "#/components/schemas/SecuritySeverity"
+            }
+          },
+          {
+            "name": "userId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ipAddress",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "correlationId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "search",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Recherche dans endpoint, IP, user agent"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Logs de sécurité",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "logs": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        },
+                        "pagination": {
+                          "$ref": "#/components/schemas/Pagination"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/security-stats": {
+      "get": {
+        "tags": ["Admin – Security"],
+        "summary": "Statistiques de sécurité",
+        "description": "Retourne les statistiques de sécurité sur une période avec détection optionnelle de patterns suspects.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Défaut : 30 jours"
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          {
+            "name": "detectPatterns",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": ["true", "false"],
+              "default": "true"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Statistiques de sécurité",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "totalEvents": {
+                          "type": "integer"
+                        },
+                        "bySeverity": {
+                          "type": "object"
+                        },
+                        "byType": {
+                          "type": "object"
+                        },
+                        "failedLogins": {
+                          "type": "integer"
+                        },
+                        "suspiciousPatterns": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        },
+                        "topIps": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "ipAddress": {
+                                "type": "string"
+                              },
+                              "count": {
+                                "type": "integer"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/scoring-config": {
+      "get": {
+        "tags": ["Admin – Scoring"],
+        "summary": "Lister les configs de scoring",
+        "description": "Liste toutes les configurations de scoring avec leurs critères.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Configurations de scoring",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "configurations": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "name": {
+                            "type": "string"
+                          },
+                          "is_default": {
+                            "type": "boolean"
+                          },
+                          "event_id": {
+                            "type": "string",
+                            "nullable": true
+                          },
+                          "criteria": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "id": {
+                                  "type": "string"
+                                },
+                                "type": {
+                                  "$ref": "#/components/schemas/ScoringCriterionType"
+                                },
+                                "enabled": {
+                                  "type": "boolean"
+                                },
+                                "weight": {
+                                  "type": "number"
+                                },
+                                "parameters": {
+                                  "type": "object"
+                                },
+                                "order": {
+                                  "type": "integer"
+                                },
+                                "isPenalty": {
+                                  "type": "boolean"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Admin – Scoring"],
+        "summary": "Créer une config de scoring",
+        "description": "Crée une configuration de scoring. Le poids total des critères activés doit être 100%.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "criteria"],
+                "properties": {
+                  "name": {
+                    "type": "string",
+                    "maxLength": 100
+                  },
+                  "event_id": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "is_default": {
+                    "type": "boolean"
+                  },
+                  "criteria": {
+                    "type": "array",
+                    "minItems": 1,
+                    "items": {
+                      "type": "object",
+                      "required": ["type", "enabled", "weight"],
+                      "properties": {
+                        "type": {
+                          "$ref": "#/components/schemas/ScoringCriterionType"
+                        },
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "weight": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 100
+                        },
+                        "parameters": {
+                          "type": "object"
+                        },
+                        "order": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Configuration créée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "configuration": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/scoring-config/{id}": {
+      "get": {
+        "tags": ["Admin – Scoring"],
+        "summary": "Détail d'une config de scoring",
+        "description": "Retourne une configuration de scoring spécifique avec critères et événement lié.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Configuration de scoring",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "configuration": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Configuration non trouvée"
+          }
+        }
+      },
+      "patch": {
+        "tags": ["Admin – Scoring"],
+        "summary": "Modifier une config de scoring",
+        "description": "Met à jour une configuration de scoring. Le poids total doit être 100%. Remplace tous les critères.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "is_default": {
+                    "type": "boolean"
+                  },
+                  "criteria": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "type": {
+                          "$ref": "#/components/schemas/ScoringCriterionType"
+                        },
+                        "enabled": {
+                          "type": "boolean"
+                        },
+                        "weight": {
+                          "type": "number"
+                        },
+                        "parameters": {
+                          "type": "object"
+                        },
+                        "order": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Configuration mise à jour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "configuration": {
+                      "type": "object"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Admin – Scoring"],
+        "summary": "Supprimer une config de scoring",
+        "description": "Supprime une configuration de scoring. Impossible de supprimer la config par défaut.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Configuration supprimée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Impossible de supprimer la config par défaut"
+          }
+        }
+      }
+    },
+    "/api/admin/scoring-config/{id}/preview": {
+      "post": {
+        "tags": ["Admin – Scoring"],
+        "summary": "Prévisualiser les scores",
+        "description": "Prévisualise les scores de toutes les inscriptions d'un événement avec cette config. Retourne le classement et les statistiques.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["eventId"],
+                "properties": {
+                  "eventId": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Prévisualisation des scores",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "configuration": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "name": {
+                          "type": "string"
+                        },
+                        "totalWeight": {
+                          "type": "number"
+                        },
+                        "isValid": {
+                          "type": "boolean"
+                        }
+                      }
+                    },
+                    "preview": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "registrationId": {
+                            "type": "string"
+                          },
+                          "institutionId": {
+                            "type": "string"
+                          },
+                          "institutionName": {
+                            "type": "string"
+                          },
+                          "score": {
+                            "type": "number"
+                          },
+                          "breakdown": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string"
+                                },
+                                "weight": {
+                                  "type": "number"
+                                },
+                                "rawScore": {
+                                  "type": "number"
+                                },
+                                "weightedScore": {
+                                  "type": "number"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "stats": {
+                      "type": "object",
+                      "properties": {
+                        "totalRegistrations": {
+                          "type": "integer"
+                        },
+                        "averageScore": {
+                          "type": "number"
+                        },
+                        "scoreDistribution": {
+                          "type": "object",
+                          "properties": {
+                            "excellent": {
+                              "type": "integer"
+                            },
+                            "good": {
+                              "type": "integer"
+                            },
+                            "fair": {
+                              "type": "integer"
+                            },
+                            "poor": {
+                              "type": "integer"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/notes/{pageId}": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Récupérer les notes d'administration pour une page",
+        "description": "Retourne la note d'administration associée à un identifiant de page, si elle existe.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "description": "Identifiant unique de la page (ex: 'admin-dashboard', 'admin-events')",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Note récupérée avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "note": {
+                      "type": "object",
+                      "nullable": true,
+                      "description": "Note si elle existe, null sinon",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "page_id": {
+                          "type": "string"
+                        },
+                        "content": {
+                          "type": "string"
+                        },
+                        "updated_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "author": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "first_name": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "last_name": {
+                              "type": "string"
+                            },
+                            "email": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Page ID manquant"
+          },
+          "401": {
+            "description": "Non authentifié ou non administrateur"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      },
+      "put": {
+        "tags": ["Admin"],
+        "summary": "Créer ou mettre à jour une note d'administration",
+        "description": "Crée une nouvelle note ou met à jour une note existante pour une page donnée. Met à jour l'auteur à chaque modification.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "pageId",
+            "in": "path",
+            "required": true,
+            "description": "Identifiant unique de la page (ex: 'admin-dashboard', 'admin-events')",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["content"],
+                "properties": {
+                  "content": {
+                    "type": "string",
+                    "description": "Contenu de la note (texte libre, supporte le Markdown)"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Note créée ou mise à jour avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "note": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string"
+                        },
+                        "page_id": {
+                          "type": "string"
+                        },
+                        "content": {
+                          "type": "string"
+                        },
+                        "updated_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time"
+                        },
+                        "author": {
+                          "type": "object",
+                          "properties": {
+                            "id": {
+                              "type": "string"
+                            },
+                            "first_name": {
+                              "type": "string",
+                              "nullable": true
+                            },
+                            "last_name": {
+                              "type": "string"
+                            },
+                            "email": {
+                              "type": "string"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Page ID manquant ou contenu invalide"
+          },
+          "401": {
+            "description": "Non authentifié ou non administrateur"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      }
+    },
+    "/api/admin/users/send-welcome-emails": {
+      "get": {
+        "tags": ["Admin"],
+        "summary": "Compter les utilisateurs en attente d'email de bienvenue",
+        "description": "Retourne le nombre d'utilisateurs qui ont `need_welcome_email: true` et au moins une inscription.",
+        "security": [
+          {
+            "BearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Nombre d'utilisateurs en attente",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "integer",
+                      "description": "Nombre d'utilisateurs attendant un email de bienvenue"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié ou non administrateur"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      },
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Envoyer les emails de bienvenue en attente",
+        "description": "Envoie les emails de bienvenue à tous les utilisateurs qui ont `need_welcome_email: true`. Utilise le même système de lien de réinitialisation que l'import.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Emails envoyés avec succès",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean",
+                      "example": true
+                    },
+                    "total": {
+                      "type": "integer",
+                      "description": "Nombre total d'utilisateurs ciblés"
+                    },
+                    "successCount": {
+                      "type": "integer",
+                      "description": "Nombre d'emails envoyés avec succès"
+                    },
+                    "errorCount": {
+                      "type": "integer",
+                      "description": "Nombre d'échecs"
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "description": "Liste des erreurs (si présentes)",
+                      "nullable": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Non authentifié ou non administrateur"
+          },
+          "500": {
+            "description": "Erreur serveur"
+          }
+        }
+      }
+    },
+    "/api/cron/backup": {
+      "get": {
+        "tags": ["Cron"],
+        "summary": "Sauvegarde automatique",
+        "description": "Crée une sauvegarde automatique de la base de données et supprime les anciennes selon la rétention (30 jours par défaut).",
+        "security": [
+          {
+            "CronAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Résultat de la sauvegarde",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "filename": {
+                      "type": "string"
+                    },
+                    "size": {
+                      "type": "integer"
+                    },
+                    "tables": {
+                      "type": "integer"
+                    },
+                    "retention": {
+                      "type": "object",
+                      "properties": {
+                        "limit": {
+                          "type": "integer"
+                        },
+                        "deleted": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cron/events/scraping": {
+      "get": {
+        "tags": ["Cron"],
+        "summary": "Scraper les événements WordPress",
+        "description": "Scrape les événements depuis l'API WordPress de l'Opéra. Crée ou met à jour les événements en respectant les protected_fields.",
+        "security": [
+          {
+            "CronAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Résultat du scraping",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "stats": {
+                      "type": "object",
+                      "properties": {
+                        "total": {
+                          "type": "integer"
+                        },
+                        "created": {
+                          "type": "integer"
+                        },
+                        "updated": {
+                          "type": "integer"
+                        },
+                        "errors": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "insertedEvents": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Event"
+                      }
+                    },
+                    "errors": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "title": {
+                            "type": "string"
+                          },
+                          "error": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cron/events/reminders": {
+      "get": {
+        "tags": ["Cron"],
+        "summary": "Envoyer les rappels d'événements",
+        "description": "Envoie des rappels email + in-app pour les événements dans 7 jours, 1 jour et aujourd'hui.",
+        "security": [
+          {
+            "CronAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rappels envoyés",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Cron"],
+        "summary": "Envoyer les rappels d'événements (POST)",
+        "description": "Même logique que GET.",
+        "security": [
+          {
+            "CronAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Rappels envoyés",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cron/events/status-update": {
+      "get": {
+        "tags": ["Cron"],
+        "summary": "Mise à jour auto des statuts",
+        "description": "Ferme les événements passés et rouvre ceux avec dates futures dans la fenêtre d'ouverture (vacances scolaires).",
+        "security": [
+          {
+            "CronAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Résultat des mises à jour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "summary": {
+                      "type": "object",
+                      "properties": {
+                        "totalEventsProcessed": {
+                          "type": "integer"
+                        },
+                        "totalUpdated": {
+                          "type": "integer"
+                        },
+                        "updatedToClosedCount": {
+                          "type": "integer"
+                        },
+                        "updatedToOpenCount": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "updatedEvents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "oldStatus": {
+                            "type": "string"
+                          },
+                          "newStatus": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": ["Cron"],
+        "summary": "Mise à jour auto des statuts (dry-run)",
+        "description": "Même logique que GET avec option dry-run.",
+        "security": [
+          {
+            "CronAuth": []
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "dryRun": {
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Résultat",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "summary": {
+                      "type": "object"
+                    },
+                    "updatedEvents": {
+                      "type": "array",
+                      "items": {
+                        "type": "object"
+                      }
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cron/security/detect-patterns": {
+      "get": {
+        "tags": ["Cron"],
+        "summary": "Détecter les patterns suspects",
+        "description": "Détecte les patterns de sécurité suspects (brute force, abus rate limit, accès non autorisés) et crée des alertes admin.",
+        "security": [
+          {
+            "CronAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "hours",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 24
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Résultat de la détection",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "stats": {
+                      "type": "object",
+                      "properties": {
+                        "totalPatterns": {
+                          "type": "integer"
+                        },
+                        "criticalPatterns": {
+                          "type": "integer"
+                        },
+                        "warningPatterns": {
+                          "type": "integer"
+                        },
+                        "alertsCreated": {
+                          "type": "integer"
+                        },
+                        "hoursScanned": {
+                          "type": "integer"
+                        }
+                      }
+                    },
+                    "patterns": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "type": {
+                            "type": "string"
+                          },
+                          "severity": {
+                            "type": "string"
+                          },
+                          "description": {
+                            "type": "string"
+                          },
+                          "count": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/cron/security/cleanup-logs": {
+      "get": {
+        "tags": ["Cron"],
+        "summary": "Nettoyer les logs de sécurité",
+        "description": "Supprime les logs de sécurité plus anciens que N jours (défaut 90).",
+        "security": [
+          {
+            "CronAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 90
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Nettoyage effectué",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "stats": {
+                      "type": "object",
+                      "properties": {
+                        "deletedCount": {
+                          "type": "integer"
+                        },
+                        "daysKept": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/csp-report": {
+      "post": {
+        "tags": ["Misc"],
+        "summary": "Rapport CSP",
+        "description": "Reçoit les rapports de violation Content Security Policy des navigateurs. Retourne toujours 204.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "csp-report": {
+                    "type": "object",
+                    "properties": {
+                      "document-uri": {
+                        "type": "string"
+                      },
+                      "violated-directive": {
+                        "type": "string"
+                      },
+                      "effective-directive": {
+                        "type": "string"
+                      },
+                      "blocked-uri": {
+                        "type": "string"
+                      },
+                      "source-file": {
+                        "type": "string"
+                      },
+                      "line-number": {
+                        "type": "integer"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Rapport reçu (pas de contenu)"
+          }
+        }
+      }
+    }
+  }
+}

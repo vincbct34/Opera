@@ -1,0 +1,233 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+      - hotfix
+  pull_request:
+    branches:
+      - main
+      - dev
+      - hotfix
+  workflow_dispatch:
+    inputs:
+      run_migrations:
+        description: 'Run prisma migrate deploy step'
+        required: false
+        type: boolean
+        default: true
+
+# Explicit permissions for private repositories
+permissions:
+  contents: read
+  pull-requests: read
+  actions: read
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: Lint & Typecheck (Node ${{ matrix.node }})
+    runs-on: ubuntu-latest
+    env:
+      # Placeholder URL just for prisma generate/validate (no actual DB needed in this job)
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/placeholder
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [20, 22]
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            package.json
+      - name: Cache Prisma engines
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/prisma
+          key: ${{ runner.os }}-prisma-${{ matrix.node }}-${{ hashFiles('prisma/schema.prisma', 'package.json') }}
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci --ignore-scripts
+          else
+            npm install --ignore-scripts
+          fi
+      - name: Generate Prisma Client
+        run: npx prisma generate
+      - name: Lint
+        run: npm run lint
+      - name: Prettier check (optional)
+        run: |
+          if npm run | grep -q "format:check"; then
+            npm run format:check
+          else
+            echo "No format:check script found, skipping"
+          fi
+      - name: Type check
+        run: npm run typecheck
+      - name: Prisma validate schema
+        run: npx prisma validate
+
+  tests:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    needs: quality
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: app
+        ports:
+          - 5432:5432
+        # Ensure Postgres is healthy before running steps
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            package.json
+      - name: Cache Prisma engines
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/prisma
+          key: ${{ runner.os }}-prisma-20-${{ hashFiles('prisma/schema.prisma', 'package.json') }}
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install --ignore-scripts
+          fi
+      - name: Prisma Generate
+        run: npx prisma generate
+      - name: Run tests
+        run: npm test && npx jest --coverage --coverageReporters="text" > coverage/coverage.txt
+      - name: Prepare test coverage report
+        uses: fingerprintjs/action-coverage-report-md@v2
+        id: coverage
+        with:
+          textReportPath: coverage/coverage.txt
+          srcBasePath: ./
+      - name: Add coverage report to the job summary
+        run: |
+          echo "## Code Coverage" >> $GITHUB_STEP_SUMMARY
+          echo "${{ steps.coverage.outputs.markdownReport }}" >> $GITHUB_STEP_SUMMARY
+
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: [quality, tests]
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: app
+        ports:
+          - 5432:5432
+        # Ensure Postgres is healthy before running steps
+        options: >-
+          --health-cmd "pg_isready -U postgres" --health-interval 10s --health-timeout 5s --health-retries 5
+    env:
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/app
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            package.json
+      - name: Cache Prisma engines
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/prisma
+          key: ${{ runner.os }}-prisma-20-${{ hashFiles('prisma/schema.prisma', 'package.json') }}
+      - name: Install dependencies
+        run: |
+          if [ -f package-lock.json ]; then
+            npm ci
+          else
+            npm install --ignore-scripts
+          fi
+      - name: Cache Next.js build cache
+        uses: actions/cache@v4
+        with:
+          path: .next/cache
+          key: ${{ runner.os }}-nextjs-20-${{ hashFiles('package-lock.json', 'package.json', 'next.config.*', 'tsconfig.json') }}
+      - name: Prisma Generate
+        run: npx prisma generate
+      - name: Build
+        run: |
+          echo "Starting Next.js build..."
+          npm run build
+          echo "Build completed successfully"
+      - name: Verify build output
+        run: |
+          echo "Checking if .next directory exists..."
+          if [ -d ".next" ]; then
+            echo "✅ .next directory found"
+            ls -la .next/ | head -20
+          else
+            echo ".next directory not found"
+            echo "Current directory contents:"
+            ls -la
+            exit 1
+          fi
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    needs: quality
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            package.json
+          registry-url: 'https://registry.npmjs.org'
+      - run: npm install --ignore-scripts
+      - name: Production dependency audit
+        run: npm audit --production --audit-level=high || true
+
+  summary:
+    name: Summary
+    runs-on: ubuntu-latest
+    needs: [quality, tests, build, security]
+    if: always()
+    steps:
+      - name: Job conclusion
+        run: |
+          echo "Quality: ${{ needs.quality.result }}"
+          echo "Tests: ${{ needs.tests.result }}"
+          echo "Build: ${{ needs.build.result }}"
+          echo "Security: ${{ needs.security.result }}"

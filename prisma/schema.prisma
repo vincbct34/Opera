@@ -1,0 +1,459 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../app/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                          String               @id @default(cuid())
+  email                       String               @unique
+  password                    String
+  first_name                  String?
+  last_name                   String
+  phone_number                String?
+  role                        Role                 @default(USER)
+  last_password_change        DateTime             @default(now())
+  email_notifications_enabled Boolean              @default(true)
+  events_reminders_enabled    Boolean              @default(true)
+  created_at                  DateTime             @default(now())
+  updated_at                  DateTime             @updatedAt
+  email_verification_expires  DateTime?
+  email_verification_token    String?
+  pending_email               String?
+  lastActivity                DateTime?
+  failed_login_attempts       Int                  @default(0)
+  locked_until                DateTime?
+  need_welcome_email          Boolean              @default(false)
+  adminNotes                  AdminNote[]
+  groups                      Group[]
+  notifications               Notification[]
+  passwordHistory             PasswordHistory[]
+  passwordResetTokens         PasswordResetToken[]
+  registrations               Registration[]
+  userInstitutions            UserInstitution[]
+
+  @@index([locked_until])
+}
+
+model Group {
+  id             String            @id @default(cuid())
+  user_id        String
+  name           String?
+  students_count Int               @default(0)
+  updated_at     DateTime          @updatedAt
+  category       PublicCategory[]
+  age_ranges     AgeRange[]        @default([])
+  grades         SchoolGrade[]     @default([])
+  user           User              @relation(fields: [user_id], references: [id], map: "Class_user_id_fkey")
+  disabilities   GroupDisability[]
+}
+
+model Address {
+  id           String        @id @default(cuid())
+  street       String?
+  zip_code     String?
+  city         String
+  created_at   DateTime      @default(now())
+  updated_at   DateTime      @updatedAt
+  institutions Institution[]
+}
+
+model Institution {
+  id               String            @id @default(cuid())
+  name             String
+  email            String?
+  phone_number     String?
+  address_id       String
+  not_listed       String?
+  created_at       DateTime          @default(now())
+  updated_at       DateTime          @updatedAt
+  is_rep           Boolean           @default(false)
+  import_id        String?           @unique
+  type             PublicCategory[]
+  age_ranges       AgeRange[]        @default([])
+  grades           SchoolGrade[]     @default([])
+  address          Address           @relation(fields: [address_id], references: [id])
+  registrations    Registration[]
+  userInstitutions UserInstitution[]
+}
+
+model UserInstitution {
+  id             String      @id @default(cuid())
+  user_id        String
+  institution_id String
+  created_at     DateTime    @default(now())
+  institution    Institution @relation(fields: [institution_id], references: [id], onDelete: Cascade)
+  user           User        @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@unique([user_id, institution_id])
+  @@index([user_id])
+  @@index([institution_id])
+}
+
+model Event {
+  id                      String                @id @default(cuid())
+  title                   String
+  description             String?
+  type                    EventType[]
+  location                String
+  duration                Int
+  total_seats             Int
+  booked_seats            Int                   @default(0)
+  status                  EventStatus           @default(OPEN)
+  image_url               String?
+  created_at              DateTime              @default(now())
+  updated_at              DateTime              @updatedAt
+  event_dates             DateTime[]
+  caretaker               Int?
+  has_initial_formation   Boolean               @default(false)
+  has_musical_preparation Boolean               @default(false)
+  slug                    String?
+  is_formation_mandatory  Boolean               @default(false)
+  manually_edited         Boolean               @default(false)
+  protected_fields        String[]              @default([])
+  category                PublicCategory[]
+  age_ranges              AgeRange[]            @default([])
+  grades                  SchoolGrade[]         @default([])
+  accessibility           EventAccessibility[]
+  registrations           Registration[]
+  scoringConfiguration    ScoringConfiguration?
+}
+
+model EventAccessibility {
+  id       String        @id @default(cuid())
+  type     Accessibility
+  event_id String
+  event    Event         @relation(fields: [event_id], references: [id])
+}
+
+model Registration {
+  id                   String                   @id @default(cuid())
+  user_id              String
+  institution_id       String
+  event_id             String
+  date                 DateTime
+  manager_first_name   String?
+  manager_last_name    String?
+  manager_email        String?
+  manager_phone_number String?
+  booked_seats         Int
+  comments             String?
+  status               RegistrationStatus       @default(PENDING)
+  was_present_comment  String?
+  created_at           DateTime                 @default(now())
+  updated_at           DateTime                 @updatedAt
+  caretaker_count      Int?
+  aesh_count           Int?
+  want_formation       Boolean?
+  want_preparation     Boolean?
+  category             PublicCategory[]
+  age_ranges           AgeRange[]               @default([])
+  grades               SchoolGrade[]            @default([])
+  event                Event                    @relation(fields: [event_id], references: [id])
+  institution          Institution              @relation(fields: [institution_id], references: [id])
+  user                 User                     @relation(fields: [user_id], references: [id])
+  disabilities         RegistrationDisability[]
+}
+
+model RegistrationDisability {
+  id              String        @id @default(cuid())
+  registration_id String
+  type            Accessibility
+  count           Int
+  details         String?
+  registration    Registration  @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+}
+
+model GroupDisability {
+  id       String        @id @default(cuid())
+  group_id String
+  type     Accessibility
+  count    Int
+  details  String?
+  group    Group         @relation(fields: [group_id], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id         String           @id @default(cuid())
+  user_id    String
+  title      String
+  message    String
+  type       NotificationType
+  read       Boolean          @default(false)
+  created_at DateTime         @default(now())
+  updated_at DateTime         @updatedAt
+  user       User             @relation(fields: [user_id], references: [id])
+
+  @@index([user_id, read])
+  @@index([created_at])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model RefreshTokenBlacklist {
+  id         String   @id @default(cuid())
+  token      String   @unique
+  user_id    String?
+  revoked_at DateTime @default(now())
+  expires_at DateTime
+
+  @@index([token])
+  @@index([expires_at])
+}
+
+model SecurityLog {
+  id            String           @id @default(cuid())
+  timestamp     DateTime         @default(now())
+  type          SecurityLogType
+  user_id       String?
+  ip_address    String?
+  user_agent    String?
+  endpoint      String?
+  method        String?
+  status        Int?
+  details       Json?
+  severity      SecuritySeverity @default(INFO)
+  correlationId String?          @unique
+
+  @@index([timestamp])
+  @@index([type])
+  @@index([user_id])
+  @@index([severity])
+  @@index([correlationId])
+}
+
+model PasswordHistory {
+  id            String   @id @default(cuid())
+  user_id       String
+  password_hash String
+  created_at    DateTime @default(now())
+  user          User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([user_id])
+  @@index([created_at])
+}
+
+model ScoringConfiguration {
+  id         String             @id @default(cuid())
+  name       String
+  event_id   String?            @unique
+  is_default Boolean            @default(false)
+  created_at DateTime           @default(now())
+  updated_at DateTime           @updatedAt
+  event      Event?             @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  criteria   ScoringCriterion[]
+
+  @@index([event_id])
+  @@index([is_default])
+}
+
+model ScoringCriterion {
+  id         String               @id @default(cuid())
+  config_id  String
+  type       ScoringCriterionType
+  enabled    Boolean              @default(true)
+  weight     Int                  @default(10)
+  parameters Json?
+  order      Int                  @default(0)
+  config     ScoringConfiguration @relation(fields: [config_id], references: [id], onDelete: Cascade)
+
+  @@index([config_id])
+  @@index([type])
+}
+
+model AppConfig {
+  id         String   @id @default(cuid())
+  category   String
+  key        String
+  value      String
+  updated_at DateTime @updatedAt
+
+  @@unique([category, key])
+  @@index([category])
+}
+
+model AdminNote {
+  id         String   @id @default(cuid())
+  page_id    String   @unique
+  content    String
+  author_id  String
+  updated_at DateTime @updatedAt
+  created_at DateTime @default(now())
+  author     User     @relation(fields: [author_id], references: [id], onDelete: Cascade)
+
+  @@index([page_id])
+  @@index([updated_at])
+}
+
+enum Role {
+  USER
+  ADMIN
+  SUPERADMIN
+}
+
+enum PublicCategory {
+  CRECHE
+  MATERNELLE
+  ELEMENTAIRE
+  COLLEGE
+  LYCEE
+  SUPERIEUR
+  CONSERVATOIRE
+  ASSOCIATION
+  PERISCOLAIRE
+  PUBLICS_EMPECHES
+  AUTRE
+}
+
+enum SchoolGrade {
+  PS
+  MS
+  GS
+  CP
+  CE1
+  CE2
+  CM1
+  CM2
+  SIXIEME
+  CINQUIEME
+  QUATRIEME
+  TROISIEME
+  SECONDE
+  PREMIERE
+  TERMINALE
+}
+
+enum AgeRange {
+  AGE_0_3
+  AGE_3_6
+  AGE_6_11
+  AGE_11_15
+  AGE_15_18
+  AGE_18_PLUS
+}
+
+enum EventType {
+  OPERA
+  CONCERT_LYRIQUE
+  SYMPHONIQUE
+  CHAMBRE_BAROQUE
+  EN_FAMILLE
+  OPERA_JUNIOR
+  CINE_CONCERT
+  INSOLITE
+  THEATRE_MUSICAL
+  DANSE
+  CONTE_MUSICAL
+  CONCERT_DECENTRALISE
+  ELECTRO_ACOUSTIQUE
+  MUSIQUE_ELECTRONIQUE
+  CONCERT_LECTURE
+  PLEIN_AIR
+  JAZZ
+  LITTERATURE
+  MASTERCLASS
+  MUSIQUE_ET_BIEN_ETRE
+  MUSIQUE_ACTUELLE
+  PARTICIPATIF
+  PROMENADE_SONORE
+  ATELIER
+  GALA
+  EXPOSITION
+  PORTES_OUVERTES
+  INTERDISCIPLINAIRE
+  SPECTACLE_EDUCATIF
+  CARITATIF
+  THEATRE
+  RENDEZ_VOUS
+  MUSIQUES_DAILLEURS
+  BAROQUE
+}
+
+enum EventStatus {
+  OPEN
+  CLOSED
+  ARCHIVED
+}
+
+enum Accessibility {
+  VISUAL
+  AUDITORY
+  MOTOR
+  PSYCHIC
+  NEUROATYPICAL
+  OTHER
+}
+
+enum RegistrationStatus {
+  PENDING
+  CONFIRMED
+  CANCELLED
+  REJECTED
+  ATTENDED
+  NO_SHOW
+}
+
+enum NotificationType {
+  REGISTRATION_CONFIRMED
+  REGISTRATION_CANCELLED
+  REGISTRATION_REJECTED
+  EVENT_REMINDER
+  NEW_EVENT
+  SYSTEM_UPDATE
+  SECURITY_ALERT
+}
+
+enum SecurityLogType {
+  LOGIN_SUCCESS
+  LOGIN_FAILED
+  LOGOUT
+  REGISTER
+  PASSWORD_CHANGE
+  PASSWORD_RESET_REQUEST
+  PASSWORD_RESET_SUCCESS
+  EMAIL_VERIFICATION
+  ADMIN_ACCESS
+  DATA_MODIFIED
+  SUSPICIOUS_ACTIVITY
+  RATE_LIMIT_EXCEEDED
+  UNAUTHORIZED_ACCESS
+  CSRF_TOKEN_INVALID
+  CORS_VIOLATION
+  TOKEN_REFRESH
+  TOKEN_EXPIRED
+  ACCOUNT_LOCKED
+}
+
+enum SecuritySeverity {
+  INFO
+  WARNING
+  CRITICAL
+}
+
+enum ScoringCriterionType {
+  ATTENDANCE_RATE
+  MONTHS_SINCE_LAST
+  TOTAL_PARTICIPATIONS
+  RECENT_NO_SHOW
+  IS_REP_INSTITUTION
+  FIRST_TIME_APPLICANT
+  ACCESSIBILITY_NEEDS
+  EARLY_REGISTRATION
+  INSTITUTION_TYPE
+  REQUESTED_SEATS_COUNT
+  CARETAKER_RATIO
+  GEOGRAPHIC_ZONE
+  EVENT_CATEGORY_MATCH
+  AESH_COUNT
+}

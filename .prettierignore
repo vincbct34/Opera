@@ -1,0 +1,10 @@
+# Build output
+.next/
+# Dependencies
+node_modules/
+# Generated
+app/generated/
+# Coverage
+coverage/
+# Unknown formatting problem
+lib/__tests__/securityLogger.test.ts

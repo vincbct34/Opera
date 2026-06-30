@@ -1,0 +1,78 @@
+@import 'tailwindcss';
+
+@theme inline {
+  --font-poppins: var(--font-poppins);
+  --font-ibm: var(--font-ibm-plex-serif);
+}
+
+body {
+  background: #ffffff;
+  color: #000000;
+}
+
+/* Ensure interactive elements show pointer cursor */
+button,
+a,
+input[type='button'],
+input[type='submit'],
+[role='button'],
+.btn,
+.button {
+  cursor: pointer;
+}
+
+/* Remove transitions/animations on interactive elements to prevent hover animations */
+button,
+a,
+[role='button'],
+.btn,
+.button,
+.cursor-pointer,
+input[type='button'],
+input[type='submit'] {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* Disable hover/focus transitions/animations on common interactive elements only.
+   This avoids breaking global animated loaders while ensuring hover effects don't animate. */
+button:hover,
+button:focus,
+a:hover,
+a:focus,
+[role='button']:hover,
+[role='button']:focus,
+.btn:hover,
+.btn:focus,
+.button:hover,
+.button:focus,
+.cursor-pointer:hover,
+.cursor-pointer:focus {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* Broad safeguard: disable transitions/animations on hover/focus globally.
+   Loader and intentional animations are re-enabled below by utility selectors. */
+*:hover,
+*:focus {
+  transition: none !important;
+  animation: none !important;
+}
+
+/* Re-enable intentional loader/entry animations used by the UI */
+.animate-spin {
+  animation: spin 1s linear infinite !important;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite !important;
+}
+
+.animate-in,
+.fade-in,
+.zoom-in {
+  /* Allow these utility classes to define their own animations */
+  transition: initial !important;
+  animation: initial !important;
+}
