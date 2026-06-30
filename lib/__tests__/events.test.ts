@@ -84,6 +84,28 @@ describe('lib/events helper', () => {
     expect(events[0].event_dates).toEqual([]);
   });
 
+  test('getEvents normalizes rich text descriptions to null when they have no readable text', async () => {
+    prisma.event.findMany.mockResolvedValue([
+      {
+        id: 'e5',
+        title: 'Event with empty rich text',
+        description: '<script>alert(1)</script>',
+        image_url: null,
+        location: 'Test Location',
+        event_dates: [],
+        type: [],
+        category: [],
+        grades: [],
+        age_ranges: [],
+        status: 'PUBLISHED',
+      },
+    ]);
+
+    const events = await getEvents();
+
+    expect(events[0].description).toBeNull();
+  });
+
   test('getEvents excludes archived events by default', async () => {
     prisma.event.findMany.mockResolvedValue([]);
 

@@ -3,6 +3,11 @@ import { prepareRichTextForEditing, richTextToPlainText, sanitizeRichText } from
 
 describe('richText', () => {
   describe('sanitizeRichText', () => {
+    test('returns an empty string for empty input', () => {
+      expect(sanitizeRichText()).toBe('');
+      expect(sanitizeRichText(null)).toBe('');
+    });
+
     test('keeps supported formatting tags', () => {
       const html = '<p>Hello <strong>World</strong></p><ul><li><em>Item</em></li></ul>';
 
@@ -22,6 +27,15 @@ describe('richText', () => {
       expect(sanitized).toContain('<a>Bad</a>');
       expect(sanitized).toContain(
         '<a target="_blank" rel="noopener noreferrer" href="https://example.com">Good</a>',
+      );
+    });
+
+    test('drops unsupported attributes and escapes kept link targets', () => {
+      const html =
+        '<p data-extra="ignored">Text</p><a title="ignored" href="/path?a=1&b=<test>">Link</a>';
+
+      expect(sanitizeRichText(html)).toBe(
+        '<p>Text</p><a target="_blank" rel="noopener noreferrer" href="/path?a=1&amp;b=&lt;test&gt;">Link</a>',
       );
     });
 
@@ -47,6 +61,11 @@ describe('richText', () => {
   });
 
   describe('richTextToPlainText', () => {
+    test('returns an empty string for empty input', () => {
+      expect(richTextToPlainText()).toBe('');
+      expect(richTextToPlainText(null)).toBe('');
+    });
+
     test('converts rich text into readable plain text', () => {
       expect(richTextToPlainText('<p>Hello <strong>World</strong></p><ul><li>Item</li></ul>')).toBe(
         'Hello World\nItem',
