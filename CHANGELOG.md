@@ -13,6 +13,11 @@ All notable changes to the Opéra de Montpellier Registration Platform will be d
   - enum imports moved to the runtime-free `@/app/generated/prisma/enums` subpath; model types and the `Prisma` namespace stay on `/client`. This prevents the v7 client runtime (`node:module`) from being pulled into browser bundles (fixed a Turbopack chunking error)
   - `excelExportService` now reuses the shared Prisma singleton instead of instantiating its own client
   - `scripts/postinstall.js`: removed the v6-only `--no-engine` flag (removed in v7)
+- **Event lifecycle schedule**:
+  - Registration season rollover now happens on June 10 instead of September
+  - First progressive opening phase runs from June 10 to the end of the Toussaint holidays
+  - Events are automatically archived one year after their latest date by `/api/cron/events/status-update`
+  - `status` remains protected from automatic closing/opening/archiving when listed in `protected_fields`
 
 ### Removed
 
@@ -680,6 +685,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `ARCHIVED` status to `EventStatus` enum
   - New endpoint: `PATCH /api/admin/events/[id]/archive`
   - Archived events are protected from modifications
+  - Since v1.7.0, the status cron also archives events automatically one year after their latest date unless `status` is protected
 
 - **Enhanced Accessibility Details**: Support for detailed accessibility information
   - Added `details` field to `RegistrationDisability` and `GroupDisability` models
@@ -777,7 +783,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Event Scraper**: Modified to set initial event status (`OPEN`/`CLOSED`) based on opening limit date
 - **Status Update Cron**: Enhanced to progressively open existing events (`CLOSED` -> `OPEN`) when they enter the allowed period
-  - Phase 1: Rentrée -> Toussaint (Events up to Nov 7 approx)
+  - Phase 1: June 10 -> Toussaint (Events up to Nov 7 approx)
   - Phase 2: Toussaint -> Christmas (Events up to Jan 6 approx)
   - Phase 3: Christmas -> End of Season (All remaining events)
 
@@ -1271,7 +1277,7 @@ For existing deployments upgrading to v1.1.0:
 ### Next Steps (Post-Deployment)
 
 - Monitor CSP violation reports at `/api/csp-report`
-- Set up cron jobs for event scraping (`/api/cron/events/scraping`) and reminders (`/api/cron/events/reminders`)
+- Set up cron jobs for event scraping (`/api/cron/events/scraping`), status updates (`/api/cron/events/status-update`), and reminders (`/api/cron/events/reminders`)
 - Configure Redis for production multi-instance deployments
 - Monitor security logs for suspicious activity
 - Gather user feedback for future enhancements

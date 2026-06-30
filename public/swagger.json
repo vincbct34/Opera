@@ -5895,7 +5895,7 @@
       "post": {
         "tags": ["Cron"],
         "summary": "Mise à jour auto des statuts (dry-run)",
-        "description": "Même logique que GET avec option dry-run.",
+        "description": "Même logique que GET avec option dry-run. Ferme les événements passés, rouvre ceux avec dates futures dans la fenêtre d'ouverture, et archive les événements un an après leur dernière date.",
         "security": [
           {
             "CronAuth": []
@@ -5930,12 +5930,50 @@
                       "type": "string"
                     },
                     "summary": {
-                      "type": "object"
+                      "type": "object",
+                      "properties": {
+                        "totalEventsProcessed": {
+                          "type": "integer"
+                        },
+                        "totalToUpdate": {
+                          "type": "integer"
+                        },
+                        "toCloseCount": {
+                          "type": "integer"
+                        },
+                        "toOpenCount": {
+                          "type": "integer"
+                        },
+                        "toArchiveCount": {
+                          "type": "integer"
+                        }
+                      }
                     },
-                    "updatedEvents": {
+                    "eventsToUpdate": {
                       "type": "array",
                       "items": {
-                        "type": "object"
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string"
+                          },
+                          "title": {
+                            "type": "string"
+                          },
+                          "oldStatus": {
+                            "type": "string"
+                          },
+                          "newStatus": {
+                            "type": "string"
+                          },
+                          "dates": {
+                            "type": "array",
+                            "items": {
+                              "type": "string",
+                              "format": "date-time"
+                            }
+                          }
+                        }
                       }
                     },
                     "timestamp": {

@@ -1,6 +1,6 @@
 # Service culturel - Plateforme web
 
-> **Version 1.6.7** - Production-ready (February 27, 2026)
+> **Version 1.7.0** - Production-ready (June 30, 2026)
 
 A full-stack web application for managing school and association registrations for cultural events at the Opéra de Montpellier. Built to replace a legacy Google Forms + Excel workflow with a centralized platform featuring separate portals for institutions and administrators.
 
@@ -10,22 +10,22 @@ The system handles multi-institution user management, automated event scraping f
 
 ✅ **Production-ready** - All core features are implemented, tested, and documented. The application is in maintenance mode with bug fixes and minor enhancements.
 
-**Latest Release**: February 27, 2026 (v1.6.7)
+**Latest Release**: June 30, 2026 (v1.7.0)
 
-**Latest Release Highlights (v1.6.7)**:
+**Latest Release Highlights (v1.7.0)**:
+
+- Migrated to Prisma ORM v7 with Direct TCP PostgreSQL adapter
+- Event registration season now starts on June 10 for the following academic year
+- Events are automatically archived one year after their latest date
+
+**Previous Release (v1.6.7)**:
 
 - Fixed registration edit API to properly handle all registration fields
 - Removed fuzzy matching from import functionality (exact match only for institutions and events)
 
-**Previous Release (v1.6.6)**:
-
-- Admin Notes System: Administrators can now add custom notes on any admin page via the HelpWidget, with author tracking and timestamps
-- Import Error Display: Errors are now grouped by category (Email, Institution, Event, Date, Duplicates) with color-coded visual summary
-- HelpWidget Enhancement: Added `isAdminPage` prop for notes functionality across all admin components
-
 ### Recent Releases
 
-- **v1.7.0** (Jun 30, 2026): Migrated to Prisma ORM v7 (Rust-free client over a Direct TCP driver adapter, `@prisma/adapter-pg`); dropped Prisma Accelerate; enum imports moved to the runtime-free `/enums` subpath; local Postgres dev via Docker Compose
+- **v1.7.0** (Jun 30, 2026): Migrated to Prisma ORM v7 (Rust-free client over a Direct TCP driver adapter, `@prisma/adapter-pg`); dropped Prisma Accelerate; enum imports moved to the runtime-free `/enums` subpath; local Postgres dev via Docker Compose; event registration season starts on June 10; events auto-archive one year after their latest date
 - **v1.6.7** (Feb 27, 2026): Fixed registration edit API, removed fuzzy matching from import
 - **v1.6.6** (Feb 26, 2026): Admin notes system, improved import error display with category grouping
 - **v1.6.5** (Feb 26, 2026): Fixed import type mapping with accent normalization, multiple type support with "+" separator, pending welcome emails system
@@ -53,7 +53,8 @@ The system handles multi-institution user management, automated event scraping f
 
 - ✅ Full authentication system with JWT, refresh tokens, and role-based access control
 - ✅ Multi-institution user management with junction table architecture
-- ✅ Event scraping and synchronization from Opera WordPress API
+- ✅ Event scraping and synchronization from Opera WordPress API, with June 10 season rollover
+- ✅ Progressive event opening and automatic archival one year after the latest event date
 - ✅ Registration management with automatic scoring algorithms (14 criteria including `EVENT_CATEGORY_MATCH` and `AESH_COUNT`)
 - ✅ Admin dashboard with comprehensive statistics, analytics, and event management (full CRUD)
 - ✅ Admin event management with create, edit, and delete capabilities
@@ -82,7 +83,7 @@ The system handles multi-institution user management, automated event scraping f
 
 - **Next.js 16.0.7** (App Router, React Server Components, Turbopack)
 - **React 19.2.0** with TypeScript 5
-- **PostgreSQL** with [Prisma 6.19.0 ORM](https://www.prisma.io/)
+- **PostgreSQL** with [Prisma 7.8.0 ORM](https://www.prisma.io/) and `@prisma/adapter-pg`
 - **Redis** ([ioredis 5.8.2](https://github.com/redis/ioredis)) for distributed state
 - **JWT** authentication with refresh token rotation
 - **Tailwind CSS 4** for styling
@@ -328,8 +329,9 @@ After deployment:
 
 1. **Set up cron jobs** for automated tasks:
    - Event scraping: `GET /api/cron/events/scraping` (requires `CRON_SECRET` header)
+   - Event status update: `GET /api/cron/events/status-update` (requires `CRON_SECRET` header)
    - Event reminders: `GET /api/cron/events/reminders` (requires `CRON_SECRET` header)
-   - Recommended schedule: Daily at 2 AM for scraping, hourly for reminders
+   - Recommended schedule: Daily at 2 AM for scraping, daily at 3 AM for status updates, hourly for reminders
 
 2. **Monitor security**:
    - Review CSP violations at `/api/csp-report`
@@ -348,7 +350,8 @@ After deployment:
 ### Known Deployment Considerations
 
 - **Redis requirement**: In-memory fallback mode is NOT suitable for multi-instance production deployments (horizontal scaling). Redis must be configured to share CSRF tokens, rate limits, and session data across instances.
-- **Event scraping**: Depends on Opera WordPress API availability. If API structure changes, scraper in `lib/cron/eventsScraper.ts` may need updates.
+- **Event scraping**: Depends on Opera WordPress API availability. If API structure changes, scraper in `lib/cron/eventsScraper.ts` may need updates. The scraper switches to the next academic season on June 10.
+- **Event lifecycle cron**: `/api/cron/events/status-update` progressively opens events, closes past events, and archives events one year after their latest date unless `status` is protected.
 - **Email templates**: SMTP2GO templates must be pre-configured in the SMTP2GO dashboard before use (verification, password reset, registration notifications).
 - **Email delivery**: Ensure SMTP2GO API key is valid and has sufficient quota for expected email volume.
 

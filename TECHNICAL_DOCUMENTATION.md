@@ -749,7 +749,7 @@ npx prisma db seed
 | ------- | ---------------------------- | --------------------- | ----------- |
 | GET     | `/api/cron/events/scraping`  | Lancer le scraping    | CRON_SECRET |
 | GET     | `/api/cron/events/reminders` | Envoyer rappels       | CRON_SECRET |
-| GET     | `/api/cron/events/status`    | Mettre à jour statuts | CRON_SECRET |
+| GET     | `/api/cron/events/status-update` | Mettre à jour statuts | CRON_SECRET |
 | GET     | `/api/cron/backup`           | Créer une sauvegarde  | CRON_SECRET |
 
 ### 5.10 Autres Endpoints
@@ -1655,7 +1655,7 @@ npm start
 0 * * * * curl -H "Authorization: Bearer $CRON_SECRET" https://example.com/api/cron/events/reminders
 
 # Mise à jour des statuts (quotidien, 3h)
-0 3 * * * curl -H "Authorization: Bearer $CRON_SECRET" https://example.com/api/cron/events/status
+0 3 * * * curl -H "Authorization: Bearer $CRON_SECRET" https://example.com/api/cron/events/status-update
 ```
 
 ### 14.5 Configuration cron-job.org
