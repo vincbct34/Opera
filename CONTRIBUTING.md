@@ -270,13 +270,15 @@ All checks must pass for merge eligibility (except CI skip commits).
 
 ## Database
 
-We use PostgreSQL with Prisma ORM.
+We use PostgreSQL with Prisma ORM (v7, Rust-free client over a Direct TCP driver adapter).
 
-- **Apply migrations**: `npx prisma db pull`
+- **Start local DB**: `docker compose -f docker-compose.dev.yml up -d` (Postgres on `localhost:5434`, matches `.env`)
+- **Apply schema**: `npx prisma db push` (or `npx prisma migrate dev`)
+- **Seed dev data**: `npm run db:seed -- --force`
 - **View database GUI**: `npx prisma studio`
 - **Generate client**: `npx prisma generate` (runs automatically after install)
 
-**Important**: The Prisma client is generated to `app/generated/prisma`, not the default location. Always import from `@/app/generated/prisma`.
+**Important**: Prisma v7 generates a Rust-free client to `app/generated/prisma`, not the default location. Import **enums** from `@/app/generated/prisma/enums` (runtime-free, browser-safe), **model types / the `Prisma` namespace** from `@/app/generated/prisma/client` (server only), and the **shared client instance** from `@/lib/middleware/prismaConfig`. Never import enums from `/client` — its runtime breaks client-component bundling.
 
 ## Getting Help
 

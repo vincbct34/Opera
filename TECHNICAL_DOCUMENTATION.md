@@ -268,12 +268,21 @@ export const GET = async (req: NextRequest) => {
 
 ### 4.1 Configuration Prisma
 
-Le client Prisma est généré dans `app/generated/prisma` (et non `node_modules/@prisma/client`).
+Le client Prisma (v7, sans moteur Rust) est généré dans `app/generated/prisma` (et non `node_modules/@prisma/client`). La connexion à PostgreSQL se fait en TCP direct via l'adaptateur `@prisma/adapter-pg` (configuré dans `lib/middleware/prismaConfig.ts`).
 
 ```typescript
-// Toujours importer depuis :
-import { PrismaClient, User, Event } from '@/app/generated/prisma';
+// Énumérations — sans runtime, sûres côté navigateur :
+import { Role, RegistrationStatus } from '@/app/generated/prisma/enums';
+
+// Types de modèles + namespace Prisma — serveur uniquement :
+import type { User, Event } from '@/app/generated/prisma/client';
+import { Prisma } from '@/app/generated/prisma/client';
+
+// Instance du client — singleton partagé :
+import prisma from '@/lib/middleware/prismaConfig';
 ```
+
+> ⚠️ Importer les énumérations depuis `/enums`, jamais `/client` : `client.ts` embarque le runtime Prisma (`node:module`), et le tirer dans un composant client casse le bundling Turbopack.
 
 ### 4.2 Modèles de Données
 

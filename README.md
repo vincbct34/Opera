@@ -25,6 +25,7 @@ The system handles multi-institution user management, automated event scraping f
 
 ### Recent Releases
 
+- **v1.7.0** (Jun 30, 2026): Migrated to Prisma ORM v7 (Rust-free client over a Direct TCP driver adapter, `@prisma/adapter-pg`); dropped Prisma Accelerate; enum imports moved to the runtime-free `/enums` subpath; local Postgres dev via Docker Compose
 - **v1.6.7** (Feb 27, 2026): Fixed registration edit API, removed fuzzy matching from import
 - **v1.6.6** (Feb 26, 2026): Admin notes system, improved import error display with category grouping
 - **v1.6.5** (Feb 26, 2026): Fixed import type mapping with accent normalization, multiple type support with "+" separator, pending welcome emails system

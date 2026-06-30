@@ -2,6 +2,26 @@
 
 All notable changes to the Opéra de Montpellier Registration Platform will be documented in this file.
 
+## [1.7.0] - 2026-06-30
+
+### Changed
+
+- **Prisma ORM v6 → v7**: upgraded `prisma` and `@prisma/client` to 7.x
+  - v7 ships a Rust-free client; the runtime now connects over Direct TCP using the `@prisma/adapter-pg` (node-postgres) driver adapter
+  - schema generator changed from `prisma-client-js` to `prisma-client`; the `url` was removed from the `datasource` block (now provided by the adapter / `prisma.config.ts`)
+  - added `prisma.config.ts` (schema, migrations, seed command, datasource via `dotenv`)
+  - enum imports moved to the runtime-free `@/app/generated/prisma/enums` subpath; model types and the `Prisma` namespace stay on `/client`. This prevents the v7 client runtime (`node:module`) from being pulled into browser bundles (fixed a Turbopack chunking error)
+  - `excelExportService` now reuses the shared Prisma singleton instead of instantiating its own client
+  - `scripts/postinstall.js`: removed the v6-only `--no-engine` flag (removed in v7)
+
+### Removed
+
+- **Prisma Accelerate**: dropped `@prisma/extension-accelerate`; the platform connects directly to PostgreSQL
+
+### Added
+
+- **Local Postgres dev**: `docker-compose.dev.yml` runs Postgres over loopback (matches prod topology); `npm run db:seed` seeds dev data
+
 ## [1.6.7] - 2026-02-27
 
 ### Fixed
