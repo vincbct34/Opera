@@ -1,7 +1,13 @@
 import type { ScoringCriterionType, ParameterValue } from './criteriaDefinitions';
 import { getCriterionDefinition } from './criteriaDefinitions';
 import { determineGeographicZone } from '@/lib/validation/geographicZone';
-import type { RegistrationStatus, Accessibility, PublicCategory, SchoolGrade, AgeRange } from '@/app/generated/prisma/enums';
+import type {
+  RegistrationStatus,
+  Accessibility,
+  PublicCategory,
+  SchoolGrade,
+  AgeRange,
+} from '@/app/generated/prisma/enums';
 
 export interface CriterionConfig {
   type: ScoringCriterionType;

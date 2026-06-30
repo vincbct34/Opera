@@ -3,8 +3,24 @@
  * Ces types utilisent Prisma comme base mais peuvent être étendus selon les besoins de l'API
  */
 
-import { Role, PublicCategory, EventType, EventStatus, Accessibility, RegistrationStatus, SchoolGrade, AgeRange } from '@/app/generated/prisma/enums';
-import type { User, Institution, Address, Event, Registration, Notification } from '@/app/generated/prisma/client';
+import {
+  Role,
+  PublicCategory,
+  EventType,
+  EventStatus,
+  Accessibility,
+  RegistrationStatus,
+  SchoolGrade,
+  AgeRange,
+} from '@/app/generated/prisma/enums';
+import type {
+  User,
+  Institution,
+  Address,
+  Event,
+  Registration,
+  Notification,
+} from '@/app/generated/prisma/client';
 
 // ============================================
 // Types User

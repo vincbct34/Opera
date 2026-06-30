@@ -1,5 +1,14 @@
 import ExcelJS from 'exceljs';
-import { Role, RegistrationStatus, EventStatus, PublicCategory, SchoolGrade, AgeRange, Accessibility, EventType } from '@/app/generated/prisma/enums';
+import {
+  Role,
+  RegistrationStatus,
+  EventStatus,
+  PublicCategory,
+  SchoolGrade,
+  AgeRange,
+  Accessibility,
+  EventType,
+} from '@/app/generated/prisma/enums';
 import { Prisma } from '@/app/generated/prisma/client';
 import {
   getAgeRangeLabelsMapAsync,

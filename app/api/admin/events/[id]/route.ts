@@ -5,7 +5,14 @@ import { logger } from '@/lib/middleware/logger';
 import { sanitizeLogArgs } from '@/lib/security/logSanitization';
 import { logDataModification } from '@/lib/security/securityLogger';
 import { z } from 'zod';
-import { EventStatus, EventType, PublicCategory, Accessibility, SchoolGrade, AgeRange } from '@/app/generated/prisma/enums';
+import {
+  EventStatus,
+  EventType,
+  PublicCategory,
+  Accessibility,
+  SchoolGrade,
+  AgeRange,
+} from '@/app/generated/prisma/enums';
 
 // List of fields that can be protected from scraping
 export const PROTECTABLE_FIELDS = [
