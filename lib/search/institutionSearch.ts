@@ -4,7 +4,8 @@
  */
 
 import { normalizeFrenchText, calculateSimilarity } from './fuzzySearch';
-import { PublicCategory, Prisma } from '@/app/generated/prisma';
+import { PublicCategory } from '@/app/generated/prisma/enums';
+import { Prisma } from '@/app/generated/prisma/client';
 
 /**
  * Institution data structure for search

@@ -1,17 +1,14 @@
 import { execSync } from 'child_process';
 
-const isProduction = process.env.NODE_ENV === 'production';
-
 try {
   // Run db push
   console.log('Running prisma db push...');
   execSync('npx prisma db push', { stdio: 'inherit' });
 
-  // Run prisma generate with or without --no-engine flag
-  const generateCommand = isProduction ? 'npx prisma generate --no-engine' : 'npx prisma generate';
-
-  console.log(`Running ${generateCommand}...`);
-  execSync(generateCommand, { stdio: 'inherit' });
+  // Prisma v7 ships a Rust-free client; there is no engine to exclude
+  // (the v6 `--no-engine` flag was removed).
+  console.log('Running prisma generate...');
+  execSync('npx prisma generate', { stdio: 'inherit' });
 
   console.log('Postinstall completed successfully!');
 } catch (error) {

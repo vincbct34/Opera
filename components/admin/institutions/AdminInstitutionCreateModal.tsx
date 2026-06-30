@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { X } from '@deemlol/next-icons';
 import { PublicCategory } from '@/types/api';
-import { SchoolGrade, AgeRange } from '@/app/generated/prisma';
+import { SchoolGrade, AgeRange } from '@/app/generated/prisma/enums';
 import { fetchJsonWithAuth } from '@/lib/api/fetchWithAuth';
 import toast from '@/lib/utils/toast';
 import Loader from '@/components/ui/Loader';

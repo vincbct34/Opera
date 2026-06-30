@@ -9,7 +9,7 @@ import { calculateMultipleInstitutionHistories } from '@/lib/events/registration
 import type { CriterionConfig } from '@/lib/scoring/scoringEngine';
 import { CRITERIA_DEFINITIONS } from '@/lib/scoring/criteriaDefinitions';
 import type { ScoringCriterionType, ParameterValue } from '@/lib/scoring/criteriaDefinitions';
-import type { RegistrationStatus, PublicCategory } from '@/app/generated/prisma';
+import type { RegistrationStatus, PublicCategory } from '@/app/generated/prisma/enums';
 
 interface ScoreBreakdownItem {
   criterion: string;

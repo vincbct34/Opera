@@ -4,7 +4,8 @@
  */
 
 import type { InstitutionHistory } from '../scoring/scoringEngine';
-import type { PrismaClient, RegistrationStatus } from '@/app/generated/prisma';
+import type { RegistrationStatus } from '@/app/generated/prisma/enums';
+import type { PrismaClient } from '@/app/generated/prisma/client';
 
 // Types pour les données Prisma (compatibles sans importer le client)
 interface RegistrationRecord {

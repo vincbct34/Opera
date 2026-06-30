@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import { requireAdmin, AuthenticatedRequest } from '@/app/api/middleware';
 import prisma from '@/lib/middleware/prismaConfig';
-import { Prisma, Role } from '@/app/generated/prisma';
+import { Role } from '@/app/generated/prisma/enums';
+import { Prisma } from '@/app/generated/prisma/client';
 import bcrypt from 'bcrypt';
 import { logger } from '@/lib/middleware/logger';
 import { sanitizeLogArgs } from '@/lib/security/logSanitization';

@@ -4,7 +4,8 @@ import bcrypt from 'bcrypt';
 import prisma from '@/lib/middleware/prismaConfig';
 import { logger } from '@/lib/middleware/logger';
 import { sendEmail } from '@/lib/notifications/emailService';
-import { RegistrationStatus, PublicCategory, Role, PrismaClient } from '@/app/generated/prisma';
+import { RegistrationStatus, PublicCategory, Role } from '@/app/generated/prisma/enums';
+import { PrismaClient } from '@/app/generated/prisma/client';
 
 // Type for transaction client (same as Prisma client but without transaction methods)
 type TransactionClient = Omit<
@@ -565,7 +566,7 @@ export async function findEvent(
   const searchMonth = searchDateUTC.getUTCMonth();
   const searchDay = searchDateUTC.getUTCDate();
 
-  const matchingEvent = events.find((event: import('@/app/generated/prisma').Event) => {
+  const matchingEvent = events.find((event: import('@/app/generated/prisma/client').Event) => {
     return event.event_dates.some((eventDate: Date) => {
       const ed = new Date(eventDate);
       return (

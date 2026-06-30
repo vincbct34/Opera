@@ -10,7 +10,7 @@ import toast from '@/lib/utils/toast';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import { Calendar, Users, MapPin, Mail } from '@deemlol/next-icons';
 import type { InstitutionWithAddress, SafeUser } from '@/types/api';
-import { SchoolGrade, AgeRange } from '@/app/generated/prisma';
+import { SchoolGrade, AgeRange } from '@/app/generated/prisma/enums';
 import MultiSelect from '@/components/ui/MultiSelect';
 import { PublicCategory, RegistrationStatus } from '@/types/api';
 import {

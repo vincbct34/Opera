@@ -1,10 +1,5 @@
-import {
-  SecurityLogType,
-  SecuritySeverity,
-  Prisma,
-  SecurityLog,
-  NotificationType,
-} from '@/app/generated/prisma';
+import { SecurityLogType, SecuritySeverity, NotificationType } from '@/app/generated/prisma/enums';
+import { Prisma, SecurityLog } from '@/app/generated/prisma/client';
 import prisma from '../middleware/prismaConfig';
 import { NextRequest } from 'next/server';
 import { logger } from '../middleware/logger';

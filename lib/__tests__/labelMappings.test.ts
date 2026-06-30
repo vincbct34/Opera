@@ -3,13 +3,7 @@
  * Centralized label mappings for French translations of database enums
  */
 
-import {
-  Accessibility,
-  EventStatus,
-  EventType,
-  PublicCategory,
-  RegistrationStatus,
-} from '@/app/generated/prisma';
+import { Accessibility, EventStatus, EventType, PublicCategory, RegistrationStatus } from '@/app/generated/prisma/enums';
 
 import {
   EVENT_TYPE_LABELS,

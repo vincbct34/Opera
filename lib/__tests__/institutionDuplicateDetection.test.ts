@@ -6,7 +6,7 @@ import {
   isAssociation,
 } from '../search/institutionDuplicateDetection';
 import prisma from '../middleware/prismaConfig';
-import { PublicCategory } from '@/app/generated/prisma';
+import { PublicCategory } from '@/app/generated/prisma/enums';
 import * as fuzzySearch from '../search/fuzzySearch';
 
 // Mock Prisma

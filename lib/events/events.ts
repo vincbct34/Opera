@@ -1,11 +1,5 @@
 import prisma from '../middleware/prismaConfig';
-import {
-  EventType,
-  PublicCategory,
-  SchoolGrade,
-  AgeRange,
-  EventStatus,
-} from '@/app/generated/prisma';
+import { EventType, PublicCategory, SchoolGrade, AgeRange, EventStatus } from '@/app/generated/prisma/enums';
 
 /**
  * Data Transfer Object for Event.

@@ -1,14 +1,12 @@
 /* eslint-disable */
 import { describe, expect, test, jest } from '@jest/globals';
 
-jest.mock('@prisma/extension-accelerate', () => ({
-  withAccelerate: jest.fn().mockReturnValue({}),
+jest.mock('@prisma/adapter-pg', () => ({
+  PrismaPg: jest.fn().mockImplementation(() => ({})),
 }));
 
-jest.mock('@/app/generated/prisma', () => ({
-  PrismaClient: jest.fn().mockImplementation(() => ({
-    $extends: jest.fn().mockReturnThis(),
-  })),
+jest.mock('@/app/generated/prisma/client', () => ({
+  PrismaClient: jest.fn().mockImplementation(() => ({})),
 }));
 
 describe('Prisma Config', () => {

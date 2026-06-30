@@ -8,7 +8,7 @@ import UserEventDetailClient from '@/components/events/UserEventDetailClient';
 import AdminEventDetailClient from '@/components/admin/events/AdminEventDetailClient';
 import Link from 'next/link';
 import type { Event as PrismaEvent, PublicCategory, SchoolGrade, AgeRange } from '@/types/api';
-import { Accessibility as AccessibilityType } from '@/app/generated/prisma';
+import { Accessibility as AccessibilityType } from '@/app/generated/prisma/enums';
 import {
   SCHOOL_GRADE_ACRONYMS,
   AGE_RANGE_ACRONYMS,

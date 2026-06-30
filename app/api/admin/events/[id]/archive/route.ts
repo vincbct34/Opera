@@ -5,7 +5,7 @@ import { logger } from '@/lib/middleware/logger';
 import { sanitizeLogArgs } from '@/lib/security/logSanitization';
 import { logDataModification } from '@/lib/security/securityLogger';
 import { z } from 'zod';
-import { EventStatus } from '@/app/generated/prisma';
+import { EventStatus } from '@/app/generated/prisma/enums';
 
 // Validation schema for archive status change
 const ArchiveSchema = z.object({

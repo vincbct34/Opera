@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { GET, POST } from '@/app/api/institutions/route';
-import { PublicCategory, Role } from '@/app/generated/prisma';
+import { PublicCategory, Role } from '@/app/generated/prisma/enums';
 import prisma from '@/lib/middleware/prismaConfig';
 import { NextRequest } from 'next/server';
 

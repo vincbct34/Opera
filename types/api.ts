@@ -3,22 +3,8 @@
  * Ces types utilisent Prisma comme base mais peuvent être étendus selon les besoins de l'API
  */
 
-import {
-  User,
-  Institution,
-  Address,
-  Event,
-  Registration,
-  Notification,
-  Role,
-  PublicCategory,
-  EventType,
-  EventStatus,
-  Accessibility,
-  RegistrationStatus,
-  SchoolGrade,
-  AgeRange,
-} from '@/app/generated/prisma';
+import { Role, PublicCategory, EventType, EventStatus, Accessibility, RegistrationStatus, SchoolGrade, AgeRange } from '@/app/generated/prisma/enums';
+import type { User, Institution, Address, Event, Registration, Notification } from '@/app/generated/prisma/client';
 
 // ============================================
 // Types User
@@ -62,12 +48,12 @@ export type UserListItemSerialized = Omit<UserListItem, 'created_at' | 'updated_
  * User avec détails complets (groups et registrations)
  */
 export type GroupWithoutUserId = Pick<
-  import('@/app/generated/prisma').Group,
+  import('@/app/generated/prisma/client').Group,
   'id' | 'name' | 'category' | 'updated_at' | 'students_count' | 'grades' | 'age_ranges'
 > & {
   disabilities?: Array<{
     id: string;
-    type: import('@/app/generated/prisma').Accessibility;
+    type: import('@/app/generated/prisma/client').Accessibility;
     count: number;
     details?: string | null;
   }>;

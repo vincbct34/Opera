@@ -2,7 +2,7 @@ import { NextResponse, NextRequest } from 'next/server';
 import { requireCronAuth } from '@/lib/middleware/cronAuth';
 import { detectSuspiciousPatterns, createAdminSecurityAlert } from '@/lib/security/securityLogger';
 import { logger } from '@/lib/middleware/logger';
-import { SecuritySeverity } from '@/app/generated/prisma';
+import { SecuritySeverity } from '@/app/generated/prisma/enums';
 
 /**
  * GET /api/cron/security/detect-patterns

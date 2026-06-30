@@ -3,13 +3,7 @@ import { requireAdmin, AuthenticatedRequest } from '@/app/api/middleware';
 import prisma from '@/lib/middleware/prismaConfig';
 import { logger } from '@/lib/middleware/logger';
 import { sanitizeLogArgs } from '@/lib/security/logSanitization';
-import {
-  RegistrationStatus,
-  Accessibility,
-  PublicCategory,
-  SchoolGrade,
-  AgeRange,
-} from '@/app/generated/prisma';
+import { RegistrationStatus, Accessibility, PublicCategory, SchoolGrade, AgeRange } from '@/app/generated/prisma/enums';
 import { UnifiedNotificationService } from '@/lib/notifications/unifiedNotificationService';
 import { historyCache } from '@/lib/events/registrationAnalytics';
 import { sendEmail } from '@/lib/notifications/emailService';

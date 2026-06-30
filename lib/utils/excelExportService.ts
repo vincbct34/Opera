@@ -1,16 +1,6 @@
 import ExcelJS from 'exceljs';
-import {
-  PrismaClient,
-  Role,
-  RegistrationStatus,
-  EventStatus,
-  PublicCategory,
-  SchoolGrade,
-  AgeRange,
-  Accessibility,
-  EventType,
-  Prisma,
-} from '@/app/generated/prisma';
+import { Role, RegistrationStatus, EventStatus, PublicCategory, SchoolGrade, AgeRange, Accessibility, EventType } from '@/app/generated/prisma/enums';
+import { Prisma } from '@/app/generated/prisma/client';
 import {
   getAgeRangeLabelsMapAsync,
   getPublicCategoryLabelsMapAsync,
@@ -20,8 +10,7 @@ import {
   getEventTypeLabelsMapAsync,
   getAccessibilityLabelsMapAsync,
 } from '@/lib/config/labelMappingsServer';
-
-const prisma = new PrismaClient();
+import prisma from '@/lib/middleware/prismaConfig';
 
 // ============================================================================
 // Types

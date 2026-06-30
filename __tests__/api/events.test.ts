@@ -8,7 +8,7 @@ import {
 } from '@/app/api/events/[slug]/registrations/route';
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/middleware/prismaConfig';
-import { Role, PublicCategory } from '@/app/generated/prisma';
+import { Role, PublicCategory } from '@/app/generated/prisma/enums';
 
 // Mock NextRequest/NextResponse
 jest.mock('next/server', () => {

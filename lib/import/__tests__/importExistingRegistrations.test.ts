@@ -92,7 +92,7 @@ import {
   importExistingRegistrations,
 } from '../importExistingRegistrations';
 
-import { PublicCategory, RegistrationStatus } from '@/app/generated/prisma';
+import { PublicCategory, RegistrationStatus } from '@/app/generated/prisma/enums';
 
 const mockPrisma = (jest.requireMock('@/lib/middleware/prismaConfig') as any).default as any;
 

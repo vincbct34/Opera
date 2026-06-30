@@ -1,0 +1,21 @@
+# Local Postgres for development.
+# Mirrors the prod topology (Direct TCP, loopback) so no Accelerate is needed.
+#   Start:  docker compose -f docker-compose.dev.yml up -d
+#   Stop:   docker compose -f docker-compose.dev.yml down
+# Matches DATABASE_URL in .env: postgres://opera:opera@localhost:5434/opera_dev
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: opera-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: opera
+      POSTGRES_PASSWORD: opera
+      POSTGRES_DB: opera_dev
+    ports:
+      - '5434:5432'
+    volumes:
+      - opera_pgdata:/var/lib/postgresql/data
+
+volumes:
+  opera_pgdata:

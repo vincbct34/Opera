@@ -9,7 +9,7 @@ import {
   buildSearchWhereClause,
   InstitutionSearchData,
 } from '../search/institutionSearch';
-import { PublicCategory } from '@/app/generated/prisma';
+import { PublicCategory } from '@/app/generated/prisma/enums';
 
 describe('Institution Search', () => {
   // Sample institutions for testing

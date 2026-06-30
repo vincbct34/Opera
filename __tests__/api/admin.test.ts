@@ -5,7 +5,7 @@ import { GET as GetStats } from '@/app/api/admin/stats/route';
 import { POST as CreateScoringConfig } from '@/app/api/admin/scoring-config/route';
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/middleware/prismaConfig';
-import { Role, EventType, PublicCategory } from '@/app/generated/prisma';
+import { Role, EventType, PublicCategory } from '@/app/generated/prisma/enums';
 import { getDashboardStats } from '@/lib/middleware/admin';
 
 // Mock NextRequest/NextResponse

@@ -5,14 +5,7 @@ import { logger } from '@/lib/middleware/logger';
 import { sanitizeLogArgs } from '@/lib/security/logSanitization';
 import { logAdminAccess, logDataModification } from '@/lib/security/securityLogger';
 import { z } from 'zod';
-import {
-  EventStatus,
-  EventType,
-  PublicCategory,
-  Accessibility,
-  SchoolGrade,
-  AgeRange,
-} from '@/app/generated/prisma';
+import { EventStatus, EventType, PublicCategory, Accessibility, SchoolGrade, AgeRange } from '@/app/generated/prisma/enums';
 
 // Validation schema for creating/updating events
 const EventSchema = z.object({

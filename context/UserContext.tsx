@@ -20,7 +20,7 @@ import {
   setCachedUser,
   hasPotentialCache,
 } from '@/lib/auth/tokenStore';
-import type { Role } from '@/app/generated/prisma';
+import type { Role } from '@/app/generated/prisma/enums';
 
 // Type definition for user
 /**

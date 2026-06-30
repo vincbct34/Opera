@@ -1,5 +1,5 @@
 import { logger } from '@/lib/middleware/logger';
-import { Accessibility, PublicCategory, SchoolGrade, AgeRange } from '@/app/generated/prisma';
+import { Accessibility, PublicCategory, SchoolGrade, AgeRange } from '@/app/generated/prisma/enums';
 import {
   formatLocation,
   mapAccessibilityIds,

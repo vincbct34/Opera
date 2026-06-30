@@ -3,7 +3,7 @@ import { requireAuth, requireAdmin, AuthenticatedRequest } from '@/app/api/middl
 import prisma from '@/lib/middleware/prismaConfig';
 import { logger } from '@/lib/middleware/logger';
 import { sanitizeLogArgs } from '@/lib/security/logSanitization';
-import { Accessibility } from '@/app/generated/prisma';
+import { Accessibility } from '@/app/generated/prisma/enums';
 import { createScoringEngine } from '@/lib/scoring/scoringEngine';
 import { calculateMultipleInstitutionHistories } from '@/lib/events/registrationAnalytics';
 import type { CriterionConfig } from '@/lib/scoring/scoringEngine';

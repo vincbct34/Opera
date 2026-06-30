@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, AuthenticatedRequest } from '@/app/api/middleware';
-import { PublicCategory, SchoolGrade, AgeRange, Accessibility } from '@/app/generated/prisma';
+import { PublicCategory, SchoolGrade, AgeRange, Accessibility } from '@/app/generated/prisma/enums';
 import prisma from '@/lib/middleware/prismaConfig';
 import { logger } from '@/lib/middleware/logger';
 import { sanitizeLogArgs } from '@/lib/security/logSanitization';

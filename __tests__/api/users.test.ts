@@ -6,7 +6,7 @@ import {
   PATCH as UpdateUser,
   DELETE as DeleteUser,
 } from '@/app/api/users/[id]/route';
-import { Role } from '@/app/generated/prisma';
+import { Role } from '@/app/generated/prisma/enums';
 import prisma from '@/lib/middleware/prismaConfig';
 
 // Mock next/server

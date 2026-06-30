@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 
 import jwt from 'jsonwebtoken';
 
-import { Role } from '@/app/generated/prisma';
+import { Role } from '@/app/generated/prisma/enums';
 import prisma from '@/lib/middleware/prismaConfig';
 import { logger } from '@/lib/middleware/logger';
 import { sanitizeLogArgs } from '@/lib/security/logSanitization';

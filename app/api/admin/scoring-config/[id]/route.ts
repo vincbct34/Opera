@@ -6,7 +6,7 @@ import { sanitizeLogArgs } from '@/lib/security/logSanitization';
 import { z } from 'zod';
 import { CRITERIA_DEFINITIONS } from '@/lib/scoring/criteriaDefinitions';
 import { UpdateScoringConfigSchema } from '@/lib/validation/validationSchemas';
-import { ScoringCriterionType } from '@/app/generated/prisma';
+import { ScoringCriterionType } from '@/app/generated/prisma/enums';
 
 /**
  * GET /api/admin/scoring-config/[id]
