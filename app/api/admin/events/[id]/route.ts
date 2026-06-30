@@ -14,6 +14,21 @@ import {
   SchoolGrade,
   AgeRange,
 } from '@/app/generated/prisma/enums';
+import {
+  getRegistrationBlocksWithLegacyFallback,
+  serializeRegistrationBlock,
+} from '@/lib/events/registrationBlocks';
+
+const RegistrationBlockSchema = z.object({
+  id: z.string().optional(),
+  title: z.string().min(1, 'Le titre du bloc est requis'),
+  description: z.string().optional().nullable(),
+  dates: z.array(z.string().datetime()).optional(),
+  enabled: z.boolean().optional(),
+  registration_enabled: z.boolean().optional(),
+  mandatory: z.boolean().optional(),
+  order: z.number().int().min(0).optional(),
+});
 
 // List of fields that can be protected from scraping
 export const PROTECTABLE_FIELDS = [
@@ -32,6 +47,7 @@ export const PROTECTABLE_FIELDS = [
   'event_dates',
   'has_initial_formation',
   'has_musical_preparation',
+  'registrationBlocks',
   'slug',
   'accessibility',
 ] as const;
@@ -54,6 +70,7 @@ const EventSchema = z.object({
   is_formation_mandatory: z.boolean().optional(),
   has_musical_preparation: z.boolean().optional(),
   accessibility: z.array(z.string()).optional(),
+  registrationBlocks: z.array(RegistrationBlockSchema).optional(),
   caretaker: z.number().min(0).optional(),
   slug: z.string().optional(),
   // NEW: Fields for managing manual edits
@@ -76,6 +93,9 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
         where: { id },
         include: {
           accessibility: true,
+          registrationBlocks: {
+            orderBy: { order: 'asc' },
+          },
           _count: {
             select: { registrations: true },
           },
@@ -86,7 +106,14 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
         return NextResponse.json({ error: 'Événement non trouvé' }, { status: 404 });
       }
 
-      return NextResponse.json({ event });
+      return NextResponse.json({
+        event: {
+          ...event,
+          registrationBlocks: getRegistrationBlocksWithLegacyFallback(event).map(
+            serializeRegistrationBlock,
+          ),
+        },
+      });
     } catch (error) {
       logger.error('Error fetching event:', ...sanitizeLogArgs(error));
       return NextResponse.json(
@@ -116,7 +143,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
 
       const existingEvent = await prisma.event.findUnique({
         where: { id },
-        include: { accessibility: true },
+        include: { accessibility: true, registrationBlocks: true },
       });
       if (!existingEvent) {
         return NextResponse.json({ error: 'Événement non trouvé' }, { status: 404 });
@@ -239,6 +266,12 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
       ) {
         modifiedFields.push('has_initial_formation');
       }
+      if (validatedData.registrationBlocks !== undefined) {
+        modifiedFields.push('registrationBlocks');
+        if (!modifiedFields.includes('has_initial_formation')) {
+          modifiedFields.push('has_initial_formation');
+        }
+      }
       if (
         validatedData.has_musical_preparation !== undefined &&
         validatedData.has_musical_preparation !== existingEvent.has_musical_preparation
@@ -304,19 +337,37 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
         image_url: imageUrlForUpdate,
         event_dates: eventDatesForUpdate,
       };
+      const { registrationBlocks, ...sanitizedEventData } = sanitizedData;
+      const hasRegistrationBlocks = registrationBlocks
+        ? registrationBlocks.some((block) => block.enabled !== false)
+        : undefined;
+      const hasMandatoryRegistrationBlock = registrationBlocks
+        ? registrationBlocks.some(
+            (block) =>
+              block.enabled !== false && block.registration_enabled !== false && block.mandatory,
+          )
+        : undefined;
 
       // Update event
       const event = await prisma.event.update({
         where: { id },
         data: {
-          ...sanitizedData,
-          event_dates: sanitizedData.event_dates
-            ? sanitizedData.event_dates.map((d) => new Date(d))
+          ...sanitizedEventData,
+          has_initial_formation:
+            hasRegistrationBlocks === undefined
+              ? sanitizedEventData.has_initial_formation
+              : hasRegistrationBlocks,
+          is_formation_mandatory:
+            hasMandatoryRegistrationBlock === undefined
+              ? sanitizedEventData.is_formation_mandatory
+              : hasMandatoryRegistrationBlock,
+          event_dates: sanitizedEventData.event_dates
+            ? sanitizedEventData.event_dates.map((d) => new Date(d))
             : undefined,
-          accessibility: sanitizedData.accessibility
+          accessibility: sanitizedEventData.accessibility
             ? {
                 deleteMany: {},
-                create: sanitizedData.accessibility.map((type: string) => ({
+                create: sanitizedEventData.accessibility.map((type: string) => ({
                   type: type as Accessibility,
                 })),
               }
@@ -325,14 +376,80 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
           manually_edited: manuallyEdited,
           protected_fields: updatedProtectedFields,
         },
+        include: {
+          accessibility: true,
+          registrationBlocks: {
+            orderBy: { order: 'asc' },
+          },
+        },
       });
+
+      if (registrationBlocks !== undefined) {
+        const incomingIds = registrationBlocks
+          .map((block) => block.id)
+          .filter(
+            (blockId): blockId is string =>
+              Boolean(blockId) &&
+              existingEvent.registrationBlocks.some(
+                (existingBlock) => existingBlock.id === blockId,
+              ),
+          );
+
+        await prisma.eventRegistrationBlock.deleteMany({
+          where: {
+            event_id: id,
+            id: {
+              notIn: incomingIds,
+            },
+          },
+        });
+
+        for (const [index, block] of registrationBlocks.entries()) {
+          const data = {
+            title: block.title,
+            description: sanitizeRichText(block.description) || null,
+            dates: (block.dates || []).map((date) => new Date(date)),
+            enabled: block.enabled ?? true,
+            registration_enabled: block.registration_enabled ?? true,
+            mandatory: block.mandatory ?? false,
+            order: block.order ?? index,
+          };
+
+          if (
+            block.id &&
+            existingEvent.registrationBlocks.some((existingBlock) => existingBlock.id === block.id)
+          ) {
+            await prisma.eventRegistrationBlock.update({
+              where: { id: block.id },
+              data,
+            });
+          } else {
+            await prisma.eventRegistrationBlock.create({
+              data: {
+                ...data,
+                event_id: id,
+              },
+            });
+          }
+        }
+      }
 
       if (authReq.user) {
         await logDataModification(authReq.user.id, req, 'Event', event.id, 'update');
       }
 
+      const updatedEvent = await prisma.event.findUnique({
+        where: { id },
+        include: {
+          accessibility: true,
+          registrationBlocks: {
+            orderBy: { order: 'asc' },
+          },
+        },
+      });
+
       return NextResponse.json({
-        event,
+        event: updatedEvent || event,
         message: 'Événement mis à jour avec succès',
         modified_fields: modifiedFields,
         protected_fields: updatedProtectedFields,

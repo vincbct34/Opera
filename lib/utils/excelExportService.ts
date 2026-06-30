@@ -602,6 +602,9 @@ async function addEventsSheet(
         select: { status: true },
       },
       accessibility: true,
+      registrationBlocks: {
+        orderBy: { order: 'asc' },
+      },
       _count: {
         select: {
           registrations: true,
@@ -632,6 +635,7 @@ async function addEventsSheet(
     { key: 'registrations_confirmed', width: 20 },
     { key: 'registrations_rejected', width: 18 },
     { key: 'accessibility', width: 40 },
+    { key: 'registration_blocks', width: 50 },
     { key: 'has_initial_formation', width: 22 },
     { key: 'has_musical_preparation', width: 25 },
     { key: 'is_formation_mandatory', width: 22 },
@@ -663,6 +667,7 @@ async function addEventsSheet(
     'Confirmées',
     'Refusées',
     'Accessibilité',
+    'Blocs pédagogiques',
     'Formation initiale',
     'Préparation musicale',
     'Formation obligatoire',
@@ -688,6 +693,18 @@ async function addEventsSheet(
     const pending = event.registrations.filter((r) => r.status === 'PENDING').length;
     const confirmed = event.registrations.filter((r) => r.status === 'CONFIRMED').length;
     const rejected = event.registrations.filter((r) => r.status === 'REJECTED').length;
+    const registrationBlocks = event.registrationBlocks
+      .map((block) => {
+        const flags = [
+          block.enabled ? 'visible' : 'masqué',
+          block.registration_enabled ? 'inscription' : 'sans inscription',
+          block.mandatory ? 'obligatoire' : null,
+        ]
+          .filter(Boolean)
+          .join(', ');
+        return `${block.title} (${flags}) - ${block.dates.length} date(s)`;
+      })
+      .join(' | ');
 
     worksheet.addRow({
       id: event.id.substring(0, 12) + '...',
@@ -709,6 +726,7 @@ async function addEventsSheet(
       registrations_confirmed: confirmed,
       registrations_rejected: rejected,
       accessibility: accessibilityTypes,
+      registration_blocks: registrationBlocks || 'Aucun',
       has_initial_formation: event.has_initial_formation ? 'Oui' : 'Non',
       has_musical_preparation: event.has_musical_preparation ? 'Oui' : 'Non',
       is_formation_mandatory: event.is_formation_mandatory ? 'Oui' : 'Non',
@@ -725,7 +743,7 @@ async function addEventsSheet(
 
   worksheet.autoFilter = {
     from: 'A1',
-    to: 'AB1',
+    to: 'AC1',
   };
 }
 
@@ -766,6 +784,16 @@ async function addRegistrationsSheet(
         include: { address: true },
       },
       disabilities: true,
+      blockSelections: {
+        include: {
+          block: true,
+        },
+        orderBy: {
+          block: {
+            order: 'asc',
+          },
+        },
+      },
     },
     orderBy: { created_at: 'desc' },
   });
@@ -793,6 +821,7 @@ async function addRegistrationsSheet(
     { key: 'caretaker_count', width: 18 },
     { key: 'aesh_count', width: 15 },
     { key: 'disabilities', width: 30 },
+    { key: 'registration_blocks', width: 50 },
     { key: 'want_formation', width: 18 },
     { key: 'want_preparation', width: 20 },
     { key: 'comments', width: 50 },
@@ -821,6 +850,7 @@ async function addRegistrationsSheet(
     'Nb Accompagnateurs',
     'Nb AESH',
     'Accessibilité',
+    'Blocs pédagogiques',
     'Formation souhaitée',
     'Préparation souhaitée',
     'Commentaires',
@@ -834,6 +864,14 @@ async function addRegistrationsSheet(
     const disabilities = reg.disabilities
       .map((d) => `${formatAccessibilityType(d.type, labels)} (${d.count})`)
       .join(', ');
+    const registrationBlocks = reg.blockSelections
+      .map((selection) => {
+        const selectedDate = selection.selected_date
+          ? ` - ${formatDate(selection.selected_date)}`
+          : '';
+        return `${selection.block.title}: ${selection.wants_to_attend ? 'Oui' : 'Non'}${selectedDate}`;
+      })
+      .join(' | ');
 
     const managerName =
       reg.manager_first_name && reg.manager_last_name
@@ -866,6 +904,7 @@ async function addRegistrationsSheet(
       caretaker_count: reg.caretaker_count || 0,
       aesh_count: reg.aesh_count || 0,
       disabilities: disabilities || 'Aucune',
+      registration_blocks: registrationBlocks || 'N/A',
       want_formation: reg.want_formation === null ? 'N/A' : reg.want_formation ? 'Oui' : 'Non',
       want_preparation:
         reg.want_preparation === null ? 'N/A' : reg.want_preparation ? 'Oui' : 'Non',

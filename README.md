@@ -17,6 +17,7 @@ The system handles multi-institution user management, automated event scraping f
 - Migrated to Prisma ORM v7 with Direct TCP PostgreSQL adapter
 - Event registration season now starts on June 10 for the following academic year
 - Events are automatically archived one year after their latest date
+- Admin events can now define multiple reusable pedagogical registration blocks (formations, ateliers, etc.) with custom titles, explanatory text, dates, and mandatory participation
 
 **Previous Release (v1.6.7)**:
 
@@ -58,6 +59,7 @@ The system handles multi-institution user management, automated event scraping f
 - ✅ Registration management with automatic scoring algorithms (14 criteria including `EVENT_CATEGORY_MATCH` and `AESH_COUNT`)
 - ✅ Admin dashboard with comprehensive statistics, analytics, and event management (full CRUD)
 - ✅ Admin event management with create, edit, delete, rich text descriptions, and normalized manual edit tracking
+- ✅ Reusable pedagogical registration blocks on events (formations, ateliers, etc.) with custom title/text/dates, optional registration, and mandatory participation rules
 - ✅ Dynamic configuration system for customizable labels (accessibility, event types, public categories, school grades, age ranges, statuses)
 - ✅ Async label retrieval system for server components with database integration
 - ✅ Redis distributed caching with 5-minute TTL and immediate invalidation across instances
@@ -120,6 +122,7 @@ The system handles multi-institution user management, automated event scraping f
 
 - **Custom Prisma Output**: Client generated to [`app/generated/prisma`](app/generated/prisma) instead of `node_modules/@prisma/client` (see [`prisma/schema.prisma`](prisma/schema.prisma))
 - **Array Fields**: PostgreSQL native arrays for `Event.event_dates` (DateTime[]), `Event.type` (EventType[]), `Event.category` (PublicCategory[]), `Event.grades` (SchoolGrade[]), `Event.age_ranges` (AgeRange[]), `Institution.type` (PublicCategory[]), `Institution.grades` (SchoolGrade[]), `Institution.age_ranges` (AgeRange[])
+- **Pedagogical Registration Blocks**: `EventRegistrationBlock` stores reusable blocks attached to an event (title, description, dates, visibility, registration enabled, mandatory flag). `RegistrationBlockSelection` stores each registration's answer and selected block date. Legacy `has_initial_formation` / `want_formation` fields are retained for backward compatibility.
 - **Soft Relations**: User-to-institution many-to-many via `UserInstitution` with cascade deletes
 - **Security Tables**: Dedicated models for `SecurityLog`, `RefreshTokenBlacklist`, `PasswordResetToken`, `PasswordHistory`
 
@@ -196,8 +199,7 @@ Service-culturel-plateforme-web/
 │   │   └── misc/          # Other admin components
 │   └── events/            # Event-related components
 ├── context/                # React Context providers (Auth, Notifications)
-├── prisma/                 # Database schema and migrations
-│   ├── migrations/        # Generated migration files
+├── prisma/                 # Database schema and Prisma configuration
 │   └── schema.prisma      # Prisma data model
 ├── public/                 # Static assets
 ├── scripts/                # Build and utility scripts
@@ -211,7 +213,7 @@ Service-culturel-plateforme-web/
 - **[`app/api/`](app/api/)**: All API routes follow HTTP method exports (`GET`, `POST`, `PUT`, `DELETE`) wrapped with middleware from [`app/api/middleware.ts`](app/api/middleware.ts)
 - **[`lib/`](lib/)**: Contains security utilities (CSRF, rate limiting, JWT), email service, validation schemas, config service, and the Redis configuration
 - **[`lib/cron/`](lib/cron/)**: Automated event scraping system that pulls from the Opera's WordPress API and syncs to PostgreSQL
-- **[`prisma/migrations/`](prisma/migrations/)**: Version-controlled database schema changes managed by Prisma Migrate
+- **[`prisma/schema.prisma`](prisma/schema.prisma)**: Prisma data model. Production schema changes should be applied before app deploys, preferably through Prisma Migrate when migration files are introduced.
 - **[`components/admin/`](components/admin/)**: Admin-specific components organized by feature (events, institutions, users, scoring, misc)
 - **[`components/account/`](components/account/)**: User account management components
 - **[`components/events/`](components/events/)**: Event-related components (calendar view, event details, registration)
@@ -276,7 +278,8 @@ npm run lint             # ESLint
 npm run typecheck        # TypeScript validation
 npm run ci               # Full CI pipeline
 
-npx prisma db pull       # Create/apply database migration
+npx prisma db pull       # Introspect database schema into Prisma schema
+npx prisma db push       # Apply schema changes directly in local/dev environments
 npx prisma studio        # GUI database browser
 ```
 
@@ -320,6 +323,7 @@ Before deploying to production, ensure:
 - [ ] `ALLOWED_ORIGINS` includes production domain(s)
 - [ ] SSL certificates are configured for HTTPS
 - [ ] Database migrations are applied: `npx prisma migrate deploy`
+- [ ] For deployments using `db push`, apply the additive schema change before deploying the app code
 - [ ] Prisma client is generated: `npx prisma generate`
 - [ ] Build succeeds: `npm run build`
 - [ ] CI pipeline passes: `npm run ci`
@@ -353,6 +357,7 @@ After deployment:
 - **Redis requirement**: In-memory fallback mode is NOT suitable for multi-instance production deployments (horizontal scaling). Redis must be configured to share CSRF tokens, rate limits, and session data across instances.
 - **Event scraping**: Depends on Opera WordPress API availability. If API structure changes, scraper in `lib/cron/eventsScraper.ts` may need updates. The scraper switches to the next academic season on June 10.
 - **Event lifecycle cron**: `/api/cron/events/status-update` progressively opens events, closes past events, and archives events one year after their latest date unless `status` is protected.
+- **Pedagogical blocks deployment order**: this feature adds two tables (`EventRegistrationBlock`, `RegistrationBlockSelection`). Apply the schema before the application deploy; old data remains readable through the legacy formation fallback.
 - **Email templates**: SMTP2GO templates must be pre-configured in the SMTP2GO dashboard before use (verification, password reset, registration notifications).
 - **Email delivery**: Ensure SMTP2GO API key is valid and has sufficient quota for expected email volume.
 
@@ -377,4 +382,4 @@ This software is the exclusive property of the Opéra Orchestre National Montpel
 
 Built for the **Opéra Orchestre National Montpellier Occitanie** to modernize their event registration system for schools and cultural associations.
 
-**Version**: 1.6.7 - Production-ready (maintenance mode)
+**Version**: 1.7.0 - Production-ready (maintenance mode)

@@ -50,6 +50,25 @@ export async function GET(req: NextRequest) {
                 registration_id: true,
               },
             },
+            blockSelections: {
+              select: {
+                id: true,
+                wants_to_attend: true,
+                selected_date: true,
+                block: {
+                  select: {
+                    id: true,
+                    title: true,
+                    mandatory: true,
+                  },
+                },
+              },
+              orderBy: {
+                block: {
+                  order: 'asc',
+                },
+              },
+            },
           },
           orderBy: { created_at: 'desc' },
           ...(shouldPaginate && { skip, take: limit }),

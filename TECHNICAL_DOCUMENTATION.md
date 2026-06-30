@@ -1,6 +1,6 @@
 # Documentation Technique - Plateforme d'Inscription de l'Opéra de Montpellier
 
-> **Version 1.6.7** | Dernière mise à jour : 27 février 2026
+> **Version 1.7.0** | Dernière mise à jour : 30 juin 2026
 
 ## Table des Matières
 
@@ -35,20 +35,21 @@ Elle remplace un système basé sur Google Forms + Excel par une plateforme cent
 
 ### 1.2 Fonctionnalités Principales
 
-| Fonctionnalité                   | Description                                                      |
-| -------------------------------- | ---------------------------------------------------------------- |
-| **Authentification JWT**         | Access tokens (15min) + Refresh tokens (7 jours) avec rotation   |
-| **Gestion Multi-Établissements** | Un utilisateur peut appartenir à plusieurs institutions          |
-| **Scraping Automatique**         | Synchronisation des événements depuis l'API WordPress de l'Opéra |
-| **Protection des Champs**        | Système de protection des champs événements contre le scraping   |
-| **Notifications Préparation**    | Emails automatiques au staff Opéra pour demandes de préparation  |
-| **Sélecteur d'Institutions**     | Affichage des établissements attachés à l'utilisateur            |
-| **Style Guide Interactif**       | Guide de style avec composants interactifs (slider, dropdown)    |
-| **Scoring Automatique**          | Algorithme de tri des inscriptions configurable par événement    |
-| **Recherche Fuzzy**              | Algorithme Levenshtein pour la recherche d'institutions          |
-| **Export Excel**                 | Export avancé (filtres, anonymisation, sélection de feuilles)    |
-| **Notifications**                | Système d'emails (SMTP2GO) + notifications in-app                |
-| **Sécurité Avancée**             | CSRF, Rate Limiting, Account Lockout, CSP                        |
+| Fonctionnalité                   | Description                                                       |
+| -------------------------------- | ----------------------------------------------------------------- |
+| **Authentification JWT**         | Access tokens (15min) + Refresh tokens (7 jours) avec rotation    |
+| **Gestion Multi-Établissements** | Un utilisateur peut appartenir à plusieurs institutions           |
+| **Scraping Automatique**         | Synchronisation des événements depuis l'API WordPress de l'Opéra  |
+| **Protection des Champs**        | Système de protection des champs événements contre le scraping    |
+| **Blocs Pédagogiques**           | Formations/ateliers liés aux événements, avec dates et obligation |
+| **Notifications Préparation**    | Emails automatiques au staff Opéra pour demandes de préparation   |
+| **Sélecteur d'Institutions**     | Affichage des établissements attachés à l'utilisateur             |
+| **Style Guide Interactif**       | Guide de style avec composants interactifs (slider, dropdown)     |
+| **Scoring Automatique**          | Algorithme de tri des inscriptions configurable par événement     |
+| **Recherche Fuzzy**              | Algorithme Levenshtein pour la recherche d'institutions           |
+| **Export Excel**                 | Export avancé (filtres, anonymisation, sélection de feuilles)     |
+| **Notifications**                | Système d'emails (SMTP2GO) + notifications in-app                 |
+| **Sécurité Avancée**             | CSRF, Rate Limiting, Account Lockout, CSP                         |
 
 ---
 
@@ -61,7 +62,7 @@ Elle remplace un système basé sur Google Forms + Excel par une plateforme cent
 | **Framework**       | Next.js (App Router)   | 16.0.7       |
 | **Frontend**        | React + TypeScript     | 19.2.0 / 5.x |
 | **Styling**         | Tailwind CSS           | 4.x          |
-| **ORM**             | Prisma                 | 6.19.0       |
+| **ORM**             | Prisma                 | 7.8.0        |
 | **Base de Données** | PostgreSQL             | 14+          |
 | **Cache Distribué** | Redis (ioredis)        | 5.8.2        |
 | **Validation**      | Zod                    | 4.1.12       |
@@ -173,6 +174,7 @@ Service-culturel-plateforme-web/
 │   ├── cronAuth.ts               # Auth endpoints cron
 │   ├── csrfProtection.ts         # Protection CSRF
 │   ├── emailService.ts           # Envoi d'emails SMTP2GO
+│   ├── events/                   # Helpers événements (URL, blocs pédagogiques)
 │   ├── excelExportService.ts     # Export Excel
 │   ├── fetchWithAuth.ts          # Fetch avec auth auto
 │   ├── frenchValidation.ts       # Validation caractères FR
@@ -197,7 +199,6 @@ Service-culturel-plateforme-web/
 │   └── validationSchemas.ts      # Schémas Zod
 │
 ├── prisma/                       # Configuration base de données
-│   ├── migrations/               # Fichiers de migration
 │   ├── schema.prisma             # Schéma de données
 │   └── seed.ts                   # Script de seed
 │
@@ -314,30 +315,64 @@ import prisma from '@/lib/middleware/prismaConfig';
                         │ event_dates[]│
                         │ total_seats │
                         │ status      │
-                        └─────────────┘
+                        └──────┬──────┘
+                               │
+                  ┌────────────┴────────────┐
+                  │ EventRegistrationBlock  │
+                  ├─────────────────────────┤
+                  │ title                   │
+                  │ description             │
+                  │ dates[]                 │
+                  │ registration_enabled    │
+                  │ mandatory               │
+                  └────────────┬────────────┘
+                               │
+                  ┌────────────┴────────────┐
+                  │ RegistrationBlockSelection
+                  ├─────────────────────────┤
+                  │ wants_to_attend         │
+                  │ selected_date           │
+                  └─────────────────────────┘
 ```
 
 #### Modèles Principaux
 
-| Modèle                   | Description                        | Relations                                               |
-| ------------------------ | ---------------------------------- | ------------------------------------------------------- |
-| **User**                 | Utilisateur (enseignant, admin)    | Groups, Notifications, Registrations, UserInstitution   |
-| **Institution**          | Établissement scolaire/association | Address, UserInstitution, Registrations                 |
-| **Event**                | Événement culturel                 | Registrations, EventAccessibility, ScoringConfiguration |
-| **Registration**         | Inscription à un événement         | User, Institution, Event, RegistrationDisability        |
-| **Group**                | Groupe d'un utilisateur            | User, GroupDisability                                   |
-| **Notification**         | Notification in-app                | User                                                    |
-| **ScoringConfiguration** | Config du scoring par événement    | Event, ScoringCriterion                                 |
+| Modèle                         | Description                                     | Relations                                                                       |
+| ------------------------------ | ----------------------------------------------- | ------------------------------------------------------------------------------- |
+| **User**                       | Utilisateur (enseignant, admin)                 | Groups, Notifications, Registrations, UserInstitution                           |
+| **Institution**                | Établissement scolaire/association              | Address, UserInstitution, Registrations                                         |
+| **Event**                      | Événement culturel                              | Registrations, EventAccessibility, EventRegistrationBlock, ScoringConfiguration |
+| **EventRegistrationBlock**     | Bloc pédagogique lié à un événement             | Event, RegistrationBlockSelection                                               |
+| **Registration**               | Inscription à un événement                      | User, Institution, Event, RegistrationDisability, RegistrationBlockSelection    |
+| **RegistrationBlockSelection** | Réponse d'une inscription à un bloc pédagogique | Registration, EventRegistrationBlock                                            |
+| **Group**                      | Groupe d'un utilisateur                         | User, GroupDisability                                                           |
+| **Notification**               | Notification in-app                             | User                                                                            |
+| **ScoringConfiguration**       | Config du scoring par événement                 | Event, ScoringCriterion                                                         |
 
 #### Tables de Sécurité
 
-| Table | Description |
-| ------------------------- | ---------------------------------- | ---------------------------------------------- |
-| **SecurityLog** | Journal des événements de sécurité |
-| **RefreshTokenBlacklist** | Tokens invalidés (logout) |
-| **PasswordResetToken** | Tokens de réinitialisation MDP |
-| **PasswordHistory** | Historique des 5 derniers MDP |
-| **AppConfig** | Configuration dynamique de l'appli | Category, Key, Value (labels personnalisables) |
+| Table                     | Description                                                          |
+| ------------------------- | -------------------------------------------------------------------- |
+| **SecurityLog**           | Journal des événements de sécurité                                   |
+| **RefreshTokenBlacklist** | Tokens invalidés (logout)                                            |
+| **PasswordResetToken**    | Tokens de réinitialisation MDP                                       |
+| **PasswordHistory**       | Historique des 5 derniers MDP                                        |
+| **AppConfig**             | Configuration dynamique de l'appli (labels personnalisables par clé) |
+
+#### Blocs pédagogiques d'événement
+
+Les blocs pédagogiques permettent à l'admin d'ajouter plusieurs contenus autour d'un événement :
+formations, ateliers, rencontres ou autres activités. Chaque bloc porte son propre titre, texte
+explicatif, liste de dates, option d'inscription et indicateur obligatoire.
+
+- `EventRegistrationBlock` stocke les blocs configurés sur un événement.
+- `RegistrationBlockSelection` stocke la réponse d'une inscription à un bloc, avec la date choisie.
+- Les champs historiques `Event.has_initial_formation`, `Event.is_formation_mandatory` et
+  `Registration.want_formation` restent en base pour compatibilité et exports.
+- Un événement ancien avec `has_initial_formation = true` mais sans bloc réel est exposé via un
+  bloc synthétique "Formation initiale" par `lib/events/registrationBlocks.ts`.
+- Le serveur refuse une inscription si un bloc obligatoire n'est pas sélectionné ou si la date
+  choisie ne fait pas partie des dates du bloc.
 
 ### 4.3 Configuration Dynamique avec Cache Distribué
 
@@ -636,10 +671,10 @@ npx prisma migrate dev --name <nom_migration>
 # Appliquer les migrations en production
 npx prisma migrate deploy
 
-# Pull des changements de schéma depuis la base de données
+# Introspecter le schéma de base vers Prisma
 npx prisma db pull
 
-# Pusher les changements de schéma vers la base de données
+# Pusher les changements de schéma vers la base de données (dev/staging)
 npx prisma db push
 
 # Générer le client Prisma
@@ -703,6 +738,25 @@ npx prisma db seed
 | GET     | `/api/events/[slug]`               | Détails événement | ✅   |
 | POST    | `/api/events/[slug]/registrations` | S'inscrire        | ✅   |
 
+`GET /api/events/[slug]` renvoie `registrationBlocks` pour la section "Autour du spectacle".
+Les blocs legacy synthétiques ont un id préfixé par `legacy-` et servent uniquement à préserver
+l'affichage des anciennes formations initiales.
+
+`POST /api/events/[slug]/registrations` accepte `registration_block_selections` :
+
+```json
+[
+  {
+    "block_id": "block-id",
+    "wants_to_attend": true,
+    "selected_date": "2026-10-01T10:00:00.000Z"
+  }
+]
+```
+
+Le serveur valide les blocs obligatoires, les dates choisies et l'appartenance des blocs à
+l'événement avant de créer l'inscription.
+
 ### 5.5 Endpoints Institutions
 
 | Méthode | Endpoint                         | Description             | Auth |
@@ -742,6 +796,10 @@ npx prisma db seed
 | POST    | `/api/admin/backups`                     | Créer une sauvegarde    | Admin |
 | POST    | `/api/admin/backups/compare`             | Comparer avec DB        | Admin |
 | POST    | `/api/admin/backups/restore`             | Restaurer sauvegarde    | Admin |
+
+Les payloads `POST /api/admin/events` et `PUT /api/admin/events/[id]` acceptent
+`registrationBlocks`. Les blocs avec `id` sont mis à jour, les blocs sans `id` sont créés, et les
+blocs retirés du formulaire admin sont supprimés.
 
 ### 5.8 Endpoints Cron
 
@@ -1663,6 +1721,10 @@ npx prisma generate
 # 4. Appliquer les migrations
 npx prisma migrate deploy
 
+# Si l'environnement utilise db push au lieu de migrations :
+# appliquer le schéma avant de déployer le code applicatif
+npx prisma db push
+
 # 5. (Optionnel) Seeder la base
 npx prisma db seed
 
@@ -1789,4 +1851,4 @@ tail -f /var/log/opera-platform/app.log
 
 ---
 
-Document généré le 26 février 2026 - Version 1.6.7
+Document mis à jour le 30 juin 2026 - Version 1.7.0

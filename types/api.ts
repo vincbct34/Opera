@@ -299,6 +299,18 @@ export type AdminEvent = {
   is_formation_mandatory?: boolean;
   has_musical_preparation?: boolean;
   accessibility?: { type: Accessibility }[];
+  registrationBlocks?: AdminEventRegistrationBlock[];
+};
+
+export type AdminEventRegistrationBlock = {
+  id?: string;
+  title: string;
+  description?: string | null;
+  dates: string[];
+  enabled?: boolean;
+  registration_enabled?: boolean;
+  mandatory?: boolean;
+  order?: number;
 };
 
 export type AdminEventFormData = Omit<

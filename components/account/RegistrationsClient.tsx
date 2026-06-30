@@ -58,6 +58,16 @@ type RegistrationWithDetails = Registration & {
     type: Accessibility;
     count: number;
   }>;
+  blockSelections?: Array<{
+    id: string;
+    wants_to_attend: boolean;
+    selected_date?: string | null;
+    block: {
+      id: string;
+      title: string;
+      mandatory?: boolean;
+    };
+  }>;
 };
 
 const badgeColor = (status: RegistrationStatus) => {
@@ -844,41 +854,69 @@ export default function RegistrationsClient({
                           </div>
                         )}
 
-                        {/* Want Formation */}
-                        {(isEditing || reg.want_formation) && reg.event?.has_initial_formation && (
+                        {/* Registration blocks */}
+                        {reg.blockSelections && reg.blockSelections.length > 0 && (
                           <div className="flex items-start gap-2">
                             <Award className="w-4 h-4 text-gray-500 mt-0.5 shrink-0" />
                             <div className="w-full">
                               <div className="text-xs uppercase tracking-wide text-gray-500 mb-0.5">
-                                Formation initiale
+                                Autour du spectacle
                               </div>
-                              {isEditing ? (
-                                <label className="flex items-center gap-2 cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    checked={
-                                      editDraft.want_formation ?? reg.want_formation ?? false
-                                    }
-                                    onChange={(e) =>
-                                      setEditDraft((prev) => ({
-                                        ...prev,
-                                        want_formation: e.target.checked,
-                                      }))
-                                    }
-                                    className="w-4 h-4 border-gray-300 rounded text-emerald-600 focus:ring-emerald-500"
-                                  />
-                                  <span className="text-sm text-gray-700">
-                                    Je souhaite bénéficier de la formation
+                              <div className="flex flex-wrap gap-2">
+                                {reg.blockSelections.map((selection) => (
+                                  <span
+                                    key={selection.id}
+                                    className="text-xs px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 font-ibm"
+                                  >
+                                    {selection.wants_to_attend ? 'Oui' : 'Non'} -{' '}
+                                    {selection.block.title}
+                                    {selection.selected_date
+                                      ? ` (${formatDateTime(selection.selected_date)})`
+                                      : ''}
                                   </span>
-                                </label>
-                              ) : (
-                                <div className="text-gray-900">
-                                  {reg.want_formation ? 'Oui' : 'Non'}
-                                </div>
-                              )}
+                                ))}
+                              </div>
                             </div>
                           </div>
                         )}
+
+                        {/* Want Formation */}
+                        {(!reg.blockSelections || reg.blockSelections.length === 0) &&
+                          (isEditing || reg.want_formation) &&
+                          reg.event?.has_initial_formation && (
+                            <div className="flex items-start gap-2">
+                              <Award className="w-4 h-4 text-gray-500 mt-0.5 shrink-0" />
+                              <div className="w-full">
+                                <div className="text-xs uppercase tracking-wide text-gray-500 mb-0.5">
+                                  Formation initiale
+                                </div>
+                                {isEditing ? (
+                                  <label className="flex items-center gap-2 cursor-pointer">
+                                    <input
+                                      type="checkbox"
+                                      checked={
+                                        editDraft.want_formation ?? reg.want_formation ?? false
+                                      }
+                                      onChange={(e) =>
+                                        setEditDraft((prev) => ({
+                                          ...prev,
+                                          want_formation: e.target.checked,
+                                        }))
+                                      }
+                                      className="w-4 h-4 border-gray-300 rounded text-emerald-600 focus:ring-emerald-500"
+                                    />
+                                    <span className="text-sm text-gray-700">
+                                      Je souhaite bénéficier de la formation
+                                    </span>
+                                  </label>
+                                ) : (
+                                  <div className="text-gray-900">
+                                    {reg.want_formation ? 'Oui' : 'Non'}
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          )}
 
                         {/* Want Preparation */}
                         {(isEditing || reg.want_preparation) &&

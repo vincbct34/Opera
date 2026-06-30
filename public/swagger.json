@@ -3,7 +3,7 @@
   "info": {
     "title": "Service culturel - Plateforme web API",
     "description": "API de gestion des inscriptions scolaires aux événements de l'Opéra Orchestre National Montpellier Occitanie.",
-    "version": "1.6.7",
+    "version": "1.7.0",
     "contact": {
       "name": "Service culturel - Plateforme web",
       "url": "https://github.com/vincbct34/service-culturel-plateforme-web"
@@ -389,6 +389,12 @@
           "has_musical_preparation": {
             "type": "boolean"
           },
+          "registrationBlocks": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/EventRegistrationBlock"
+            }
+          },
           "created_at": {
             "type": "string",
             "format": "date-time"
@@ -396,6 +402,68 @@
           "updated_at": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "EventRegistrationBlock": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "event_id": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true
+          },
+          "dates": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "registration_enabled": {
+            "type": "boolean"
+          },
+          "mandatory": {
+            "type": "boolean"
+          },
+          "order": {
+            "type": "integer"
+          }
+        }
+      },
+      "RegistrationBlockSelection": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string"
+          },
+          "registration_id": {
+            "type": "string"
+          },
+          "block_id": {
+            "type": "string"
+          },
+          "wants_to_attend": {
+            "type": "boolean"
+          },
+          "selected_date": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true
+          },
+          "block": {
+            "$ref": "#/components/schemas/EventRegistrationBlock"
           }
         }
       },
@@ -578,6 +646,12 @@
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/Disability"
+            }
+          },
+          "blockSelections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegistrationBlockSelection"
             }
           },
           "created_at": {
@@ -1426,6 +1500,25 @@
                   },
                   "want_preparation": {
                     "type": "boolean"
+                  },
+                  "registration_block_selections": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "block_id": {
+                          "type": "string"
+                        },
+                        "wants_to_attend": {
+                          "type": "boolean"
+                        },
+                        "selected_date": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -3568,6 +3661,12 @@
                   "has_musical_preparation": {
                     "type": "boolean"
                   },
+                  "registrationBlocks": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/EventRegistrationBlock"
+                    }
+                  },
                   "accessibility": {
                     "type": "array",
                     "items": {
@@ -3731,6 +3830,12 @@
                   },
                   "has_musical_preparation": {
                     "type": "boolean"
+                  },
+                  "registrationBlocks": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/EventRegistrationBlock"
+                    }
                   },
                   "accessibility": {
                     "type": "array",

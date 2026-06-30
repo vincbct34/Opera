@@ -48,6 +48,29 @@ interface ExistingRegistration {
   age_ranges?: AgeRange[];
   want_formation?: boolean;
   want_preparation?: boolean;
+  blockSelections?: RegistrationBlockSelection[];
+}
+
+interface EventRegistrationBlock {
+  id: string;
+  title: string;
+  description?: string | null;
+  dates: string[];
+  enabled: boolean;
+  registration_enabled: boolean;
+  mandatory: boolean;
+  order: number;
+}
+
+interface RegistrationBlockSelection {
+  id: string;
+  wants_to_attend: boolean;
+  selected_date?: string | null;
+  block: {
+    id: string;
+    title: string;
+    mandatory?: boolean;
+  };
 }
 
 /**
@@ -97,6 +120,7 @@ export default function UserEventDetailClient({
     has_initial_formation: boolean;
     is_formation_mandatory: boolean;
     has_musical_preparation: boolean;
+    registrationBlocks: EventRegistrationBlock[];
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -127,6 +151,10 @@ export default function UserEventDetailClient({
     grades: [] as SchoolGrade[],
     ageRanges: [] as AgeRange[],
     comments: '',
+    registrationBlockSelections: {} as Record<
+      string,
+      { wantsToAttend: boolean; selectedDate: string }
+    >,
     disabilities: Object.keys(ACCESSIBILITY_LABELS).map((type) => ({
       type: type as Accessibility,
       count: 0,
@@ -141,12 +169,28 @@ export default function UserEventDetailClient({
       const data = await response.json();
       logger.debug('Fetched event data:', data);
       if (response.ok && data.event) {
+        const registrationBlocks = (data.event.registrationBlocks || []).filter(
+          (block: EventRegistrationBlock) => !block.id.startsWith('legacy-'),
+        );
         setEventDates(data.event.event_dates || []);
         setEventInfo({
           has_initial_formation: data.event.has_initial_formation || false,
           is_formation_mandatory: data.event.is_formation_mandatory || false,
           has_musical_preparation: data.event.has_musical_preparation || false,
+          registrationBlocks,
         });
+        const registrationBlockSelections = Object.fromEntries(
+          registrationBlocks
+            .filter((block: EventRegistrationBlock) => block.enabled && block.registration_enabled)
+            .map((block: EventRegistrationBlock) => [
+              block.id,
+              {
+                wantsToAttend: block.mandatory,
+                selectedDate: '',
+              },
+            ]),
+        );
+        setFormData((prev) => ({ ...prev, registrationBlockSelections }));
       }
     } catch (error) {
       logger.error('Error fetching event dates:', error);
@@ -399,6 +443,22 @@ export default function UserEventDetailClient({
       return;
     }
 
+    const registrationBlocks =
+      eventInfo?.registrationBlocks.filter(
+        (block) => block.enabled && block.registration_enabled,
+      ) || [];
+    for (const block of registrationBlocks) {
+      const selection = formData.registrationBlockSelections[block.id];
+      if (block.mandatory && !selection?.wantsToAttend) {
+        toast(`Le bloc "${block.title}" est obligatoire`, 'error');
+        return;
+      }
+      if (selection?.wantsToAttend && block.dates.length > 0 && !selection.selectedDate) {
+        toast(`Veuillez choisir une date pour "${block.title}"`, 'error');
+        return;
+      }
+    }
+
     setSubmitting(true);
 
     try {
@@ -418,6 +478,14 @@ export default function UserEventDetailClient({
           aesh_count: aesh,
           want_formation: formData.wantFormation || null,
           want_preparation: formData.wantPreparation || null,
+          registration_block_selections: registrationBlocks.map((block) => {
+            const selection = formData.registrationBlockSelections[block.id];
+            return {
+              block_id: block.id,
+              wants_to_attend: Boolean(selection?.wantsToAttend),
+              selected_date: selection?.wantsToAttend ? selection.selectedDate || null : null,
+            };
+          }),
           manager_first_name: formData.managerFirstName || null,
           manager_last_name: formData.managerLastName || null,
           manager_email: formData.managerEmail || null,
@@ -549,10 +617,34 @@ export default function UserEventDetailClient({
                   </div>
                 </div>
               ) : null}
-              {(existingRegistration.want_formation !== null &&
-                existingRegistration.want_formation !== undefined) ||
-              (existingRegistration.want_preparation !== null &&
-                existingRegistration.want_preparation !== undefined) ? (
+              {existingRegistration.blockSelections &&
+              existingRegistration.blockSelections.length > 0 ? (
+                <p>
+                  <span className="font-medium">Autour du spectacle :</span>{' '}
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {existingRegistration.blockSelections.map((selection) => (
+                      <span
+                        key={selection.id}
+                        className="text-xs px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 font-ibm inline-block"
+                      >
+                        {selection.wants_to_attend ? '✓' : 'Non'} {selection.block.title}
+                        {selection.selected_date
+                          ? ` - ${new Date(selection.selected_date).toLocaleString('fr-FR', {
+                              day: '2-digit',
+                              month: 'short',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit',
+                            })}`
+                          : ''}
+                      </span>
+                    ))}
+                  </div>
+                </p>
+              ) : (existingRegistration.want_formation !== null &&
+                  existingRegistration.want_formation !== undefined) ||
+                (existingRegistration.want_preparation !== null &&
+                  existingRegistration.want_preparation !== undefined) ? (
                 <p>
                   <span className="font-medium">Autour du spectacle :</span>{' '}
                   <div className="flex flex-wrap gap-2 mt-1">
@@ -1234,7 +1326,9 @@ export default function UserEventDetailClient({
         {/* ============================================ */}
         {/* SECTION 5: AUTOUR DU SPECTACLE */}
         {/* ============================================ */}
-        {(eventInfo?.has_initial_formation || eventInfo?.has_musical_preparation) && (
+        {((eventInfo?.registrationBlocks || []).some((block) => block.enabled) ||
+          eventInfo?.has_initial_formation ||
+          eventInfo?.has_musical_preparation) && (
           <div>
             <h2 className="text-base font-poppins font-semibold text-gray-900 mb-4 flex items-center gap-2">
               <span className="w-6 h-6 bg-blue-600 text-white rounded-none flex items-center justify-center text-sm">
@@ -1245,19 +1339,134 @@ export default function UserEventDetailClient({
             <div className="space-y-4 pl-8">
               <p className="text-xs text-gray-500 font-ibm">
                 Cet événement propose des activités pédagogiques
-                {eventInfo?.has_initial_formation && eventInfo?.is_formation_mandatory
+                {(eventInfo?.registrationBlocks || []).some(
+                  (block) => block.enabled && block.registration_enabled && block.mandatory,
+                ) ||
+                (eventInfo?.has_initial_formation && eventInfo?.is_formation_mandatory)
                   ? ' complémentaires/obligatoires.'
                   : ' complémentaires.'}
               </p>
               <div className="space-y-3">
-                {eventInfo.has_initial_formation && (
+                {(eventInfo?.registrationBlocks || [])
+                  .filter((block) => block.enabled)
+                  .map((block) => {
+                    const selection = formData.registrationBlockSelections[block.id];
+                    return (
+                      <div
+                        key={block.id}
+                        className="p-3 bg-gray-50 border border-gray-200 rounded-none"
+                      >
+                        <div className="space-y-3">
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-sm text-gray-800 font-semibold font-ibm">
+                              {block.title}
+                            </span>
+                            {block.registration_enabled && block.mandatory && (
+                              <span className="px-2 py-0.5 text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300 rounded-none">
+                                Requis
+                              </span>
+                            )}
+                          </div>
+                          {block.description && (
+                            <p className="text-xs text-gray-600 font-ibm whitespace-pre-wrap">
+                              {block.description}
+                            </p>
+                          )}
+                          {block.registration_enabled && (
+                            <>
+                              <div className="flex gap-2">
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      registrationBlockSelections: {
+                                        ...prev.registrationBlockSelections,
+                                        [block.id]: {
+                                          ...prev.registrationBlockSelections[block.id],
+                                          wantsToAttend: true,
+                                        },
+                                      },
+                                    }))
+                                  }
+                                  className={`flex-1 py-2 px-4 text-sm font-medium transition-colors font-ibm ${
+                                    selection?.wantsToAttend
+                                      ? 'bg-blue-600 text-white border border-blue-600'
+                                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                  }`}
+                                >
+                                  OUI
+                                </button>
+                                <button
+                                  type="button"
+                                  disabled={block.mandatory}
+                                  onClick={() =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      registrationBlockSelections: {
+                                        ...prev.registrationBlockSelections,
+                                        [block.id]: {
+                                          ...prev.registrationBlockSelections[block.id],
+                                          wantsToAttend: false,
+                                          selectedDate: '',
+                                        },
+                                      },
+                                    }))
+                                  }
+                                  className={`flex-1 py-2 px-4 text-sm font-medium transition-colors font-ibm disabled:opacity-50 disabled:cursor-not-allowed ${
+                                    !selection?.wantsToAttend
+                                      ? 'bg-blue-600 text-white border border-blue-600'
+                                      : 'bg-white text-gray-700 border border-gray-300 hover:bg-gray-50'
+                                  }`}
+                                >
+                                  NON
+                                </button>
+                              </div>
+                              {selection?.wantsToAttend && block.dates.length > 0 && (
+                                <select
+                                  value={selection.selectedDate}
+                                  onChange={(e) =>
+                                    setFormData((prev) => ({
+                                      ...prev,
+                                      registrationBlockSelections: {
+                                        ...prev.registrationBlockSelections,
+                                        [block.id]: {
+                                          ...prev.registrationBlockSelections[block.id],
+                                          selectedDate: e.target.value,
+                                        },
+                                      },
+                                    }))
+                                  }
+                                  className="w-full p-2 border border-gray-300 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-black font-ibm bg-white"
+                                >
+                                  <option value="">Sélectionner une date</option>
+                                  {block.dates.map((date) => (
+                                    <option key={date} value={date}>
+                                      {new Date(date).toLocaleString('fr-FR', {
+                                        day: '2-digit',
+                                        month: 'long',
+                                        year: 'numeric',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                      })}
+                                    </option>
+                                  ))}
+                                </select>
+                              )}
+                            </>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                {eventInfo?.registrationBlocks.length === 0 && eventInfo?.has_initial_formation && (
                   <div className="p-3 bg-gray-50 border border-gray-200 rounded-none">
                     <div className="space-y-2">
                       <div className="flex items-center justify-between">
                         <span className="text-sm text-gray-700 font-ibm">
                           Pourrez-vous assister à la formation ?
                         </span>
-                        {eventInfo.is_formation_mandatory && (
+                        {eventInfo?.is_formation_mandatory && (
                           <span className="px-2 py-0.5 text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300 rounded-none">
                             Requis
                           </span>
@@ -1288,7 +1497,7 @@ export default function UserEventDetailClient({
                         </button>
                       </div>
                     </div>
-                    {eventInfo.is_formation_mandatory && (
+                    {eventInfo?.is_formation_mandatory && (
                       <p className="text-xs text-amber-700 mt-2 font-ibm">
                         La participation à cette formation est obligatoire pour assister à
                         l&apos;événement. Elle se déroule avant la représentation.
@@ -1296,7 +1505,7 @@ export default function UserEventDetailClient({
                     )}
                   </div>
                 )}
-                {eventInfo.has_musical_preparation && (
+                {eventInfo?.has_musical_preparation && (
                   <div className="p-3 bg-gray-50 border border-gray-200 rounded-none">
                     <div className="space-y-2">
                       <span className="text-sm text-gray-700 font-ibm">
@@ -1354,7 +1563,11 @@ export default function UserEventDetailClient({
         <div>
           <h2 className="text-base font-poppins font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <span className="w-6 h-6 bg-blue-600 text-white rounded-none flex items-center justify-center text-sm">
-              {eventInfo?.has_initial_formation || eventInfo?.has_musical_preparation ? '6' : '5'}
+              {(eventInfo?.registrationBlocks || []).some((block) => block.enabled) ||
+              eventInfo?.has_initial_formation ||
+              eventInfo?.has_musical_preparation
+                ? '6'
+                : '5'}
             </span>
             Informations complémentaires
           </h2>

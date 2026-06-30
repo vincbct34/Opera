@@ -79,6 +79,16 @@ interface RegistrationData {
   age_ranges?: AgeRange[];
   want_formation?: boolean;
   want_preparation?: boolean;
+  blockSelections?: Array<{
+    id: string;
+    wants_to_attend: boolean;
+    selected_date?: string | null;
+    block: {
+      id: string;
+      title: string;
+      mandatory?: boolean;
+    };
+  }>;
 }
 
 interface ScoringConfiguration {

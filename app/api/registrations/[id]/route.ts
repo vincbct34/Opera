@@ -48,6 +48,25 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
               details: true,
             },
           },
+          blockSelections: {
+            select: {
+              id: true,
+              wants_to_attend: true,
+              selected_date: true,
+              block: {
+                select: {
+                  id: true,
+                  title: true,
+                  mandatory: true,
+                },
+              },
+            },
+            orderBy: {
+              block: {
+                order: 'asc',
+              },
+            },
+          },
         },
       });
 

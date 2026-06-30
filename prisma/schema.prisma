@@ -94,32 +94,52 @@ model UserInstitution {
 }
 
 model Event {
-  id                      String                @id @default(cuid())
+  id                      String                   @id @default(cuid())
   title                   String
   description             String?
   type                    EventType[]
   location                String
   duration                Int
   total_seats             Int
-  booked_seats            Int                   @default(0)
-  status                  EventStatus           @default(OPEN)
+  booked_seats            Int                      @default(0)
+  status                  EventStatus              @default(OPEN)
   image_url               String?
-  created_at              DateTime              @default(now())
-  updated_at              DateTime              @updatedAt
+  created_at              DateTime                 @default(now())
+  updated_at              DateTime                 @updatedAt
   event_dates             DateTime[]
   caretaker               Int?
-  has_initial_formation   Boolean               @default(false)
-  has_musical_preparation Boolean               @default(false)
+  has_initial_formation   Boolean                  @default(false)
+  has_musical_preparation Boolean                  @default(false)
   slug                    String?
-  is_formation_mandatory  Boolean               @default(false)
-  manually_edited         Boolean               @default(false)
-  protected_fields        String[]              @default([])
+  is_formation_mandatory  Boolean                  @default(false)
+  manually_edited         Boolean                  @default(false)
+  protected_fields        String[]                 @default([])
   category                PublicCategory[]
-  age_ranges              AgeRange[]            @default([])
-  grades                  SchoolGrade[]         @default([])
+  age_ranges              AgeRange[]               @default([])
+  grades                  SchoolGrade[]            @default([])
   accessibility           EventAccessibility[]
+  registrationBlocks      EventRegistrationBlock[]
   registrations           Registration[]
   scoringConfiguration    ScoringConfiguration?
+}
+
+model EventRegistrationBlock {
+  id                   String                       @id @default(cuid())
+  event_id             String
+  title                String
+  description          String?
+  dates                DateTime[]                   @default([])
+  enabled              Boolean                      @default(true)
+  registration_enabled Boolean                      @default(true)
+  mandatory            Boolean                      @default(false)
+  order                Int                          @default(0)
+  created_at           DateTime                     @default(now())
+  updated_at           DateTime                     @updatedAt
+  event                Event                        @relation(fields: [event_id], references: [id], onDelete: Cascade)
+  selections           RegistrationBlockSelection[]
+
+  @@index([event_id])
+  @@index([order])
 }
 
 model EventAccessibility {
@@ -130,7 +150,7 @@ model EventAccessibility {
 }
 
 model Registration {
-  id                   String                   @id @default(cuid())
+  id                   String                       @id @default(cuid())
   user_id              String
   institution_id       String
   event_id             String
@@ -141,21 +161,37 @@ model Registration {
   manager_phone_number String?
   booked_seats         Int
   comments             String?
-  status               RegistrationStatus       @default(PENDING)
+  status               RegistrationStatus           @default(PENDING)
   was_present_comment  String?
-  created_at           DateTime                 @default(now())
-  updated_at           DateTime                 @updatedAt
+  created_at           DateTime                     @default(now())
+  updated_at           DateTime                     @updatedAt
   caretaker_count      Int?
   aesh_count           Int?
   want_formation       Boolean?
   want_preparation     Boolean?
   category             PublicCategory[]
-  age_ranges           AgeRange[]               @default([])
-  grades               SchoolGrade[]            @default([])
-  event                Event                    @relation(fields: [event_id], references: [id])
-  institution          Institution              @relation(fields: [institution_id], references: [id])
-  user                 User                     @relation(fields: [user_id], references: [id])
+  age_ranges           AgeRange[]                   @default([])
+  grades               SchoolGrade[]                @default([])
+  event                Event                        @relation(fields: [event_id], references: [id])
+  institution          Institution                  @relation(fields: [institution_id], references: [id])
+  user                 User                         @relation(fields: [user_id], references: [id])
+  blockSelections      RegistrationBlockSelection[]
   disabilities         RegistrationDisability[]
+}
+
+model RegistrationBlockSelection {
+  id              String                 @id @default(cuid())
+  registration_id String
+  block_id        String
+  wants_to_attend Boolean
+  selected_date   DateTime?
+  created_at      DateTime               @default(now())
+  updated_at      DateTime               @updatedAt
+  registration    Registration           @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+  block           EventRegistrationBlock @relation(fields: [block_id], references: [id], onDelete: Cascade)
+
+  @@unique([registration_id, block_id])
+  @@index([block_id])
 }
 
 model RegistrationDisability {

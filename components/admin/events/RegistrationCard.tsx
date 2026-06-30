@@ -74,6 +74,16 @@ interface RegistrationData {
   age_ranges?: AgeRange[];
   want_formation?: boolean;
   want_preparation?: boolean;
+  blockSelections?: Array<{
+    id: string;
+    wants_to_attend: boolean;
+    selected_date?: string | null;
+    block: {
+      id: string;
+      title: string;
+      mandatory?: boolean;
+    };
+  }>;
 }
 
 interface RegistrationCardProps {
@@ -530,9 +540,33 @@ export default function RegistrationCard({
             ) : null}
 
             {/* Formation and Preparation flags */}
-            {(registration.want_formation !== null && registration.want_formation !== undefined) ||
-            (registration.want_preparation !== null &&
-              registration.want_preparation !== undefined) ? (
+            {registration.blockSelections && registration.blockSelections.length > 0 ? (
+              <div>
+                <p className="text-xs text-gray-500 mb-1 font-ibm">Autour du spectacle</p>
+                <div className="flex flex-wrap gap-2">
+                  {registration.blockSelections.map((selection) => (
+                    <span
+                      key={selection.id}
+                      className="text-xs px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 font-ibm"
+                    >
+                      {selection.wants_to_attend ? '✓' : 'Non'} {selection.block.title}
+                      {selection.selected_date
+                        ? ` - ${new Date(selection.selected_date).toLocaleString('fr-FR', {
+                            day: '2-digit',
+                            month: 'short',
+                            year: 'numeric',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}`
+                        : ''}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ) : (registration.want_formation !== null &&
+                registration.want_formation !== undefined) ||
+              (registration.want_preparation !== null &&
+                registration.want_preparation !== undefined) ? (
               <div>
                 <p className="text-xs text-gray-500 mb-1 font-ibm">Autour du spectacle</p>
                 <div className="flex flex-wrap gap-2">

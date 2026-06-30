@@ -65,6 +65,25 @@ export async function GET(req: NextRequest, context: { params: Promise<{ slug: s
           age_ranges: true,
           want_formation: true,
           want_preparation: true,
+          blockSelections: {
+            select: {
+              id: true,
+              wants_to_attend: true,
+              selected_date: true,
+              block: {
+                select: {
+                  id: true,
+                  title: true,
+                  mandatory: true,
+                },
+              },
+            },
+            orderBy: {
+              block: {
+                order: 'asc',
+              },
+            },
+          },
           institution: {
             select: {
               id: true,

@@ -39,6 +39,9 @@ jest.mock('@/lib/middleware/prismaConfig', () => ({
       count: jest.fn(),
       create: jest.fn(),
     },
+    registrationBlockSelection: {
+      createMany: jest.fn(),
+    },
     userInstitution: {
       findFirst: jest.fn(),
     },
@@ -115,7 +118,9 @@ describe('Events API', () => {
     event_dates: [new Date()],
     accessibility: [],
     has_initial_formation: true,
+    is_formation_mandatory: false,
     has_musical_preparation: true,
+    registrationBlocks: [],
   };
 
   beforeEach(() => {
@@ -194,6 +199,42 @@ describe('Events API', () => {
 
       expect(res.status).toBe(201);
       expect(data.registration.id).toBe('reg-1');
+    });
+
+    it('should reject registration when a mandatory block is not selected', async () => {
+      const mandatoryBlockEvent = {
+        ...mockEvent,
+        registrationBlocks: [
+          {
+            id: 'block-1',
+            title: 'Atelier obligatoire',
+            dates: [new Date('2026-10-01T10:00:00.000Z')],
+            registration_enabled: true,
+            mandatory: true,
+            order: 0,
+          },
+        ],
+      };
+
+      (prisma.event.findFirst as unknown as jest.Mock<any>).mockResolvedValue(mandatoryBlockEvent);
+      (prisma.userInstitution.findFirst as unknown as jest.Mock<any>).mockResolvedValue({
+        id: 'ui-1',
+      });
+
+      const req = createMockRequest(`http://localhost/api/events/${mockEvent.slug}/registrations`, {
+        method: 'POST',
+        body: validRegistrationData,
+        user: { id: 'user-1', role: Role.USER },
+      });
+
+      const res = await CreateRegistration(req, {
+        params: Promise.resolve({ slug: mockEvent.slug }),
+      });
+      const data = await res.json();
+
+      expect(res.status).toBe(400);
+      expect(data.error).toContain('obligatoire');
+      expect(prisma.registration.create).not.toHaveBeenCalled();
     });
 
     it('should return 403 if user not in institution', async () => {

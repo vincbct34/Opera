@@ -14,6 +14,21 @@ import {
   SchoolGrade,
   AgeRange,
 } from '@/app/generated/prisma/enums';
+import {
+  getRegistrationBlocksWithLegacyFallback,
+  serializeRegistrationBlock,
+} from '@/lib/events/registrationBlocks';
+
+const RegistrationBlockSchema = z.object({
+  id: z.string().optional(),
+  title: z.string().min(1, 'Le titre du bloc est requis'),
+  description: z.string().optional().nullable(),
+  dates: z.array(z.string().datetime()).optional(),
+  enabled: z.boolean().optional(),
+  registration_enabled: z.boolean().optional(),
+  mandatory: z.boolean().optional(),
+  order: z.number().int().min(0).optional(),
+});
 
 // Validation schema for creating/updating events
 const EventSchema = z.object({
@@ -33,6 +48,7 @@ const EventSchema = z.object({
   is_formation_mandatory: z.boolean().optional(),
   has_musical_preparation: z.boolean().optional(),
   accessibility: z.array(z.string()).optional(), // We'll handle mapping to Accessibility enum manually if needed
+  registrationBlocks: z.array(RegistrationBlockSchema).optional(),
 });
 
 /**
@@ -52,13 +68,23 @@ export async function GET(req: NextRequest) {
         orderBy: { event_dates: 'asc' },
         include: {
           accessibility: true,
+          registrationBlocks: {
+            orderBy: { order: 'asc' },
+          },
           _count: {
             select: { registrations: true },
           },
         },
       });
 
-      return NextResponse.json({ events });
+      return NextResponse.json({
+        events: events.map((event) => ({
+          ...event,
+          registrationBlocks: getRegistrationBlocksWithLegacyFallback(event).map(
+            serializeRegistrationBlock,
+          ),
+        })),
+      });
     } catch (error) {
       logger.error('Error listing events:', ...sanitizeLogArgs(error));
       return NextResponse.json(
@@ -82,6 +108,12 @@ export async function POST(req: NextRequest) {
 
       // Basic validation
       const validatedData = EventSchema.parse(body);
+      const registrationBlocks = validatedData.registrationBlocks ?? [];
+      const hasRegistrationBlocks = registrationBlocks.some((block) => block.enabled !== false);
+      const hasMandatoryRegistrationBlock = registrationBlocks.some(
+        (block) =>
+          block.enabled !== false && block.registration_enabled !== false && block.mandatory,
+      );
 
       // Create event
       const event = await prisma.event.create({
@@ -98,14 +130,33 @@ export async function POST(req: NextRequest) {
           category: validatedData.category || [],
           grades: validatedData.grades || [],
           age_ranges: validatedData.age_ranges || [],
-          has_initial_formation: validatedData.has_initial_formation || false,
-          is_formation_mandatory: validatedData.is_formation_mandatory || false,
+          has_initial_formation:
+            hasRegistrationBlocks || validatedData.has_initial_formation || false,
+          is_formation_mandatory:
+            hasMandatoryRegistrationBlock || validatedData.is_formation_mandatory || false,
           has_musical_preparation: validatedData.has_musical_preparation || false,
           // Handle accessibility if provided
           accessibility: {
             create: (body.accessibility || []).map((type: string) => ({
               type: type as Accessibility, // Cast to Accessibility enum
             })),
+          },
+          registrationBlocks: {
+            create: registrationBlocks.map((block, index) => ({
+              title: block.title,
+              description: sanitizeRichText(block.description) || null,
+              dates: (block.dates || []).map((date) => new Date(date)),
+              enabled: block.enabled ?? true,
+              registration_enabled: block.registration_enabled ?? true,
+              mandatory: block.mandatory ?? false,
+              order: block.order ?? index,
+            })),
+          },
+        },
+        include: {
+          accessibility: true,
+          registrationBlocks: {
+            orderBy: { order: 'asc' },
           },
         },
       });

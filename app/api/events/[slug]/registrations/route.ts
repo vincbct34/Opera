@@ -80,6 +80,26 @@ export async function GET(req: NextRequest, context: { params: Promise<{ slug: s
             age_ranges: true,
             want_formation: true,
             want_preparation: true,
+            blockSelections: {
+              select: {
+                id: true,
+                wants_to_attend: true,
+                selected_date: true,
+                block: {
+                  select: {
+                    id: true,
+                    title: true,
+                    mandatory: true,
+                    registration_enabled: true,
+                  },
+                },
+              },
+              orderBy: {
+                block: {
+                  order: 'asc',
+                },
+              },
+            },
             user: {
               select: {
                 id: true,
@@ -318,7 +338,20 @@ export async function POST(req: NextRequest, context: { params: Promise<{ slug: 
           total_seats: true,
           booked_seats: true,
           has_initial_formation: true,
+          is_formation_mandatory: true,
           has_musical_preparation: true,
+          registrationBlocks: {
+            where: { enabled: true },
+            select: {
+              id: true,
+              title: true,
+              dates: true,
+              registration_enabled: true,
+              mandatory: true,
+              order: true,
+            },
+            orderBy: { order: 'asc' },
+          },
           title: true,
           image_url: true,
           location: true,
@@ -337,7 +370,20 @@ export async function POST(req: NextRequest, context: { params: Promise<{ slug: 
             total_seats: true,
             booked_seats: true,
             has_initial_formation: true,
+            is_formation_mandatory: true,
             has_musical_preparation: true,
+            registrationBlocks: {
+              where: { enabled: true },
+              select: {
+                id: true,
+                title: true,
+                dates: true,
+                registration_enabled: true,
+                mandatory: true,
+                order: true,
+              },
+              orderBy: { order: 'asc' },
+            },
             title: true,
             image_url: true,
             location: true,
@@ -374,6 +420,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ slug: 
         disabilities,
         want_formation,
         want_preparation,
+        registration_block_selections,
       } = body;
 
       // Validate required fields
@@ -428,6 +475,73 @@ export async function POST(req: NextRequest, context: { params: Promise<{ slug: 
         );
       }
 
+      const registrationBlockSelections = Array.isArray(registration_block_selections)
+        ? (registration_block_selections as Array<{
+            block_id?: string;
+            wants_to_attend?: boolean;
+            selected_date?: string | null;
+          }>)
+        : [];
+      const eventRegistrationBlocks = event.registrationBlocks || [];
+      const blocksById = new Map(eventRegistrationBlocks.map((block) => [block.id, block]));
+      const selectionsByBlockId = new Map(
+        registrationBlockSelections
+          .filter((selection) => typeof selection.block_id === 'string')
+          .map((selection) => [selection.block_id as string, selection]),
+      );
+      const datesMatch = (selectedDate: string | null | undefined, dates: Date[]) => {
+        if (!selectedDate) return dates.length === 0;
+        const selectedTime = new Date(selectedDate).getTime();
+        return dates.some((date) => date.getTime() === selectedTime);
+      };
+
+      for (const selection of registrationBlockSelections) {
+        if (!selection.block_id || typeof selection.wants_to_attend !== 'boolean') {
+          return NextResponse.json(
+            { error: 'Réponse de bloc pédagogique invalide' },
+            { status: 400 },
+          );
+        }
+
+        const block = blocksById.get(selection.block_id);
+        if (!block || !block.registration_enabled) {
+          return NextResponse.json(
+            { error: "Ce bloc pédagogique n'accepte pas d'inscription" },
+            { status: 400 },
+          );
+        }
+
+        if (
+          selection.wants_to_attend &&
+          block.dates.length > 0 &&
+          !datesMatch(selection.selected_date, block.dates)
+        ) {
+          return NextResponse.json(
+            { error: `Veuillez choisir une date valide pour "${block.title}"` },
+            { status: 400 },
+          );
+        }
+      }
+
+      for (const block of eventRegistrationBlocks) {
+        if (!block.registration_enabled || !block.mandatory) continue;
+
+        const selection = selectionsByBlockId.get(block.id);
+        if (!selection?.wants_to_attend) {
+          return NextResponse.json(
+            { error: `Le bloc "${block.title}" est obligatoire` },
+            { status: 400 },
+          );
+        }
+
+        if (block.dates.length > 0 && !datesMatch(selection.selected_date, block.dates)) {
+          return NextResponse.json(
+            { error: `Veuillez choisir une date valide pour "${block.title}"` },
+            { status: 400 },
+          );
+        }
+      }
+
       // Check available seats
       const availableSeats = (event.total_seats || 0) - (event.booked_seats || 0);
       if (booked_seats > availableSeats) {
@@ -475,6 +589,24 @@ export async function POST(req: NextRequest, context: { params: Promise<{ slug: 
             }),
           ),
         );
+      }
+
+      const selectionsToCreate = registrationBlockSelections.filter((selection) =>
+        selection.block_id ? blocksById.has(selection.block_id) : false,
+      );
+
+      if (selectionsToCreate.length > 0) {
+        await prisma.registrationBlockSelection.createMany({
+          data: selectionsToCreate.map((selection) => ({
+            registration_id: registration.id,
+            block_id: selection.block_id!,
+            wants_to_attend: Boolean(selection.wants_to_attend),
+            selected_date:
+              selection.wants_to_attend && selection.selected_date
+                ? new Date(selection.selected_date)
+                : null,
+          })),
+        });
       }
 
       // NOTE: Ne pas incrémenter booked_seats ici car l'inscription est PENDING

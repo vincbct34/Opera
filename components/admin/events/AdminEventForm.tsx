@@ -35,8 +35,20 @@ const PROTECTABLE_FIELDS = [
   { key: 'image_url', label: "URL de l'image" },
   { key: 'event_dates', label: "Dates de l'événement" },
   { key: 'has_initial_formation', label: 'Formation initiale' },
+  { key: 'registrationBlocks', label: 'Blocs pédagogiques' },
   { key: 'has_musical_preparation', label: 'Préparation musicale' },
 ] as const;
+
+type LocalRegistrationBlock = {
+  id?: string;
+  title: string;
+  description: string;
+  dates: string[];
+  enabled: boolean;
+  registration_enabled: boolean;
+  mandatory: boolean;
+  order: number;
+};
 
 interface AdminEventFormProps {
   initialData?: Partial<AdminEventFormData>;
@@ -102,6 +114,32 @@ export default function AdminEventForm({
     return date.toISOString();
   };
 
+  const initialRegistrationBlocks: LocalRegistrationBlock[] =
+    initialData?.registrationBlocks && initialData.registrationBlocks.length > 0
+      ? initialData.registrationBlocks.map((block, index) => ({
+          id: block.id,
+          title: block.title,
+          description: block.description ?? '',
+          dates: (block.dates || []).map((date) => utcToDatetimeLocal(date)),
+          enabled: block.enabled ?? true,
+          registration_enabled: block.registration_enabled ?? true,
+          mandatory: block.mandatory ?? false,
+          order: block.order ?? index,
+        }))
+      : initialData?.has_initial_formation
+        ? [
+            {
+              title: 'Formation initiale',
+              description: '',
+              dates: [],
+              enabled: true,
+              registration_enabled: true,
+              mandatory: initialData.is_formation_mandatory ?? false,
+              order: 0,
+            },
+          ]
+        : [];
+
   const [formData, setFormData] = useState({
     title: initialData?.title ?? '',
     description: initialData?.description ?? '',
@@ -120,6 +158,7 @@ export default function AdminEventForm({
     has_initial_formation: initialData?.has_initial_formation ?? false,
     is_formation_mandatory: initialData?.is_formation_mandatory ?? false,
     has_musical_preparation: initialData?.has_musical_preparation ?? false,
+    registrationBlocks: initialRegistrationBlocks,
     accessibility: initialData?.accessibility
       ? (initialData.accessibility as Array<{ type: Accessibility } | Accessibility>).map((a) =>
           typeof a === 'string' ? a : a.type,
@@ -132,6 +171,15 @@ export default function AdminEventForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    const registrationBlocks = formData.registrationBlocks.map((block, index) => ({
+      ...block,
+      order: index,
+      dates: block.dates.map((date) => datetimeLocalToUtc(date)),
+    }));
+    const hasRegistrationBlocks = registrationBlocks.some((block) => block.enabled);
+    const hasMandatoryRegistrationBlock = registrationBlocks.some(
+      (block) => block.enabled && block.registration_enabled && block.mandatory,
+    );
     // Convert dates back to ISO strings if needed, but the API expects ISO strings
     // The datetime-local input gives 'YYYY-MM-DDTHH:mm'
     const payload: AdminEventFormData = {
@@ -142,6 +190,9 @@ export default function AdminEventForm({
       age_ranges: formData.age_ranges as AgeRange[],
       accessibility: formData.accessibility,
       event_dates: formData.event_dates.map((d) => datetimeLocalToUtc(d)),
+      has_initial_formation: hasRegistrationBlocks,
+      is_formation_mandatory: hasMandatoryRegistrationBlock,
+      registrationBlocks,
       protected_fields: formData.protected_fields,
     };
     onSubmit(payload);
@@ -167,6 +218,81 @@ export default function AdminEventForm({
     const newDates = [...formData.event_dates];
     newDates[index] = value;
     setFormData((prev) => ({ ...prev, event_dates: newDates }));
+  };
+
+  const addRegistrationBlock = () => {
+    setFormData((prev) => ({
+      ...prev,
+      registrationBlocks: [
+        ...prev.registrationBlocks,
+        {
+          title: 'Formation initiale',
+          description: '',
+          dates: [],
+          enabled: true,
+          registration_enabled: true,
+          mandatory: false,
+          order: prev.registrationBlocks.length,
+        },
+      ],
+    }));
+  };
+
+  const updateRegistrationBlock = (index: number, updates: Partial<LocalRegistrationBlock>) => {
+    setFormData((prev) => ({
+      ...prev,
+      registrationBlocks: prev.registrationBlocks.map((block, blockIndex) =>
+        blockIndex === index ? { ...block, ...updates } : block,
+      ),
+    }));
+  };
+
+  const removeRegistrationBlock = (index: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      registrationBlocks: prev.registrationBlocks.filter((_, blockIndex) => blockIndex !== index),
+    }));
+  };
+
+  const addRegistrationBlockDate = (index: number) => {
+    const now = new Date();
+    const datetimeLocal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    setFormData((prev) => ({
+      ...prev,
+      registrationBlocks: prev.registrationBlocks.map((block, blockIndex) =>
+        blockIndex === index ? { ...block, dates: [...block.dates, datetimeLocal] } : block,
+      ),
+    }));
+  };
+
+  const updateRegistrationBlockDate = (blockIndex: number, dateIndex: number, value: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      registrationBlocks: prev.registrationBlocks.map((block, currentBlockIndex) =>
+        currentBlockIndex === blockIndex
+          ? {
+              ...block,
+              dates: block.dates.map((date, currentDateIndex) =>
+                currentDateIndex === dateIndex ? value : date,
+              ),
+            }
+          : block,
+      ),
+    }));
+  };
+
+  const removeRegistrationBlockDate = (blockIndex: number, dateIndex: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      registrationBlocks: prev.registrationBlocks.map((block, currentBlockIndex) =>
+        currentBlockIndex === blockIndex
+          ? {
+              ...block,
+              dates: block.dates.filter((_, currentDateIndex) => currentDateIndex !== dateIndex),
+            }
+          : block,
+      ),
+    }));
   };
 
   const typeOptions = Object.values(EventType).map((t) => ({
@@ -334,36 +460,6 @@ export default function AdminEventForm({
             <label className="flex items-center gap-2 cursor-pointer">
               <input
                 type="checkbox"
-                checked={formData.has_initial_formation}
-                onChange={(e) =>
-                  setFormData({
-                    ...formData,
-                    has_initial_formation: e.target.checked,
-                    is_formation_mandatory: e.target.checked
-                      ? formData.is_formation_mandatory
-                      : false,
-                  })
-                }
-                className="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
-              />
-              <span className="text-sm text-gray-700">Formation initiale disponible</span>
-            </label>
-            {formData.has_initial_formation && (
-              <label className="flex items-center gap-2 cursor-pointer ml-6">
-                <input
-                  type="checkbox"
-                  checked={formData.is_formation_mandatory}
-                  onChange={(e) =>
-                    setFormData({ ...formData, is_formation_mandatory: e.target.checked })
-                  }
-                  className="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
-                />
-                <span className="text-sm text-gray-700">Formation obligatoire</span>
-              </label>
-            )}
-            <label className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="checkbox"
                 checked={formData.has_musical_preparation}
                 onChange={(e) =>
                   setFormData({ ...formData, has_musical_preparation: e.target.checked })
@@ -411,6 +507,151 @@ export default function AdminEventForm({
           ))}
           {formData.event_dates.length === 0 && (
             <p className="text-sm text-gray-500 italic">Aucune date définie.</p>
+          )}
+        </div>
+      </div>
+
+      <div className="border-t border-gray-200 pt-4">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="text-sm font-semibold text-gray-900">Blocs pédagogiques</h3>
+            <p className="text-xs text-gray-500 mt-1">
+              Ajoutez des formations, ateliers ou autres activités associées à cet événement.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={addRegistrationBlock}
+            className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+          >
+            <Plus size={16} /> Ajouter un bloc
+          </button>
+        </div>
+
+        <div className="space-y-4">
+          {formData.registrationBlocks.map((block, blockIndex) => (
+            <div key={block.id || blockIndex} className="border border-gray-200 p-4 bg-gray-50">
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div className="flex flex-wrap gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={block.enabled}
+                      onChange={(e) =>
+                        updateRegistrationBlock(blockIndex, { enabled: e.target.checked })
+                      }
+                      className="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+                    />
+                    <span className="text-sm text-gray-700">Afficher le bloc</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={block.registration_enabled}
+                      onChange={(e) =>
+                        updateRegistrationBlock(blockIndex, {
+                          registration_enabled: e.target.checked,
+                          mandatory: e.target.checked ? block.mandatory : false,
+                        })
+                      }
+                      className="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+                    />
+                    <span className="text-sm text-gray-700">Inscription possible</span>
+                  </label>
+                  {block.registration_enabled && (
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={block.mandatory}
+                        onChange={(e) =>
+                          updateRegistrationBlock(blockIndex, { mandatory: e.target.checked })
+                        }
+                        className="w-4 h-4 text-black border-gray-300 rounded focus:ring-black"
+                      />
+                      <span className="text-sm text-gray-700">Obligatoire</span>
+                    </label>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeRegistrationBlock(blockIndex)}
+                  className="p-2 text-red-600 hover:bg-red-50 transition-colors"
+                  title="Supprimer le bloc"
+                >
+                  <X size={20} />
+                </button>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Titre</label>
+                  <input
+                    required
+                    type="text"
+                    value={block.title}
+                    onChange={(e) => updateRegistrationBlock(blockIndex, { title: e.target.value })}
+                    className="w-full p-2 border border-gray-300 rounded-none focus:outline-none focus:ring-2 focus:ring-black bg-white"
+                    placeholder="Formation initiale, Atelier..."
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Texte explicatif
+                  </label>
+                  <textarea
+                    value={block.description}
+                    onChange={(e) =>
+                      updateRegistrationBlock(blockIndex, { description: e.target.value })
+                    }
+                    className="w-full min-h-24 p-2 border border-gray-300 rounded-none focus:outline-none focus:ring-2 focus:ring-black bg-white"
+                    placeholder="Informations utiles pour les inscrits..."
+                  />
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-sm font-medium text-gray-700">Dates du bloc</label>
+                  <button
+                    type="button"
+                    onClick={() => addRegistrationBlockDate(blockIndex)}
+                    className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
+                  >
+                    <Plus size={16} /> Ajouter une date
+                  </button>
+                </div>
+                <div className="space-y-2">
+                  {block.dates.map((date, dateIndex) => (
+                    <div key={`${blockIndex}-${dateIndex}`} className="flex gap-2">
+                      <input
+                        type="datetime-local"
+                        value={date}
+                        onChange={(e) =>
+                          updateRegistrationBlockDate(blockIndex, dateIndex, e.target.value)
+                        }
+                        className="flex-1 p-2 border border-gray-300 rounded-none focus:outline-none focus:ring-2 focus:ring-black bg-white"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeRegistrationBlockDate(blockIndex, dateIndex)}
+                        className="p-2 text-red-600 hover:bg-red-50 transition-colors"
+                        title="Supprimer"
+                      >
+                        <X size={20} />
+                      </button>
+                    </div>
+                  ))}
+                  {block.dates.length === 0 && (
+                    <p className="text-sm text-gray-500 italic">
+                      Aucune date définie pour ce bloc.
+                    </p>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+          {formData.registrationBlocks.length === 0 && (
+            <p className="text-sm text-gray-500 italic">Aucun bloc pédagogique défini.</p>
           )}
         </div>
       </div>

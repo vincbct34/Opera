@@ -3,6 +3,10 @@ import prisma from '@/lib/middleware/prismaConfig';
 import { logger } from '@/lib/middleware/logger';
 import { sanitizeLogArgs } from '@/lib/security/logSanitization';
 import type { Accessibility } from '@/app/generated/prisma/enums';
+import {
+  getRegistrationBlocksWithLegacyFallback,
+  serializeRegistrationBlock,
+} from '@/lib/events/registrationBlocks';
 
 /**
  * GET /api/events/[slug]
@@ -18,14 +22,24 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
     // Try to find event by slug first, fallback to ID for backwards compatibility
     let event = await prisma.event.findFirst({
       where: { slug },
-      include: { accessibility: true },
+      include: {
+        accessibility: true,
+        registrationBlocks: {
+          orderBy: { order: 'asc' },
+        },
+      },
     });
 
     // Fallback: if no event found by slug, try by ID (for backwards compatibility)
     if (!event) {
       event = await prisma.event.findUnique({
         where: { id: slug },
-        include: { accessibility: true },
+        include: {
+          accessibility: true,
+          registrationBlocks: {
+            orderBy: { order: 'asc' },
+          },
+        },
       });
     }
 
@@ -55,6 +69,9 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
       has_initial_formation: event.has_initial_formation,
       is_formation_mandatory: event.is_formation_mandatory,
       has_musical_preparation: event.has_musical_preparation,
+      registrationBlocks: getRegistrationBlocksWithLegacyFallback(event).map(
+        serializeRegistrationBlock,
+      ),
     };
 
     return NextResponse.json({ success: true, event: payload });

@@ -6,11 +6,22 @@ All notable changes to the Opéra de Montpellier Registration Platform will be d
 
 ### Added
 
+- **Event Pedagogical Registration Blocks**: Admins can configure multiple reusable blocks around an event
+  - Blocks support custom title, explanatory text, one or more dates, visibility, registration enabled/disabled, and mandatory participation
+  - New Prisma models `EventRegistrationBlock` and `RegistrationBlockSelection`
+  - Public registration form now stores per-block answers and selected block dates
+  - Admin, account, event registration, and Excel export views display block answers
+  - Legacy `has_initial_formation` / `want_formation` data remains supported through a fallback "Formation initiale" block
+
 - **Rich Text Event Descriptions**: Admin event descriptions now use a restricted rich text editor
   - Supports bold, italic, underline, unordered/ordered lists, links, and clearing formatting
   - Stores descriptions as sanitized HTML in the existing `Event.description` field
   - Public event cards render plain-text previews while detail pages render sanitized rich text
   - Added `lib/richText.ts`, `components/ui/RichTextEditor.tsx`, and `components/events/EventDescription.tsx`
+
+### Deployment Notes
+
+- Apply the database schema before deploying the app code for the pedagogical blocks feature. The change is additive, but the new code reads the new relations from event and registration endpoints.
 
 ### Fixed
 
