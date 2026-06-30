@@ -629,7 +629,6 @@ describe('eventsScraper (API mode)', () => {
     const { scrapeEvents } = require('@/lib/cron/eventsScraper');
     const events = await scrapeEvents();
     expect(Array.isArray(events)).toBe(true);
-
   });
 
   test('scrapeEvents switches to next academic year on June 10', async () => {

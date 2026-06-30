@@ -133,8 +133,7 @@ export class HolidaysService {
 
     const seasonStartYear = getAcademicSeasonStartYear(now);
     const toussaintEnd = holidays.toussaint?.end || new Date(seasonStartYear, 10, 7); // ~Nov 7th default
-    const christmasEnd =
-      holidays.christmas?.end || new Date(seasonStartYear + 1, 0, 6); // ~Jan 6th default
+    const christmasEnd = holidays.christmas?.end || new Date(seasonStartYear + 1, 0, 6); // ~Jan 6th default
 
     // Logic:
     // 1. June 10 -> Toussaint End: Open until Toussaint End
