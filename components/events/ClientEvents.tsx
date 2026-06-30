@@ -1,7 +1,9 @@
 'use client';
 
 import Image from 'next/image';
+import type { StaticImageData } from 'next/image';
 import dynamic from 'next/dynamic';
+import LocalEventPlaceholderImage from '@/assets/hero.jpg';
 import MultiSelect from '@/components/ui/MultiSelect';
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { Calendar, List } from '@deemlol/next-icons';
@@ -32,7 +34,7 @@ const CalendarView = dynamic(() => import('./CalendarView'), {
   ),
 });
 
-const EVENT_PLACEHOLDER_IMAGE =
+const REMOTE_EVENT_PLACEHOLDER_IMAGE =
   'https://www.opera-orchestre-montpellier.fr/wp-content/uploads/2023/03/MG1_7857-1920x1280.jpg';
 
 // ============================================================================
@@ -118,6 +120,7 @@ export default function ClientEvents({
    * by pre-filtering events to their target audience (based on institution type).
    */
   const [selectedPublicType, setSelectedPublicType] = useState<string[]>([]);
+  const [failedImageSources, setFailedImageSources] = useState<Set<string>>(() => new Set());
 
   // Auto-populate the public type filter based on user's institution type
   const hasAutoSelected = useRef(false);
@@ -299,181 +302,213 @@ export default function ClientEvents({
     return d.toLocaleString('fr-FR', { dateStyle: 'short', timeStyle: 'short' });
   };
 
+  const markImageSourceAsFailed = useCallback((src: string) => {
+    setFailedImageSources((previous) => {
+      if (previous.has(src)) return previous;
+
+      const next = new Set(previous);
+      next.add(src);
+      return next;
+    });
+  }, []);
+
+  const getEventImageSource = (imageUrl?: string | null): string | StaticImageData => {
+    if (imageUrl && !failedImageSources.has(imageUrl)) {
+      return imageUrl;
+    }
+
+    if (!failedImageSources.has(REMOTE_EVENT_PLACEHOLDER_IMAGE)) {
+      return REMOTE_EVENT_PLACEHOLDER_IMAGE;
+    }
+
+    return LocalEventPlaceholderImage;
+  };
+
   // Function to render an event card
-  const renderEventCard = (ev: EventData, isPast = false, index = 0) => (
-    <article
-      key={ev.id}
-      className={`overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white ${
-        isPast ? 'opacity-60 grayscale-30' : ''
-      }`}
-    >
-      <div className="relative h-40 sm:h-44 bg-gray-100">
-        <Image
-          src={ev.image_url || EVENT_PLACEHOLDER_IMAGE}
-          alt={ev.image_url ? ev.title : ''}
-          fill
-          className="object-cover"
-          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-          priority={!isPast && index < 3}
-        />
-      </div>
-      <div className="p-3 sm:p-4">
-        <h3
-          className={`font-poppins font-semibold text-base sm:text-lg mb-1 ${isPast ? 'text-gray-600' : ''}`}
-        >
-          {ev.title}
-        </h3>
+  const renderEventCard = (ev: EventData, isPast = false, index = 0) => {
+    const imageSource = getEventImageSource(ev.image_url);
+    const imageAlt = imageSource === ev.image_url ? ev.title : '';
 
-        {/* Pastilles de catégorie de public */}
-        {ev.category && ev.category.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-1">
-            {[...ev.category]
-              .sort((a, b) => PUBLIC_CATEGORY_ORDER.indexOf(a) - PUBLIC_CATEGORY_ORDER.indexOf(b))
-              .map((publicCategory) => (
-                <span
-                  key={publicCategory}
-                  className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 text-[10px] sm:text-xs font-medium text-black bg-white border border-black rounded-full"
-                  title={PUBLIC_CATEGORY_LABELS[publicCategory] || publicCategory}
-                >
-                  {PUBLIC_CATEGORY_ACRONYMS[publicCategory]}
-                </span>
-              ))}
-          </div>
-        )}
-
-        {/* Pastilles de niveaux scolaires */}
-        {ev.grades && ev.grades.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-1">
-            {[...ev.grades]
-              .sort((a, b) => SCHOOL_GRADE_ORDER.indexOf(a) - SCHOOL_GRADE_ORDER.indexOf(b))
-              .map((grade) => (
-                <span
-                  key={grade}
-                  className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 text-[10px] sm:text-xs font-medium text-white bg-black border border-black rounded-full"
-                  title={SCHOOL_GRADE_LABELS[grade] || grade}
-                >
-                  {SCHOOL_GRADE_ACRONYMS[grade] || grade}
-                </span>
-              ))}
-          </div>
-        )}
-
-        {/* Pastilles de tranches d'âge */}
-        {ev.age_ranges && ev.age_ranges.length > 0 && (
-          <div className="flex flex-wrap gap-1.5 mb-2">
-            {[...ev.age_ranges]
-              .sort((a, b) => AGE_RANGE_ORDER.indexOf(a) - AGE_RANGE_ORDER.indexOf(b))
-              .map((ageRange) => (
-                <span
-                  key={ageRange}
-                  className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 text-[10px] sm:text-xs font-medium text-white bg-black border border-black rounded-full"
-                  title={AGE_RANGE_LABELS[ageRange] || ageRange}
-                >
-                  {AGE_RANGE_ACRONYMS[ageRange] || ageRange}
-                </span>
-              ))}
-          </div>
-        )}
-
-        {ev.location &&
-          (() => {
-            const locationLink = `https://www.google.com/maps/search/${encodeURIComponent(ev.location)}`;
-            return locationLink ? (
-              <a
-                href={locationLink}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`text-sm font-ibm text-gray-700 hover:text-black hover:underline focus:outline-none focus:ring-2 focus:ring-black/40 rounded px-1 ${isPast ? 'text-gray-500' : ''}`}
-              >
-                {ev.location}
-              </a>
-            ) : (
-              <p className={`text-xs sm:text-sm ${isPast ? 'text-gray-500' : 'text-gray-600'}`}>
-                {ev.location}
-              </p>
-            );
-          })()}
-        {ev.event_dates &&
-          ev.event_dates.length > 0 &&
-          (() => {
-            const sorted = ev.event_dates
-              .slice()
-              .sort((a: string, b: string) => new Date(a).getTime() - new Date(b).getTime());
-            const first = sorted[0];
-            return (
-              <button
-                type="button"
-                onClick={() => setSelectedEvent(ev)}
-                className={`mt-2 group flex items-center gap-2 text-left text-xs sm:text-sm font-medium hover:text-black focus:outline-none focus:ring-2 focus:ring-black/40 rounded ${
-                  isPast ? 'text-gray-500' : 'text-gray-700'
-                }`}
-                aria-label={`Voir toutes les dates pour ${ev.title}`}
-              >
-                <span
-                  className={`inline-flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded border transition-colors ${
-                    isPast
-                      ? 'border-gray-200 bg-gray-100 group-hover:border-gray-400'
-                      : 'border-gray-300 bg-gray-50 group-hover:border-black'
-                  }`}
-                >
-                  <Calendar size={14} className="cursor-pointer sm:hidden">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M8 2v3m8-3v3M3.5 9h17M5 6h14a1 1 0 0 1 1 1v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a1 1 0 0 1 1-1m3 6h.01m3.99 0h.01m4 0h.01m-8 4h.01m3.99 0h.01m4 0h.01"
-                    />
-                  </Calendar>
-                  <Calendar size={15} className="cursor-pointer hidden sm:block">
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M8 2v3m8-3v3M3.5 9h17M5 6h14a1 1 0 0 1 1 1v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a1 1 0 0 1 1-1m3 6h.01m3.99 0h.01m4 0h.01m-8 4h.01m3.99 0h.01m4 0h.01"
-                    />
-                  </Calendar>
-                </span>
-                <span className="text-xs sm:text-sm">
-                  {formatDate(first)}
-                  {sorted.length > 1 && (
-                    <span
-                      className={`ml-1 text-[10px] sm:text-xs ${isPast ? 'text-gray-400' : 'text-gray-500'}`}
-                    >
-                      (+{sorted.length - 1} autres)
-                    </span>
-                  )}
-                </span>
-              </button>
-            );
-          })()}
-        {ev.description && (
-          <p
-            className={`mt-3 text-xs sm:text-sm text-justify line-clamp-3 ${
-              isPast ? 'text-gray-500' : 'text-gray-600'
-            }`}
+    return (
+      <article
+        key={ev.id}
+        className={`overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white ${
+          isPast ? 'opacity-60 grayscale-30' : ''
+        }`}
+      >
+        <div className="relative h-40 sm:h-44 bg-gray-100">
+          <Image
+            src={imageSource}
+            alt={imageAlt}
+            fill
+            className="object-cover"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            priority={!isPast && index < 3}
+            onError={() => {
+              if (typeof imageSource === 'string') {
+                markImageSourceAsFailed(imageSource);
+              }
+            }}
+          />
+        </div>
+        <div className="p-3 sm:p-4">
+          <h3
+            className={`font-poppins font-semibold text-base sm:text-lg mb-1 ${isPast ? 'text-gray-600' : ''}`}
           >
-            {ev.description}
-          </p>
-        )}
-        <div className="mt-3 sm:mt-4 flex items-center justify-end">
-          {!isAdmin && ev.status === 'CLOSED' ? (
-            <span className="text-xs sm:text-sm font-poppins font-semibold transition-colors px-3 py-2 text-red-600 border border-red-200 bg-red-50 cursor-not-allowed">
-              Inscriptions closes
-            </span>
-          ) : (
-            <a
-              href={getEventUrl(ev)}
-              className={`text-xs sm:text-sm font-poppins font-semibold transition-colors px-3 py-2 ${
-                isPast
-                  ? 'text-gray-500 border border-gray-300 hover:text-gray-700 hover:border-gray-400'
-                  : 'text-black border border-black hover:bg-gray-50'
+            {ev.title}
+          </h3>
+
+          {/* Pastilles de catégorie de public */}
+          {ev.category && ev.category.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-1">
+              {[...ev.category]
+                .sort((a, b) => PUBLIC_CATEGORY_ORDER.indexOf(a) - PUBLIC_CATEGORY_ORDER.indexOf(b))
+                .map((publicCategory) => (
+                  <span
+                    key={publicCategory}
+                    className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 text-[10px] sm:text-xs font-medium text-black bg-white border border-black rounded-full"
+                    title={PUBLIC_CATEGORY_LABELS[publicCategory] || publicCategory}
+                  >
+                    {PUBLIC_CATEGORY_ACRONYMS[publicCategory]}
+                  </span>
+                ))}
+            </div>
+          )}
+
+          {/* Pastilles de niveaux scolaires */}
+          {ev.grades && ev.grades.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-1">
+              {[...ev.grades]
+                .sort((a, b) => SCHOOL_GRADE_ORDER.indexOf(a) - SCHOOL_GRADE_ORDER.indexOf(b))
+                .map((grade) => (
+                  <span
+                    key={grade}
+                    className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 text-[10px] sm:text-xs font-medium text-white bg-black border border-black rounded-full"
+                    title={SCHOOL_GRADE_LABELS[grade] || grade}
+                  >
+                    {SCHOOL_GRADE_ACRONYMS[grade] || grade}
+                  </span>
+                ))}
+            </div>
+          )}
+
+          {/* Pastilles de tranches d'âge */}
+          {ev.age_ranges && ev.age_ranges.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 mb-2">
+              {[...ev.age_ranges]
+                .sort((a, b) => AGE_RANGE_ORDER.indexOf(a) - AGE_RANGE_ORDER.indexOf(b))
+                .map((ageRange) => (
+                  <span
+                    key={ageRange}
+                    className="inline-flex items-center justify-center w-10 h-10 sm:w-11 sm:h-11 text-[10px] sm:text-xs font-medium text-white bg-black border border-black rounded-full"
+                    title={AGE_RANGE_LABELS[ageRange] || ageRange}
+                  >
+                    {AGE_RANGE_ACRONYMS[ageRange] || ageRange}
+                  </span>
+                ))}
+            </div>
+          )}
+
+          {ev.location &&
+            (() => {
+              const locationLink = `https://www.google.com/maps/search/${encodeURIComponent(ev.location)}`;
+              return locationLink ? (
+                <a
+                  href={locationLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className={`text-sm font-ibm text-gray-700 hover:text-black hover:underline focus:outline-none focus:ring-2 focus:ring-black/40 rounded px-1 ${isPast ? 'text-gray-500' : ''}`}
+                >
+                  {ev.location}
+                </a>
+              ) : (
+                <p className={`text-xs sm:text-sm ${isPast ? 'text-gray-500' : 'text-gray-600'}`}>
+                  {ev.location}
+                </p>
+              );
+            })()}
+          {ev.event_dates &&
+            ev.event_dates.length > 0 &&
+            (() => {
+              const sorted = ev.event_dates
+                .slice()
+                .sort((a: string, b: string) => new Date(a).getTime() - new Date(b).getTime());
+              const first = sorted[0];
+              return (
+                <button
+                  type="button"
+                  onClick={() => setSelectedEvent(ev)}
+                  className={`mt-2 group flex items-center gap-2 text-left text-xs sm:text-sm font-medium hover:text-black focus:outline-none focus:ring-2 focus:ring-black/40 rounded ${
+                    isPast ? 'text-gray-500' : 'text-gray-700'
+                  }`}
+                  aria-label={`Voir toutes les dates pour ${ev.title}`}
+                >
+                  <span
+                    className={`inline-flex h-6 w-6 sm:h-7 sm:w-7 items-center justify-center rounded border transition-colors ${
+                      isPast
+                        ? 'border-gray-200 bg-gray-100 group-hover:border-gray-400'
+                        : 'border-gray-300 bg-gray-50 group-hover:border-black'
+                    }`}
+                  >
+                    <Calendar size={14} className="cursor-pointer sm:hidden">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M8 2v3m8-3v3M3.5 9h17M5 6h14a1 1 0 0 1 1 1v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a1 1 0 0 1 1-1m3 6h.01m3.99 0h.01m4 0h.01m-8 4h.01m3.99 0h.01m4 0h.01"
+                      />
+                    </Calendar>
+                    <Calendar size={15} className="cursor-pointer hidden sm:block">
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        d="M8 2v3m8-3v3M3.5 9h17M5 6h14a1 1 0 0 1 1 1v12a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V7a1 1 0 0 1 1-1m3 6h.01m3.99 0h.01m4 0h.01m-8 4h.01m3.99 0h.01m4 0h.01"
+                      />
+                    </Calendar>
+                  </span>
+                  <span className="text-xs sm:text-sm">
+                    {formatDate(first)}
+                    {sorted.length > 1 && (
+                      <span
+                        className={`ml-1 text-[10px] sm:text-xs ${isPast ? 'text-gray-400' : 'text-gray-500'}`}
+                      >
+                        (+{sorted.length - 1} autres)
+                      </span>
+                    )}
+                  </span>
+                </button>
+              );
+            })()}
+          {ev.description && (
+            <p
+              className={`mt-3 text-xs sm:text-sm text-justify line-clamp-3 ${
+                isPast ? 'text-gray-500' : 'text-gray-600'
               }`}
             >
-              {isAdmin ? "Gérer l'événement" : isPast ? 'Voir détails' : 'Faire une demande'}
-            </a>
+              {ev.description}
+            </p>
           )}
+          <div className="mt-3 sm:mt-4 flex items-center justify-end">
+            {!isAdmin && ev.status === 'CLOSED' ? (
+              <span className="text-xs sm:text-sm font-poppins font-semibold transition-colors px-3 py-2 text-red-600 border border-red-200 bg-red-50 cursor-not-allowed">
+                Inscriptions closes
+              </span>
+            ) : (
+              <a
+                href={getEventUrl(ev)}
+                className={`text-xs sm:text-sm font-poppins font-semibold transition-colors px-3 py-2 ${
+                  isPast
+                    ? 'text-gray-500 border border-gray-300 hover:text-gray-700 hover:border-gray-400'
+                    : 'text-black border border-black hover:bg-gray-50'
+                }`}
+              >
+                {isAdmin ? "Gérer l'événement" : isPast ? 'Voir détails' : 'Faire une demande'}
+              </a>
+            )}
+          </div>
         </div>
-      </div>
-    </article>
-  );
+      </article>
+    );
+  };
 
   return (
     <main className="p-4 sm:p-6">

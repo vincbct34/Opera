@@ -7,6 +7,7 @@ All notable changes to the Opéra de Montpellier Registration Platform will be d
 ### Added
 
 - **Public Event Image Fallback**: Event cards without an `image_url` now display the Opera fallback photo instead of a text placeholder
+  - If an event image or the remote fallback image fails to load, cards fall back to the local bundled hero image
 
 - **Event Pedagogical Registration Blocks**: Admins can configure multiple reusable blocks around an event
   - Blocks support custom title, explanatory text, one or more dates, visibility, registration enabled/disabled, and mandatory participation

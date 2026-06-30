@@ -18,7 +18,7 @@ The system handles multi-institution user management, automated event scraping f
 - Event registration season now starts on June 10 for the following academic year
 - Events are automatically archived one year after their latest date
 - Admin events can now define multiple reusable pedagogical registration blocks (formations, ateliers, etc.) with custom titles, explanatory text, dates, and mandatory participation
-- Public event listing loads faster by rendering immediately, deferring the calendar bundle, and using an Opera fallback image for events without a visual
+- Public event listing loads faster by rendering immediately, deferring the calendar bundle, and using a resilient Opera/local fallback image chain for events without a visual
 
 **Previous Release (v1.6.7)**:
 
@@ -56,7 +56,7 @@ The system handles multi-institution user management, automated event scraping f
 - ✅ Full authentication system with JWT, refresh tokens, and role-based access control
 - ✅ Multi-institution user management with junction table architecture
 - ✅ Event scraping and synchronization from Opera WordPress API, with June 10 season rollover
-- ✅ Optimized public event listing with server-side data loading, lazy calendar view, first-image prioritization, and fallback Opera imagery
+- ✅ Optimized public event listing with server-side data loading, lazy calendar view, first-image prioritization, and resilient fallback imagery
 - ✅ Progressive event opening and automatic archival one year after the latest event date
 - ✅ Registration management with automatic scoring algorithms (14 criteria including `EVENT_CATEGORY_MATCH` and `AESH_COUNT`)
 - ✅ Admin dashboard with comprehensive statistics, analytics, and event management (full CRUD)

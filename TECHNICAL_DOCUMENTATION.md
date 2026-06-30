@@ -253,7 +253,7 @@ Optimisations de rendu de la liste :
 
 - Aucun préchargement global des images : la page s'affiche immédiatement.
 - Les premières images visibles des événements à venir sont priorisées avec `next/image`.
-- Les événements sans `image_url` utilisent une image de secours de l'Opéra.
+- Les événements sans `image_url` utilisent une image de secours de l'Opéra, puis l'image locale `assets/hero.jpg` si la ressource distante échoue.
 - La vue calendrier est chargée dynamiquement seulement quand elle est demandée.
 - Les descriptions enrichies sont converties en texte côté serveur pour les cartes de liste.
 
