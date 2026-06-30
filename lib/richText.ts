@@ -20,11 +20,12 @@ const escapeAttributeValue = (value: string): string =>
 const decodeHtmlEntities = (value: string): string =>
   value
     .replace(/&nbsp;/g, ' ')
-    .replace(/&amp;/g, '&')
     .replace(/&lt;/g, '<')
     .replace(/&gt;/g, '>')
     .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'");
+    .replace(/&#39;/g, "'")
+    // Decode &amp; last so sequences like "&amp;lt;" do not collapse into "<"
+    .replace(/&amp;/g, '&');
 
 const normalizeRichTextInput = (html: string): string => {
   const normalizedBlocks = html

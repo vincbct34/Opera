@@ -118,35 +118,24 @@ export class HolidaysService {
     const now = overrideDate || new Date();
     const holidays = await this.fetchHolidayDates();
 
-    // Default fallback dates if API fails (approximate for 2025-2026 based on common patterns)
-    // These should definitely be correct in the DB/API, but as a fallback:
-    // Toussaint: End of Oct / Start of Nov
-    // Christmas: End of Dec / Start of Jan
-
-    // Safety fallback: if no data, open everything (or nothing? User said "events open petit a petit").
-    // Better to be conservative? Or permissive?
-    // If API fails, let's look at the implementation plan logic.
-    // If we can't get dates, we can't implement the waves.
-    // Let's assume we return a far future date if we can't decide, or "end of season".
-    // Actually, if we fail, maybe we shouldn't block everything.
-    // Let's try to infer from typical months if holidays are missing.
-
+    // Registration opens in waves anchored on school holiday ends. When the API is
+    // unavailable we fall back to approximate dates for the Montpellier academy so the
+    // waves still progress instead of blocking every event.
     const seasonStartYear = getAcademicSeasonStartYear(now);
     const toussaintEnd = holidays.toussaint?.end || new Date(seasonStartYear, 10, 7); // ~Nov 7th default
     const christmasEnd = holidays.christmas?.end || new Date(seasonStartYear + 1, 0, 6); // ~Jan 6th default
 
-    // Logic:
-    // 1. June 10 -> Toussaint End: Open until Toussaint End
+    // Wave 1 — June 10 to Toussaint end: open until Toussaint end.
     if (now <= toussaintEnd) {
       return toussaintEnd;
     }
 
-    // 2. Toussaint End -> Christmas End: Open until Christmas End
+    // Wave 2 — Toussaint end to Christmas end: open until Christmas end.
     if (now <= christmasEnd) {
       return christmasEnd;
     }
 
-    // 3. Christmas End -> End of Season: Open everything (End of Season ~ July)
+    // Wave 3 — Christmas end to end of season: open everything (~end of July).
     return new Date(seasonStartYear + 1, 6, 31); // July 31st
   }
 }

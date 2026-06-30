@@ -553,63 +553,65 @@ export async function POST(req: NextRequest, context: { params: Promise<{ slug: 
         );
       }
 
-      // Create registration
-      const registration = await prisma.registration.create({
-        data: {
-          user_id: userId,
-          institution_id,
-          event_id: eventId,
-          date: new Date(date),
-          manager_first_name,
-          manager_last_name,
-          manager_email,
-          manager_phone_number,
-          booked_seats,
-          caretaker_count: caretaker_count || null,
-          aesh_count: aesh_count || null,
-          want_formation: want_formation || null,
-          want_preparation: want_preparation || null,
-          category: category || [],
-          grades: grades || [],
-          age_ranges: age_ranges || [],
-          comments,
-          status: 'PENDING',
-        },
-      });
-
-      // Create disabilities if provided
-      if (disabilities && Array.isArray(disabilities)) {
-        await Promise.all(
-          disabilities.map((d: { type: Accessibility; count: number; details?: string }) =>
-            prisma.registrationDisability.create({
-              data: {
-                registration_id: registration.id,
-                type: d.type,
-                count: d.count,
-                details: d.type === 'OTHER' ? d.details || null : null,
-              },
-            }),
-          ),
-        );
-      }
-
       const selectionsToCreate = registrationBlockSelections.filter((selection) =>
         selection.block_id ? blocksById.has(selection.block_id) : false,
       );
 
-      if (selectionsToCreate.length > 0) {
-        await prisma.registrationBlockSelection.createMany({
-          data: selectionsToCreate.map((selection) => ({
-            registration_id: registration.id,
-            block_id: selection.block_id!,
-            wants_to_attend: Boolean(selection.wants_to_attend),
-            selected_date:
-              selection.wants_to_attend && selection.selected_date
-                ? new Date(selection.selected_date)
-                : null,
-          })),
+      // Create the registration, its disabilities and its block selections atomically so a
+      // partial failure never leaves an orphaned registration without its related records.
+      const registration = await prisma.$transaction(async (tx) => {
+        const created = await tx.registration.create({
+          data: {
+            user_id: userId,
+            institution_id,
+            event_id: eventId,
+            date: new Date(date),
+            manager_first_name,
+            manager_last_name,
+            manager_email,
+            manager_phone_number,
+            booked_seats,
+            caretaker_count: caretaker_count || null,
+            aesh_count: aesh_count || null,
+            want_formation: want_formation || null,
+            want_preparation: want_preparation || null,
+            category: category || [],
+            grades: grades || [],
+            age_ranges: age_ranges || [],
+            comments,
+            status: 'PENDING',
+          },
         });
-      }
+
+        if (disabilities && Array.isArray(disabilities)) {
+          await tx.registrationDisability.createMany({
+            data: disabilities.map(
+              (d: { type: Accessibility; count: number; details?: string }) => ({
+                registration_id: created.id,
+                type: d.type,
+                count: d.count,
+                details: d.type === 'OTHER' ? d.details || null : null,
+              }),
+            ),
+          });
+        }
+
+        if (selectionsToCreate.length > 0) {
+          await tx.registrationBlockSelection.createMany({
+            data: selectionsToCreate.map((selection) => ({
+              registration_id: created.id,
+              block_id: selection.block_id!,
+              wants_to_attend: Boolean(selection.wants_to_attend),
+              selected_date:
+                selection.wants_to_attend && selection.selected_date
+                  ? new Date(selection.selected_date)
+                  : null,
+            })),
+          });
+        }
+
+        return created;
+      });
 
       // NOTE: Ne pas incrémenter booked_seats ici car l'inscription est PENDING
       // Les places seront décomptées uniquement lors de la confirmation (status CONFIRMED)

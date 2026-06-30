@@ -4,7 +4,7 @@ import prisma from '@/lib/middleware/prismaConfig';
 import { logger } from '@/lib/middleware/logger';
 import { sanitizeLogArgs } from '@/lib/security/logSanitization';
 import { logDataModification } from '@/lib/security/securityLogger';
-import { sanitizeRichText } from '@/lib/richText';
+import { richTextToPlainText, sanitizeRichText } from '@/lib/richText';
 import { z } from 'zod';
 import {
   EventStatus,
@@ -345,91 +345,100 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
         ? registrationBlocks.some((block) => block.enabled !== false && block.mandatory)
         : undefined;
 
-      // Update event
-      const event = await prisma.event.update({
-        where: { id },
-        data: {
-          ...sanitizedEventData,
-          has_initial_formation:
-            hasRegistrationBlocks === undefined
-              ? sanitizedEventData.has_initial_formation
-              : hasRegistrationBlocks,
-          is_formation_mandatory:
-            hasMandatoryRegistrationBlock === undefined
-              ? sanitizedEventData.is_formation_mandatory
-              : hasMandatoryRegistrationBlock,
-          event_dates: sanitizedEventData.event_dates
-            ? sanitizedEventData.event_dates.map((d) => new Date(d))
-            : undefined,
-          accessibility: sanitizedEventData.accessibility
-            ? {
-                deleteMany: {},
-                create: sanitizedEventData.accessibility.map((type: string) => ({
-                  type: type as Accessibility,
-                })),
-              }
-            : undefined,
-          // Update protected fields and manually_edited flag
-          manually_edited: manuallyEdited,
-          protected_fields: updatedProtectedFields,
-        },
-        include: {
-          accessibility: true,
-          registrationBlocks: {
-            orderBy: { order: 'asc' },
+      // Update the event and synchronize its registration blocks atomically so a
+      // failure mid-sync can never leave the event with half-written blocks.
+      const event = await prisma.$transaction(async (tx) => {
+        const updatedEvent = await tx.event.update({
+          where: { id },
+          data: {
+            ...sanitizedEventData,
+            has_initial_formation:
+              hasRegistrationBlocks === undefined
+                ? sanitizedEventData.has_initial_formation
+                : hasRegistrationBlocks,
+            is_formation_mandatory:
+              hasMandatoryRegistrationBlock === undefined
+                ? sanitizedEventData.is_formation_mandatory
+                : hasMandatoryRegistrationBlock,
+            event_dates: sanitizedEventData.event_dates
+              ? sanitizedEventData.event_dates.map((d) => new Date(d))
+              : undefined,
+            accessibility: sanitizedEventData.accessibility
+              ? {
+                  deleteMany: {},
+                  create: sanitizedEventData.accessibility.map((type: string) => ({
+                    type: type as Accessibility,
+                  })),
+                }
+              : undefined,
+            // Update protected fields and manually_edited flag
+            manually_edited: manuallyEdited,
+            protected_fields: updatedProtectedFields,
           },
-        },
-      });
-
-      if (registrationBlocks !== undefined) {
-        const incomingIds = registrationBlocks
-          .map((block) => block.id)
-          .filter(
-            (blockId): blockId is string =>
-              Boolean(blockId) &&
-              existingEvent.registrationBlocks.some(
-                (existingBlock) => existingBlock.id === blockId,
-              ),
-          );
-
-        await prisma.eventRegistrationBlock.deleteMany({
-          where: {
-            event_id: id,
-            id: {
-              notIn: incomingIds,
+          include: {
+            accessibility: true,
+            registrationBlocks: {
+              orderBy: { order: 'asc' },
             },
           },
         });
 
-        for (const [index, block] of registrationBlocks.entries()) {
-          const data = {
-            title: block.title,
-            description: sanitizeRichText(block.description) || null,
-            dates: (block.dates || []).map((date) => new Date(date)),
-            enabled: block.enabled ?? true,
-            registration_enabled: block.enabled !== false,
-            mandatory: block.enabled !== false && (block.mandatory ?? false),
-            order: block.order ?? index,
-          };
+        if (registrationBlocks !== undefined) {
+          const incomingIds = registrationBlocks
+            .map((block) => block.id)
+            .filter(
+              (blockId): blockId is string =>
+                Boolean(blockId) &&
+                existingEvent.registrationBlocks.some(
+                  (existingBlock) => existingBlock.id === blockId,
+                ),
+            );
 
-          if (
-            block.id &&
-            existingEvent.registrationBlocks.some((existingBlock) => existingBlock.id === block.id)
-          ) {
-            await prisma.eventRegistrationBlock.update({
-              where: { id: block.id },
-              data,
-            });
-          } else {
-            await prisma.eventRegistrationBlock.create({
-              data: {
-                ...data,
-                event_id: id,
+          await tx.eventRegistrationBlock.deleteMany({
+            where: {
+              event_id: id,
+              id: {
+                notIn: incomingIds,
               },
-            });
+            },
+          });
+
+          for (const [index, block] of registrationBlocks.entries()) {
+            const data = {
+              title: block.title,
+              // Blocks use a plain-text explanatory field (admin edits it via a textarea),
+              // so strip any markup to plain text instead of storing rich HTML.
+              description: richTextToPlainText(block.description) || null,
+              dates: (block.dates || []).map((date) => new Date(date)),
+              enabled: block.enabled ?? true,
+              registration_enabled: block.enabled !== false,
+              mandatory: block.enabled !== false && (block.mandatory ?? false),
+              order: block.order ?? index,
+            };
+
+            if (
+              block.id &&
+              existingEvent.registrationBlocks.some(
+                (existingBlock) => existingBlock.id === block.id,
+              )
+            ) {
+              await tx.eventRegistrationBlock.update({
+                where: { id: block.id },
+                data,
+              });
+            } else {
+              await tx.eventRegistrationBlock.create({
+                data: {
+                  ...data,
+                  event_id: id,
+                },
+              });
+            }
           }
         }
-      }
+
+        return updatedEvent;
+      });
 
       if (authReq.user) {
         await logDataModification(authReq.user.id, req, 'Event', event.id, 'update');

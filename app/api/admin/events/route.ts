@@ -4,7 +4,7 @@ import prisma from '@/lib/middleware/prismaConfig';
 import { logger } from '@/lib/middleware/logger';
 import { sanitizeLogArgs } from '@/lib/security/logSanitization';
 import { logAdminAccess, logDataModification } from '@/lib/security/securityLogger';
-import { sanitizeRichText } from '@/lib/richText';
+import { richTextToPlainText, sanitizeRichText } from '@/lib/richText';
 import { z } from 'zod';
 import {
   EventStatus,
@@ -143,7 +143,8 @@ export async function POST(req: NextRequest) {
           registrationBlocks: {
             create: registrationBlocks.map((block, index) => ({
               title: block.title,
-              description: sanitizeRichText(block.description) || null,
+              // Blocks store a plain-text explanatory field (admin edits it via a textarea).
+              description: richTextToPlainText(block.description) || null,
               dates: (block.dates || []).map((date) => new Date(date)),
               enabled: block.enabled ?? true,
               registration_enabled: block.enabled !== false,

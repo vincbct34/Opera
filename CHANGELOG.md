@@ -26,6 +26,12 @@ All notable changes to the Opéra de Montpellier Registration Platform will be d
 
 - Apply the database schema before deploying the app code for the pedagogical blocks feature. The change is additive, but the new code reads the new relations from event and registration endpoints.
 - Apply the updated Prisma schema so the new `Event.status` index is created before relying on the event list query optimization in production.
+- **Scraper season cutover (June 10) uses the server clock.** `getCurrentSeason` (events scraper) and `getAcademicSeasonStartYear` (holidays service) compute the academic year from the server-local `Date`. Run the app/cron with `TZ=Europe/Paris` so the June 10 boundary flips at French midnight rather than UTC.
+
+### Known Behaviour
+
+- **Deleting a pedagogical block removes its registration answers.** `RegistrationBlockSelection` cascades on block deletion. Editing an event keeps existing blocks (matched by id) and their answers; removing a block in the admin form permanently deletes every user's answer for it. Use the "Masqué" (hidden) mode instead of deleting to preserve historical answers.
+- **No information-only block.** Every visible block collects a yes/no inscription answer (`registration_enabled` is coupled to visibility through the hidden / optional / mandatory modes). A block that displays title, text, and dates without any registration question is not yet supported.
 
 ### Changed
 
@@ -43,6 +49,17 @@ All notable changes to the Opéra de Montpellier Registration Platform will be d
   - Added a Prisma index on `Event.status` for the default non-archived event listing
 
 ### Fixed
+
+- **Atomic Event Block & Registration Writes**: Multi-step writes now run inside a single transaction
+  - Admin event update wraps the event change and its registration-block sync (`deleteMany` + create/update) in `prisma.$transaction`, so a mid-sync failure can no longer leave half-written blocks
+  - Public registration creation wraps the registration, its disabilities, and its block selections in one transaction (disabilities now inserted via `createMany`)
+
+- **Pedagogical Block Text Display**: Block explanatory text is stored as plain text and renders correctly
+  - The admin block editor uses a plain textarea, so block descriptions are normalized with `richTextToPlainText` on create/update instead of being stored as rich HTML
+  - Fixes literal `<br>`/markup appearing in the public block description (rendered with `whitespace-pre-wrap`)
+
+- **Rich Text Plain-Text Extraction**: `&amp;`-encoded entities are decoded last
+  - Prevents sequences such as `&amp;lt;` from collapsing into `<` when generating plain-text previews
 
 - **Hidden Mandatory Pedagogical Blocks**: Hidden event blocks no longer block public registration even if older data marked them mandatory
   - Registration API ignores hidden blocks when validating mandatory pedagogical selections
