@@ -65,6 +65,7 @@ export default function AdminEventsClient({
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [formLoading, setFormLoading] = useState(false);
   const [archivingId, setArchivingId] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Filters
   const [searchTerm, setSearchTerm] = useState('');
@@ -80,39 +81,51 @@ export default function AdminEventsClient({
 
   const fetchEvents = async () => {
     setLoading(true);
+    setLoadError(null);
     try {
       const { data, response } = await fetchJsonWithAuth('/api/admin/events');
-      if (response.ok && data) {
-        // @ts-expect-error - API response typing
-        const eventsData = data.events || [];
-
-        // Sort events: future events first (chronologically), then past events (chronologically), then events without dates
-        const now = Date.now();
-        const sortedEvents = eventsData.sort((a: AdminEvent, b: AdminEvent) => {
-          const firstDateA = a.event_dates?.[0] ? new Date(a.event_dates[0]).getTime() : null;
-          const firstDateB = b.event_dates?.[0] ? new Date(b.event_dates[0]).getTime() : null;
-
-          // Priority 1: Events without dates go to the end
-          if (!firstDateA && !firstDateB) return 0;
-          if (!firstDateA) return 1;
-          if (!firstDateB) return -1;
-
-          // Priority 2: Future events before past events
-          const isFutureA = firstDateA >= now;
-          const isFutureB = firstDateB >= now;
-
-          if (isFutureA && !isFutureB) return -1;
-          if (!isFutureA && isFutureB) return 1;
-
-          // Priority 3: Chronological order within each group
-          return firstDateA - firstDateB;
-        });
-
-        setEvents(sortedEvents);
+      if (!response.ok) {
+        const errorMessage =
+          data && typeof data === 'object' && 'error' in data && typeof data.error === 'string'
+            ? data.error
+            : 'Erreur lors du chargement des événements';
+        throw new Error(errorMessage);
       }
+
+      const eventsData =
+        data && typeof data === 'object' && 'events' in data && Array.isArray(data.events)
+          ? data.events
+          : [];
+
+      // Sort events: future events first (chronologically), then past events (chronologically), then events without dates
+      const now = Date.now();
+      const sortedEvents = eventsData.sort((a: AdminEvent, b: AdminEvent) => {
+        const firstDateA = a.event_dates?.[0] ? new Date(a.event_dates[0]).getTime() : null;
+        const firstDateB = b.event_dates?.[0] ? new Date(b.event_dates[0]).getTime() : null;
+
+        // Priority 1: Events without dates go to the end
+        if (!firstDateA && !firstDateB) return 0;
+        if (!firstDateA) return 1;
+        if (!firstDateB) return -1;
+
+        // Priority 2: Future events before past events
+        const isFutureA = firstDateA >= now;
+        const isFutureB = firstDateB >= now;
+
+        if (isFutureA && !isFutureB) return -1;
+        if (!isFutureA && isFutureB) return 1;
+
+        // Priority 3: Chronological order within each group
+        return firstDateA - firstDateB;
+      });
+
+      setEvents(sortedEvents);
     } catch (err) {
       logger.error(err);
-      toast('Erreur lors du chargement des événements', 'error');
+      const msg = err instanceof Error ? err.message : 'Erreur lors du chargement des événements';
+      setLoadError(msg);
+      setEvents([]);
+      toast(msg, 'error');
     } finally {
       setLoading(false);
     }
@@ -440,6 +453,10 @@ export default function AdminEventsClient({
         {loading ? (
           <div className="flex justify-center py-12">
             <Loader />
+          </div>
+        ) : loadError ? (
+          <div className="bg-white rounded-none shadow-sm border border-red-200 p-8 text-center">
+            <p className="text-red-700 font-ibm">{loadError}</p>
           </div>
         ) : filteredEvents.length === 0 ? (
           <div className="bg-white rounded-none shadow-sm border border-gray-200 p-8 text-center">
