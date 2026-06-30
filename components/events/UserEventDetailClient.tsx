@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, startTransition } from 'react';
 import { useUser } from '@/context/UserContext';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { logger } from '@/lib/middleware/logger';
@@ -134,16 +134,6 @@ export default function UserEventDetailClient({
     })),
   });
 
-  useEffect(() => {
-    fetchEventDates();
-    if (user) {
-      fetchUserGroups();
-      fetchUserDetails();
-      checkExistingRegistration();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eventIdentifier, user]);
-
   const fetchEventDates = async () => {
     setLoading(true);
     try {
@@ -220,6 +210,18 @@ export default function UserEventDetailClient({
       toast('Erreur lors du chargement des groupes', 'error');
     }
   };
+
+  useEffect(() => {
+    startTransition(() => {
+      fetchEventDates();
+      if (user) {
+        fetchUserGroups();
+        fetchUserDetails();
+        checkExistingRegistration();
+      }
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [eventIdentifier, user]);
 
   const handleUseGroupData = (groupData: UserGroup) => {
     // Marquer le groupe comme sélectionné

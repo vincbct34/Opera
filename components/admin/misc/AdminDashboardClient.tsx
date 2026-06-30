@@ -4,7 +4,7 @@ import { useUser } from '@/context/UserContext';
 import Loader from '@/components/ui/Loader';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, startTransition } from 'react';
 import { DashboardStats, UpcomingEvent } from '@/lib/middleware/admin';
 import { fetchJsonWithAuth } from '@/lib/api/fetchWithAuth';
 import { logger } from '@/lib/middleware/logger';
@@ -151,7 +151,9 @@ export default function AdminDashboardClient({ stats, upcomingEvents }: AdminDas
 
   // Fetch pending welcome emails count on mount
   useEffect(() => {
-    fetchPendingEmailsCount();
+    startTransition(() => {
+      fetchPendingEmailsCount();
+    });
   }, []);
 
   if (loading) {

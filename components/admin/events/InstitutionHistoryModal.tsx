@@ -49,36 +49,37 @@ export default function InstitutionHistoryModal({
   const SCHOOL_GRADE_LABELS = DEFAULT_SCHOOL_GRADE_LABELS;
   const AGE_RANGE_LABELS = DEFAULT_AGE_RANGE_LABELS;
 
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [historyData, setHistoryData] = useState<HistoryData | null>(null);
 
   useEffect(() => {
-    if (open && institutionId) {
-      fetchHistory();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open, institutionId]);
+    if (!open || !institutionId) return;
 
-  const fetchHistory = async () => {
-    if (!institutionId) return;
+    let active = true;
+    (async () => {
+      try {
+        const response = await fetchWithAuth(`/api/institutions/${institutionId}/history`);
+        const data = await response.json();
+        if (!active) return;
 
-    setLoading(true);
-    try {
-      const response = await fetchWithAuth(`/api/institutions/${institutionId}/history`);
-      const data = await response.json();
-
-      if (response.ok && data.success) {
-        setHistoryData(data);
-      } else {
-        throw new Error(data.error || 'Erreur lors du chargement');
+        if (response.ok && data.success) {
+          setHistoryData(data);
+        } else {
+          throw new Error(data.error || 'Erreur lors du chargement');
+        }
+      } catch (error) {
+        if (!active) return;
+        const msg = error instanceof Error ? error.message : 'Erreur inconnue';
+        toast(msg, 'error');
+      } finally {
+        if (active) setLoading(false);
       }
-    } catch (error) {
-      const msg = error instanceof Error ? error.message : 'Erreur inconnue';
-      toast(msg, 'error');
-    } finally {
-      setLoading(false);
-    }
-  };
+    })();
+
+    return () => {
+      active = false;
+    };
+  }, [open, institutionId]);
 
   if (!open) return null;
 

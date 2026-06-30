@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, startTransition } from 'react';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { normalizeApiError } from '@/lib/validation/errorMessages';
 import Loader from '@/components/ui/Loader';
@@ -172,16 +172,7 @@ export default function RegistrationsClient({
   const [page, setPage] = useState(1);
   const ITEMS_PER_PAGE = 10;
 
-  useEffect(() => {
-    loadRegistrations();
-  }, []);
-
-  // Reset page when filters change
-  useEffect(() => {
-    setPage(1);
-  }, [statusFilter, searchQuery, showArchived]);
-
-  const loadRegistrations = async () => {
+  const loadRegistrations = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -203,7 +194,18 @@ export default function RegistrationsClient({
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    startTransition(() => {
+      loadRegistrations();
+    });
+  }, [loadRegistrations]);
+
+  // Reset page when filters change
+  useEffect(() => {
+    startTransition(() => setPage(1));
+  }, [statusFilter, searchQuery, showArchived]);
 
   const startEdit = (reg: RegistrationWithDetails) => {
     setEditingId(reg.id);

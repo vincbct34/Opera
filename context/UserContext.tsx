@@ -8,6 +8,7 @@ import {
   ReactNode,
   useCallback,
   useRef,
+  startTransition,
 } from 'react';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { logger } from '@/lib/middleware/logger';
@@ -170,19 +171,21 @@ export const UserProvider = ({ children }: { children: ReactNode }) => {
     hasInitialized.current = true;
 
     const cached = getCachedUser();
-    if (cached) {
-      setUser(cached);
-      setLoading(false);
-      // Still refresh in background to ensure data is up to date
-      refreshUser();
-    } else if (hasPotentialCache()) {
-      // Il pourrait y avoir un cache, mais il a expiré
-      // Tenter un refresh sans loading pour une UX plus fluide
-      refreshUser();
-    } else {
-      // Pas de cache du tout, loading normal
-      refreshUser();
-    }
+    startTransition(() => {
+      if (cached) {
+        setUser(cached);
+        setLoading(false);
+        // Still refresh in background to ensure data is up to date
+        refreshUser();
+      } else if (hasPotentialCache()) {
+        // Il pourrait y avoir un cache, mais il a expiré
+        // Tenter un refresh sans loading pour une UX plus fluide
+        refreshUser();
+      } else {
+        // Pas de cache du tout, loading normal
+        refreshUser();
+      }
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Vraiment vide - on ne veut s'exécuter qu'une seule fois
 

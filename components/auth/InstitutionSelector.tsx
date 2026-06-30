@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, startTransition } from 'react';
 import { Search, MapPin, Plus, X, AlertCircle } from '@deemlol/next-icons';
 
 import { PublicCategory, SchoolGrade, AgeRange, InstitutionSelectOption } from '@/types/api';
@@ -222,7 +222,7 @@ export default function InstitutionSelector({
   useEffect(() => {
     // Name is required (min 2 chars)
     if (nameSearch.length < 2) {
-      setInstitutions([]);
+      startTransition(() => setInstitutions([]));
       return;
     }
 

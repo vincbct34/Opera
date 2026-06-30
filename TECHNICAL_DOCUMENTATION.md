@@ -322,13 +322,13 @@ import { PrismaClient, User, Event } from '@/app/generated/prisma';
 
 #### Tables de Sécurité
 
-| Table                     | Description                        |
+| Table | Description |
 | ------------------------- | ---------------------------------- | ---------------------------------------------- |
-| **SecurityLog**           | Journal des événements de sécurité |
-| **RefreshTokenBlacklist** | Tokens invalidés (logout)          |
-| **PasswordResetToken**    | Tokens de réinitialisation MDP     |
-| **PasswordHistory**       | Historique des 5 derniers MDP      |
-| **AppConfig**             | Configuration dynamique de l'appli | Category, Key, Value (labels personnalisables) |
+| **SecurityLog** | Journal des événements de sécurité |
+| **RefreshTokenBlacklist** | Tokens invalidés (logout) |
+| **PasswordResetToken** | Tokens de réinitialisation MDP |
+| **PasswordHistory** | Historique des 5 derniers MDP |
+| **AppConfig** | Configuration dynamique de l'appli | Category, Key, Value (labels personnalisables) |
 
 ### 4.3 Configuration Dynamique avec Cache Distribué
 

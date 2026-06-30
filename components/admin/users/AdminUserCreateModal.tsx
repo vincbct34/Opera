@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, startTransition } from 'react';
 import { Search, MapPin, X, Eye, EyeOff } from '@deemlol/next-icons';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { logger } from '@/lib/middleware/logger';
@@ -68,7 +68,7 @@ export default function AdminUserCreateModal({
   // Debounced institution search
   useEffect(() => {
     if (nameSearch.length < 2) {
-      setSearchResults([]);
+      startTransition(() => setSearchResults([]));
       return;
     }
 

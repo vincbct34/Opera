@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, startTransition } from 'react';
 import { Search, Mail, User, X } from '@deemlol/next-icons';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { logger } from '@/lib/middleware/logger';
@@ -40,7 +40,7 @@ export default function UserSelector({
   // Load initial user if provided
   useEffect(() => {
     if (initialUser) {
-      setSelectedUser(initialUser);
+      startTransition(() => setSelectedUser(initialUser));
     }
   }, [initialUser]);
 
@@ -48,7 +48,7 @@ export default function UserSelector({
   useEffect(() => {
     // Require at least 2 characters
     if (searchQuery.length < 2) {
-      setUsers([]);
+      startTransition(() => setUsers([]));
       return;
     }
 

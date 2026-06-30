@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef, useCallback, startTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/context/UserContext';
 import Loader from '@/components/ui/Loader';
@@ -209,10 +209,10 @@ export default function AdminStatisticsClient({
   // Debounced institution search effect
   useEffect(() => {
     const hasSearch = institutionSearch.length >= 2 || institutionCitySearch.length >= 2;
-    setIsSearchingInstitutions(hasSearch);
+    startTransition(() => setIsSearchingInstitutions(hasSearch));
 
     if (!hasSearch) {
-      setSearchedInstitutions([]);
+      startTransition(() => setSearchedInstitutions([]));
       return;
     }
 
@@ -234,7 +234,7 @@ export default function AdminStatisticsClient({
 
   // Reset institution page when search changes
   useEffect(() => {
-    setInstitutionPage(1);
+    startTransition(() => setInstitutionPage(1));
   }, [institutionSearch, institutionCitySearch]);
 
   // Filter events based on search
@@ -243,8 +243,10 @@ export default function AdminStatisticsClient({
     const filtered = stats.topEvents.filter((event) =>
       event.title.toLowerCase().includes(eventSearch.toLowerCase()),
     );
-    setFilteredEvents(filtered);
-    setEventPage(1);
+    startTransition(() => {
+      setFilteredEvents(filtered);
+      setEventPage(1);
+    });
   }, [eventSearch, stats]);
 
   if (loading) {

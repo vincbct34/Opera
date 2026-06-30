@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, startTransition } from 'react';
 import { useUser } from '@/context/UserContext';
 import Loader from '@/components/ui/Loader';
 import Link from 'next/link';
@@ -102,14 +102,16 @@ export default function AdminInstitutionsClient({
   // Initialize state from URL params (on mount)
   useEffect(() => {
     const sp = Object.fromEntries(searchParams ? Array.from(searchParams.entries()) : []);
-    if (sp.search) setSearch(sp.search);
-    if (sp.city) setCity(sp.city);
-    if (sp.type) setFilterType(sp.type as PublicCategory);
-    if (sp.hasRegistrations && (sp.hasRegistrations === 'true' || sp.hasRegistrations === '1')) {
-      setHasRegistrationsOnly(true);
-    }
-    // fetch initial
-    fetchPage(1);
+    startTransition(() => {
+      if (sp.search) setSearch(sp.search);
+      if (sp.city) setCity(sp.city);
+      if (sp.type) setFilterType(sp.type as PublicCategory);
+      if (sp.hasRegistrations && (sp.hasRegistrations === 'true' || sp.hasRegistrations === '1')) {
+        setHasRegistrationsOnly(true);
+      }
+      // fetch initial
+      fetchPage(1);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 

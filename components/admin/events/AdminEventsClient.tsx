@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, startTransition } from 'react';
 import Link from 'next/link';
 import { fetchJsonWithAuth, fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { logger } from '@/lib/middleware/logger';
@@ -119,7 +119,9 @@ export default function AdminEventsClient({
   };
 
   useEffect(() => {
-    fetchEvents();
+    startTransition(() => {
+      fetchEvents();
+    });
   }, []);
 
   const handleCreate = async (formData: AdminEventFormData) => {
@@ -314,7 +316,7 @@ export default function AdminEventsClient({
 
   // Reset pagination when filters change
   useEffect(() => {
-    setCurrentPage(1);
+    startTransition(() => setCurrentPage(1));
   }, [searchTerm, selectedType, selectedMonth, selectedLocation, selectedPublicType, showArchived]);
 
   // Pagination logic

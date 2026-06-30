@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useCallback, useMemo, startTransition } from 'react';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { logger } from '@/lib/middleware/logger';
 import Loader from '@/components/ui/Loader';
@@ -173,19 +173,7 @@ export default function AdminEventDetailClient({
   // Export
   const [exporting, setExporting] = useState(false);
 
-  useEffect(() => {
-    fetchConfigurations();
-  }, []);
-
-  useEffect(() => {
-    // Charger les inscriptions une fois que les configurations sont chargées
-    if (configurationsLoaded) {
-      fetchRegistrations();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [eventId, selectedConfigId, configurationsLoaded]);
-
-  const fetchConfigurations = async () => {
+  const fetchConfigurations = useCallback(async () => {
     try {
       const response = await fetchWithAuth('/api/admin/scoring-config');
       const data = await response.json();
@@ -207,7 +195,7 @@ export default function AdminEventDetailClient({
       logger.error('Error fetching configurations:', error);
       setConfigurationsLoaded(true); // Marquer comme chargé même en cas d'erreur
     }
-  };
+  }, []);
 
   const fetchRegistrations = useCallback(async () => {
     setLoading(true);
@@ -239,6 +227,21 @@ export default function AdminEventDetailClient({
       setLoading(false);
     }
   }, [eventIdentifier, selectedConfigId]);
+
+  useEffect(() => {
+    startTransition(() => {
+      fetchConfigurations();
+    });
+  }, [fetchConfigurations]);
+
+  useEffect(() => {
+    // Charger les inscriptions une fois que les configurations sont chargées
+    if (configurationsLoaded) {
+      startTransition(() => {
+        fetchRegistrations();
+      });
+    }
+  }, [configurationsLoaded, fetchRegistrations]);
 
   const handleStatusChange = async (
     registrationId: string,

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, startTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/context/UserContext';
 import { SecurityLogType, SecuritySeverity } from '@/app/generated/prisma/enums';
@@ -177,8 +177,10 @@ export default function AdminSecurityClient() {
   // Initial fetch and filter changes (excluding search - handled by debounce)
   useEffect(() => {
     if (!loading && user) {
-      fetchStats();
-      fetchLogs();
+      startTransition(() => {
+        fetchStats();
+        fetchLogs();
+      });
     }
   }, [loading, user, fetchStats, fetchLogs]);
 

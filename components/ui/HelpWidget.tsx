@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, startTransition } from 'react';
 import { useUser } from '@/context/UserContext';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import type { HelpContent } from '@/lib/help/types';
@@ -86,7 +86,9 @@ export const HelpWidget: React.FC<HelpWidgetProps> = ({ content, isAdminPage = f
 
   useEffect(() => {
     if (isOpen && showAdminNotes && !noteLoaded) {
-      fetchAdminNote();
+      startTransition(() => {
+        fetchAdminNote();
+      });
     }
   }, [isOpen, showAdminNotes, noteLoaded, fetchAdminNote]);
 

@@ -36,12 +36,7 @@ export type ExportType = 'users' | 'events' | 'registrations' | 'institutions' |
  * Sheet identifiers available for the 'complete' export type.
  */
 export type SheetType =
-  | 'users'
-  | 'events'
-  | 'registrations'
-  | 'institutions'
-  | 'groups'
-  | 'statistics';
+  'users' | 'events' | 'registrations' | 'institutions' | 'groups' | 'statistics';
 
 const ALL_SHEETS: SheetType[] = [
   'users',

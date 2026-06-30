@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, startTransition } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 
@@ -67,7 +67,7 @@ function LoginForm() {
       const msg =
         'Inscription réussie ! Pensez à vérifier votre adresse email avant de vous connecter. Si vous ne voyez pas l’email, vérifiez votre dossier de spam.';
       // Only run once on mount to avoid cascading renders
-      setSuccessMessage(msg);
+      startTransition(() => setSuccessMessage(msg));
       try {
         toast(msg, 'success');
       } catch (e) {
