@@ -231,23 +231,31 @@ Service-culturel-plateforme-web/
 ```typescript
 // Server Component (défaut) - Accès direct à la DB
 // app/events/page.tsx
-import { prisma } from '@/lib/prismaConfig';
+import { getEvents } from '@/lib/events/events';
 
 export default async function EventsPage() {
-  const events = await prisma.event.findMany();
-  return <EventsList events={events} />;
+  const events = await getEvents();
+  return <ClientEvents events={events} />;
 }
 
 // Client Component - Interactivité
-// components/misc/EventsClient.tsx
+// components/events/ClientEvents.tsx
 'use client';
-import { fetchWithAuth } from '@/lib/fetchWithAuth';
 
-export function EventsClient() {
-  const [events, setEvents] = useState([]);
-  // Logique interactive...
+export function ClientEvents({ events }) {
+  // Filtres, tri et modale de dates côté client.
 }
 ```
+
+La page publique `/events` garde le chargement des données côté serveur (`getEvents()`), puis délègue uniquement les interactions au client. La requête Prisma de liste utilise `select` pour limiter le payload aux champs affichés, exclut les événements `ARCHIVED` par défaut et s'appuie sur l'index `Event.status`.
+
+Optimisations de rendu de la liste :
+
+- Aucun préchargement global des images : la page s'affiche immédiatement.
+- Les premières images visibles des événements à venir sont priorisées avec `next/image`.
+- Les événements sans `image_url` utilisent une image de secours de l'Opéra.
+- La vue calendrier est chargée dynamiquement seulement quand elle est demandée.
+- Les descriptions enrichies sont converties en texte côté serveur pour les cartes de liste.
 
 #### Pattern Middleware API
 
@@ -737,6 +745,8 @@ npx prisma db seed
 | GET     | `/api/events`                      | Lister événements | ✅   |
 | GET     | `/api/events/[slug]`               | Détails événement | ✅   |
 | POST    | `/api/events/[slug]/registrations` | S'inscrire        | ✅   |
+
+`GET /api/events` utilise une projection Prisma explicite (`select`) pour renvoyer uniquement les champs nécessaires à la liste et aux sélecteurs d'export : identité, titre, slug, description, typologies, publics, niveaux, lieu, capacités, statut, image, dates, indicateurs de formation/préparation et accessibilité. Les relations non nécessaires, notamment les inscriptions, ne sont pas chargées.
 
 `GET /api/events/[slug]` renvoie `registrationBlocks` pour la section "Autour du spectacle".
 Les blocs legacy synthétiques ont un id préfixé par `legacy-` et servent uniquement à préserver
@@ -1379,6 +1389,7 @@ Les administrateurs disposent d'un éditeur de texte enrichi limité pour la des
 - L'API sanitise à la création et à la mise à jour
 - Le composant `EventDescription` sanitise à nouveau avant `dangerouslySetInnerHTML`
 - Les cartes événements affichent un aperçu texte via `richTextToPlainText()` pour éviter d'injecter du HTML dans les listes
+- La liste publique calcule cet aperçu texte côté serveur dans `lib/events/events.ts`, ce qui évite d'embarquer la sanitation HTML dans le chemin critique du client
 
 ---
 

@@ -6,6 +6,7 @@ import {
   AgeRange,
   EventStatus,
 } from '@/app/generated/prisma/enums';
+import { richTextToPlainText } from '@/lib/richText';
 
 /**
  * Data Transfer Object for Event.
@@ -35,14 +36,28 @@ export async function getEvents(includeArchived = false): Promise<EventDto[]> {
   const events = await prisma.event.findMany({
     where: includeArchived ? {} : { status: { not: 'ARCHIVED' } },
     orderBy: { event_dates: 'asc' },
+    select: {
+      id: true,
+      title: true,
+      slug: true,
+      description: true,
+      image_url: true,
+      location: true,
+      event_dates: true,
+      type: true,
+      category: true,
+      grades: true,
+      age_ranges: true,
+      status: true,
+    },
   });
 
   // Normalize fields to match client expectations
   return events.map((e) => ({
     id: e.id,
     title: e.title,
-    slug: e.slug,
-    description: e.description ?? null,
+    slug: e.slug ?? null,
+    description: e.description ? richTextToPlainText(e.description) || null : null,
     image_url: e.image_url ?? null,
     location: e.location,
     event_dates: (e.event_dates || []).map((d) => new Date(d).toISOString()),

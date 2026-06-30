@@ -23,7 +23,31 @@ export async function GET(req: NextRequest) {
     try {
       const events = await prisma.event.findMany({
         orderBy: { created_at: 'desc' },
-        include: { accessibility: true },
+        select: {
+          id: true,
+          title: true,
+          slug: true,
+          description: true,
+          type: true,
+          category: true,
+          grades: true,
+          age_ranges: true,
+          location: true,
+          duration: true,
+          total_seats: true,
+          booked_seats: true,
+          status: true,
+          image_url: true,
+          created_at: true,
+          updated_at: true,
+          event_dates: true,
+          has_initial_formation: true,
+          is_formation_mandatory: true,
+          has_musical_preparation: true,
+          accessibility: {
+            select: { type: true },
+          },
+        },
       });
 
       const payload = events.map((e) => ({

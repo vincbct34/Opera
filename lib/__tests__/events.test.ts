@@ -92,6 +92,20 @@ describe('lib/events helper', () => {
     expect(prisma.event.findMany).toHaveBeenCalledWith({
       where: { status: { not: 'ARCHIVED' } },
       orderBy: { event_dates: 'asc' },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        description: true,
+        image_url: true,
+        location: true,
+        event_dates: true,
+        type: true,
+        category: true,
+        grades: true,
+        age_ranges: true,
+        status: true,
+      },
     });
   });
 
@@ -117,6 +131,20 @@ describe('lib/events helper', () => {
     expect(prisma.event.findMany).toHaveBeenCalledWith({
       where: {},
       orderBy: { event_dates: 'asc' },
+      select: {
+        id: true,
+        title: true,
+        slug: true,
+        description: true,
+        image_url: true,
+        location: true,
+        event_dates: true,
+        type: true,
+        category: true,
+        grades: true,
+        age_ranges: true,
+        status: true,
+      },
     });
     expect(events.length).toBe(1);
     expect(events[0].status).toBe('ARCHIVED');

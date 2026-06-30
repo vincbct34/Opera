@@ -1,10 +1,7 @@
 'use client';
 
 import Image from 'next/image';
-import Loader from '@/components/ui/Loader';
-import EventDescription from '@/components/events/EventDescription';
-import useImagesLoaded from '@/hooks/useImagesLoaded';
-import CalendarView from './CalendarView';
+import dynamic from 'next/dynamic';
 import MultiSelect from '@/components/ui/MultiSelect';
 import { useMemo, useState, useCallback, useEffect, useRef } from 'react';
 import { Calendar, List } from '@deemlol/next-icons';
@@ -26,6 +23,17 @@ import {
 } from '@/lib/config/badgeConstants';
 import { HelpWidget } from '@/components/ui/HelpWidget';
 import { HELP_CONTENTS } from '@/lib/help/helpContents';
+
+const CalendarView = dynamic(() => import('./CalendarView'), {
+  loading: () => (
+    <div className="border border-gray-200 p-6 text-sm text-gray-600">
+      Chargement du calendrier...
+    </div>
+  ),
+});
+
+const EVENT_PLACEHOLDER_IMAGE =
+  'https://www.opera-orchestre-montpellier.fr/wp-content/uploads/2023/03/MG1_7857-1920x1280.jpg';
 
 // ============================================================================
 // Types
@@ -275,21 +283,6 @@ export default function ClientEvents({
     return { upcomingEvents: upcoming, pastEvents: past };
   }, [filteredEvents]);
 
-  const imageUrls = useMemo(
-    () => [...upcomingEvents, ...pastEvents].map((e) => e.image_url).filter(Boolean) as string[],
-    [upcomingEvents, pastEvents],
-  );
-
-  // Increase timeout to 10 seconds for production environments
-  const { done } = useImagesLoaded(imageUrls, 10000);
-
-  // Always show content after 10 seconds, even if images aren't loaded
-  const [forceShow, setForceShow] = useState(false);
-  useEffect(() => {
-    const forceTimer = setTimeout(() => setForceShow(true), 10000);
-    return () => clearTimeout(forceTimer);
-  }, []);
-
   // Close on ESC
   const escHandler = useCallback((e: KeyboardEvent) => {
     if (e.key === 'Escape') setSelectedEvent(null);
@@ -307,7 +300,7 @@ export default function ClientEvents({
   };
 
   // Function to render an event card
-  const renderEventCard = (ev: EventData, isPast = false) => (
+  const renderEventCard = (ev: EventData, isPast = false, index = 0) => (
     <article
       key={ev.id}
       className={`overflow-hidden shadow-sm hover:shadow-md transition-shadow bg-white ${
@@ -315,20 +308,14 @@ export default function ClientEvents({
       }`}
     >
       <div className="relative h-40 sm:h-44 bg-gray-100">
-        {ev.image_url ? (
-          <Image
-            src={ev.image_url}
-            alt={ev.title}
-            fill
-            className="object-cover"
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-            priority={false}
-          />
-        ) : (
-          <div className="w-full h-full flex items-center justify-center text-sm sm:text-base text-gray-400">
-            Image
-          </div>
-        )}
+        <Image
+          src={ev.image_url || EVENT_PLACEHOLDER_IMAGE}
+          alt={ev.image_url ? ev.title : ''}
+          fill
+          className="object-cover"
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          priority={!isPast && index < 3}
+        />
       </div>
       <div className="p-3 sm:p-4">
         <h3
@@ -458,13 +445,13 @@ export default function ClientEvents({
             );
           })()}
         {ev.description && (
-          <EventDescription
-            description={ev.description}
-            preview
+          <p
             className={`mt-3 text-xs sm:text-sm text-justify line-clamp-3 ${
               isPast ? 'text-gray-500' : 'text-gray-600'
             }`}
-          />
+          >
+            {ev.description}
+          </p>
         )}
         <div className="mt-3 sm:mt-4 flex items-center justify-end">
           {!isAdmin && ev.status === 'CLOSED' ? (
@@ -487,14 +474,6 @@ export default function ClientEvents({
       </div>
     </article>
   );
-
-  if (!done && !forceShow) {
-    return (
-      <main className="flex justify-center items-center h-[90vh]">
-        <Loader />
-      </main>
-    );
-  }
 
   return (
     <main className="p-4 sm:p-6">
@@ -633,7 +612,7 @@ export default function ClientEvents({
                   </span>
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                  {upcomingEvents.map((ev) => renderEventCard(ev, false))}
+                  {upcomingEvents.map((ev, index) => renderEventCard(ev, false, index))}
                 </div>
               </div>
             )}
@@ -648,7 +627,7 @@ export default function ClientEvents({
                   </span>
                 </h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                  {pastEvents.map((ev) => renderEventCard(ev, true))}
+                  {pastEvents.map((ev, index) => renderEventCard(ev, true, index))}
                 </div>
               </div>
             )}

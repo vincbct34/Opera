@@ -121,6 +121,8 @@ model Event {
   registrationBlocks      EventRegistrationBlock[]
   registrations           Registration[]
   scoringConfiguration    ScoringConfiguration?
+
+  @@index([status])
 }
 
 model EventRegistrationBlock {

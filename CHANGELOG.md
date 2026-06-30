@@ -6,6 +6,8 @@ All notable changes to the Opéra de Montpellier Registration Platform will be d
 
 ### Added
 
+- **Public Event Image Fallback**: Event cards without an `image_url` now display the Opera fallback photo instead of a text placeholder
+
 - **Event Pedagogical Registration Blocks**: Admins can configure multiple reusable blocks around an event
   - Blocks support custom title, explanatory text, one or more dates, visibility, registration enabled/disabled, and mandatory participation
   - New Prisma models `EventRegistrationBlock` and `RegistrationBlockSelection`
@@ -22,6 +24,17 @@ All notable changes to the Opéra de Montpellier Registration Platform will be d
 ### Deployment Notes
 
 - Apply the database schema before deploying the app code for the pedagogical blocks feature. The change is additive, but the new code reads the new relations from event and registration endpoints.
+- Apply the updated Prisma schema so the new `Event.status` index is created before relying on the event list query optimization in production.
+
+### Changed
+
+- **Public Event List Performance**: Optimized the `/events` listing page load path
+  - Removed the global image preloader that blocked the page until every event image loaded or timed out
+  - Preloads only the first visible upcoming event images through `next/image`
+  - Lazy-loads the calendar view bundle when users switch from list view
+  - Converts rich descriptions to plain text on the server for event cards
+  - Limits Prisma event-list queries to the fields required by the public listing/API payload
+  - Added a Prisma index on `Event.status` for the default non-archived event listing
 
 ### Fixed
 
