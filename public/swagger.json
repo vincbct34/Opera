@@ -5821,7 +5821,7 @@
       "get": {
         "tags": ["Cron"],
         "summary": "Mise à jour auto des statuts",
-        "description": "Ferme les événements passés et rouvre ceux avec dates futures dans la fenêtre d'ouverture (vacances scolaires).",
+        "description": "Ferme les événements passés, rouvre ceux avec dates futures dans la fenêtre d'ouverture (vacances scolaires), et archive les événements un an après leur dernière date.",
         "security": [
           {
             "CronAuth": []
@@ -5854,6 +5854,9 @@
                           "type": "integer"
                         },
                         "updatedToOpenCount": {
+                          "type": "integer"
+                        },
+                        "updatedToArchivedCount": {
                           "type": "integer"
                         }
                       }

@@ -209,6 +209,57 @@ describe('Cron API', () => {
       });
     });
 
+    it('should archive events one year after their latest date', async () => {
+      const oldDate = new Date();
+      oldDate.setFullYear(oldDate.getFullYear() - 2);
+
+      const events = [
+        {
+          id: 'evt-archive-1',
+          title: 'Old Closed Event',
+          status: EventStatus.CLOSED,
+          event_dates: [oldDate],
+        },
+      ];
+      (prisma.event.findMany as unknown as jest.Mock<any>).mockResolvedValue(events);
+
+      const req = createMockRequest('http://localhost/api/cron/events/status-update');
+      const res = await UpdateStatus(req);
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.summary.updatedToArchivedCount).toBe(1);
+      expect(prisma.event.update).toHaveBeenCalledWith({
+        where: { id: 'evt-archive-1' },
+        data: { status: EventStatus.ARCHIVED },
+      });
+    });
+
+    it('should not archive multi-date events before one year after the latest date', async () => {
+      const oldDate = new Date();
+      oldDate.setFullYear(oldDate.getFullYear() - 2);
+      const recentDate = new Date();
+      recentDate.setMonth(recentDate.getMonth() - 6);
+
+      const events = [
+        {
+          id: 'evt-archive-2',
+          title: 'Recent Multi Date Event',
+          status: EventStatus.CLOSED,
+          event_dates: [oldDate, recentDate],
+        },
+      ];
+      (prisma.event.findMany as unknown as jest.Mock<any>).mockResolvedValue(events);
+
+      const req = createMockRequest('http://localhost/api/cron/events/status-update');
+      const res = await UpdateStatus(req);
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.summary.updatedToArchivedCount).toBe(0);
+      expect(prisma.event.update).not.toHaveBeenCalled();
+    });
+
     it('should not update events whose status is protected', async () => {
       const pastDate = new Date();
       pastDate.setDate(pastDate.getDate() - 1);
@@ -231,6 +282,7 @@ describe('Cron API', () => {
       expect(res.status).toBe(200);
       expect(data.summary.updatedToClosedCount).toBe(0);
       expect(data.summary.updatedToOpenCount).toBe(0);
+      expect(data.summary.updatedToArchivedCount).toBe(0);
       expect(prisma.event.update).not.toHaveBeenCalled();
     });
   });
@@ -256,6 +308,35 @@ describe('Cron API', () => {
       expect(res.status).toBe(200);
       expect(data.dryRun).toBe(true);
       expect(data.summary.toCloseCount).toBe(1);
+      expect(prisma.event.update).not.toHaveBeenCalled();
+    });
+
+    it('should include archive candidates in dry run', async () => {
+      const oldDate = new Date();
+      oldDate.setFullYear(oldDate.getFullYear() - 2);
+
+      const events = [
+        {
+          id: 'evt-archive-3',
+          title: 'Old Closed Event',
+          status: EventStatus.CLOSED,
+          event_dates: [oldDate],
+        },
+      ];
+      (prisma.event.findMany as unknown as jest.Mock<any>).mockResolvedValue(events);
+
+      const req = createMockRequest('http://localhost/api/cron/events/status-update', {
+        method: 'POST',
+        body: { dryRun: true },
+      });
+
+      const res = await ManualUpdateStatus(req);
+      const data = await res.json();
+
+      expect(res.status).toBe(200);
+      expect(data.dryRun).toBe(true);
+      expect(data.summary.toArchiveCount).toBe(1);
+      expect(data.eventsToUpdate[0].newStatus).toBe(EventStatus.ARCHIVED);
       expect(prisma.event.update).not.toHaveBeenCalled();
     });
 
@@ -285,6 +366,7 @@ describe('Cron API', () => {
       expect(res.status).toBe(200);
       expect(data.summary.toCloseCount).toBe(0);
       expect(data.summary.toOpenCount).toBe(0);
+      expect(data.summary.toArchiveCount).toBe(0);
       expect(prisma.event.update).not.toHaveBeenCalled();
     });
   });

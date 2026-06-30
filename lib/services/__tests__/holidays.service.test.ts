@@ -236,8 +236,8 @@ describe('HolidaysService', () => {
 
       const result = await HolidaysService.getOpeningLimitDate(testDate);
 
-      // Should return July 31st next year
-      expect(result.getFullYear()).toBe(2027);
+      // Should return July 31st at the end of the current academic season
+      expect(result.getFullYear()).toBe(2026);
       expect(result.getMonth()).toBe(6); // July
     });
 
@@ -257,6 +257,35 @@ describe('HolidaysService', () => {
       // Should return fallback Nov 7th
       expect(result.getMonth()).toBe(10); // November
       expect(result.getDate()).toBe(7);
+    });
+
+    it('should return toussaint end date from the first opening checkpoint on June 10', async () => {
+      const testDate = new Date(2026, 5, 10); // June 10, 2026
+
+      mockFetch.mockResolvedValue(
+        createMockResponse({
+          total_count: 2,
+          results: [
+            {
+              description: 'Vacances de la Toussaint',
+              start_date: '2026-10-17T00:00:00+02:00',
+              end_date: '2026-11-02T00:00:00+01:00',
+            },
+            {
+              description: 'Vacances de Noël',
+              start_date: '2026-12-19T00:00:00+01:00',
+              end_date: '2027-01-04T00:00:00+01:00',
+            },
+          ],
+        }),
+      );
+
+      const result = await HolidaysService.getOpeningLimitDate(testDate);
+
+      expect(result.getUTCFullYear()).toBe(2026);
+      expect(result.getUTCMonth()).toBe(10); // November
+      expect(result.getUTCDate()).toBeGreaterThanOrEqual(1);
+      expect(result.getUTCDate()).toBeLessThanOrEqual(2);
     });
 
     it('should use current date when no overrideDate is provided', async () => {
@@ -279,7 +308,7 @@ describe('HolidaysService', () => {
     });
 
     it('should use correct christmas fallback when month is before September', async () => {
-      // Mock: Early January (month < 9) - christmas fallback should NOT add 1 to year
+      // Mock: Early January, before Christmas fallback ends for the current academic season
       // Date: Jan 3, 2026 - this is BEFORE christmasEnd fallback (Jan 6, 2026)
       // So it should return christmasEnd (Jan 6, 2026), not toussaintEnd
       const testDate = new Date(2026, 0, 3); // Jan 3, 2026 (month = 0, < 9)
@@ -293,12 +322,9 @@ describe('HolidaysService', () => {
 
       const result = await HolidaysService.getOpeningLimitDate(testDate);
 
-      // christmasEnd fallback = Jan 6, 2026 (since month < 9, no +1 to year)
-      // Jan 3 <= Nov 7 (toussaintEnd)? YES, so returns toussaintEnd
-      // Actually toussaintEnd = Nov 7, 2026 and christmasEnd = Jan 6, 2026
-      // Jan 3 <= Nov 7? YES -> returns toussaintEnd (Nov 7, 2026)
-      expect(result.getMonth()).toBe(10); // November (fallback toussaintEnd)
-      expect(result.getDate()).toBe(7);
+      // christmasEnd fallback = Jan 6, 2026 for the 2025-2026 season
+      expect(result.getMonth()).toBe(0); // January
+      expect(result.getDate()).toBe(6);
       expect(result.getFullYear()).toBe(2026);
     });
   });
@@ -319,7 +345,7 @@ describe('HolidaysService', () => {
       );
     });
 
-    it('should return correct season for January-August', async () => {
+    it('should return correct season before June 10', async () => {
       // Set system date to March 2026
       jest.setSystemTime(new Date(2026, 2, 15)); // March 15, 2026
 
@@ -328,6 +354,32 @@ describe('HolidaysService', () => {
       await HolidaysService.fetchHolidayDates();
 
       // Check that the fetch URL contains the correct season
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('2025-2026'),
+        expect.any(Object),
+      );
+    });
+
+    it('should switch to the next season on June 10', async () => {
+      jest.setSystemTime(new Date(2026, 5, 10)); // June 10, 2026
+
+      mockFetch.mockResolvedValue(createMockResponse({ total_count: 0, results: [] }));
+
+      await HolidaysService.fetchHolidayDates();
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        expect.stringContaining('2026-2027'),
+        expect.any(Object),
+      );
+    });
+
+    it('should still use previous season on June 9', async () => {
+      jest.setSystemTime(new Date(2026, 5, 9)); // June 9, 2026
+
+      mockFetch.mockResolvedValue(createMockResponse({ total_count: 0, results: [] }));
+
+      await HolidaysService.fetchHolidayDates();
+
       expect(mockFetch).toHaveBeenCalledWith(
         expect.stringContaining('2025-2026'),
         expect.any(Object),

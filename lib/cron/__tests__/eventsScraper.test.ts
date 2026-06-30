@@ -5,6 +5,8 @@ describe('eventsScraper (API mode)', () => {
   beforeEach(() => {
     jest.resetModules();
     jest.clearAllMocks();
+    jest.useFakeTimers();
+    jest.setSystemTime(new Date('2025-09-15T10:00:00Z'));
 
     // Mock global.fetch to simulate WP REST API responses
     global.fetch = jest.fn(async (input: RequestInfo | URL) => {
@@ -594,9 +596,8 @@ describe('eventsScraper (API mode)', () => {
     expect(events[0].location).toBe('Autre'); // default location
   });
 
-  test('scrapeEvents during January-July period (previous academic year)', async () => {
+  test('scrapeEvents before June 10 uses previous academic year', async () => {
     // Set date to March 2026 (should use 2025-26 season)
-    jest.useFakeTimers();
     jest.setSystemTime(new Date('2026-03-15T10:00:00Z'));
 
     global.fetch = jest.fn(async (input: RequestInfo | URL) => {
@@ -629,12 +630,42 @@ describe('eventsScraper (API mode)', () => {
     const events = await scrapeEvents();
     expect(Array.isArray(events)).toBe(true);
 
-    jest.useRealTimers();
   });
 
-  test('scrapeEvents during August period (next academic year)', async () => {
+  test('scrapeEvents switches to next academic year on June 10', async () => {
+    jest.setSystemTime(new Date('2026-06-10T10:00:00Z'));
+
+    global.fetch = jest.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url.includes('/wp-json/wp/v2/spectacle')) {
+        return {
+          ok: true,
+          json: async () => [
+            {
+              id: 130,
+              title: { rendered: 'June Opening Event' },
+              acf: {
+                colonne_de_droite: {
+                  dates: [{ date: '2026-09-01', complet: false, annule: false, report: false }],
+                },
+                diaporama_header: [],
+              },
+              class_list: ['saisons-2026-27-scolaires', 'etypes-opera'],
+            },
+          ],
+        } as any;
+      }
+      return { ok: true, json: async () => [] } as any;
+    }) as any;
+
+    const { scrapeEvents } = require('@/lib/cron/eventsScraper');
+    const events = await scrapeEvents();
+    expect(events).toHaveLength(1);
+    expect(events[0].title).toBe('June Opening Event');
+  });
+
+  test('scrapeEvents during August period uses opened academic year', async () => {
     // Set date to August 2025 (should use 2025-26 season - current year)
-    jest.useFakeTimers();
     jest.setSystemTime(new Date('2025-08-15T10:00:00Z'));
 
     global.fetch = jest.fn(async (input: RequestInfo | URL) => {
@@ -663,14 +694,10 @@ describe('eventsScraper (API mode)', () => {
     const { scrapeEvents } = require('@/lib/cron/eventsScraper');
     const events = await scrapeEvents();
     expect(Array.isArray(events)).toBe(true);
-
-    jest.useRealTimers();
   });
 
   test('scrapeEvents during September-December period (current academic year)', async () => {
     // Set date to September 2025 (should use 2025-26 season - current year)
-    // This tests lines 94-95: if (currentMonth >= 9) { startYear = currentYear; }
-    jest.useFakeTimers();
     jest.setSystemTime(new Date('2025-09-15T10:00:00Z'));
 
     global.fetch = jest.fn(async (input: RequestInfo | URL) => {
@@ -699,8 +726,6 @@ describe('eventsScraper (API mode)', () => {
     const { scrapeEvents } = require('@/lib/cron/eventsScraper');
     const events = await scrapeEvents();
     expect(Array.isArray(events)).toBe(true);
-
-    jest.useRealTimers();
   });
 
   test('scrapeEvents with unknown event types (not in typeMap)', async () => {

@@ -71,33 +71,25 @@ type WordPressEvent = {
 };
 
 const WP_API_BASE = 'https://www.opera-orchestre-montpellier.fr/wp-json/wp/v2';
+const FIRST_OPENING_MONTH = 6; // June
+const FIRST_OPENING_DAY = 10;
 
 /**
  * Get the current academic season
- * Academic year runs from September to July
+ * Academic year now opens for registrations from June 10
  * Returns both long format (YYYY-YY) and short format (YY-YY)
- * Example: September 2025 to July 2026 = { long: "2025-26", short: "25-26" }
+ * Example: June 10, 2025 to June 9, 2026 = { long: "2025-26", short: "25-26" }
  */
 export function getCurrentSeason(): { long: string; short: string } {
   const now = new Date();
   const currentYear = now.getFullYear();
   const currentMonth = now.getMonth() + 1; // JavaScript months are 0-indexed
 
-  // If we're between September (9) and December (12), we're in the first part of the academic year
-  // If we're between January (1) and July (7), we're in the second part of the academic year
-  // If we're in August (8), we consider it as the next academic year starting soon
+  const isOnOrAfterFirstOpening =
+    currentMonth > FIRST_OPENING_MONTH ||
+    (currentMonth === FIRST_OPENING_MONTH && now.getDate() >= FIRST_OPENING_DAY);
 
-  let startYear: number;
-  if (currentMonth >= 9) {
-    // September to December: current year is the start year
-    startYear = currentYear;
-  } else if (currentMonth >= 1 && currentMonth <= 7) {
-    // January to July: previous year is the start year
-    startYear = currentYear - 1;
-  } else {
-    // August: next academic year starts soon, use current year
-    startYear = currentYear;
-  }
+  const startYear = isOnOrAfterFirstOpening ? currentYear : currentYear - 1;
 
   const endYear = startYear + 1;
   const startYearShort = startYear.toString().slice(-2); // Get last 2 digits

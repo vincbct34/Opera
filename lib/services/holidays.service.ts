@@ -23,6 +23,18 @@ export type HolidayDates = {
 
 const MAX_RETRIES = 3;
 const RETRY_DELAY = 1000; // 1 second
+const FIRST_OPENING_MONTH_INDEX = 5; // June
+const FIRST_OPENING_DAY = 10;
+
+function getAcademicSeasonStartYear(date: Date): number {
+  const currentYear = date.getFullYear();
+  const currentMonth = date.getMonth() + 1;
+  const isOnOrAfterFirstOpening =
+    currentMonth > FIRST_OPENING_MONTH_INDEX + 1 ||
+    (currentMonth === FIRST_OPENING_MONTH_INDEX + 1 && date.getDate() >= FIRST_OPENING_DAY);
+
+  return isOnOrAfterFirstOpening ? currentYear : currentYear - 1;
+}
 
 export class HolidaysService {
   private static readonly API_BASE_URL =
@@ -33,15 +45,10 @@ export class HolidaysService {
    */
   private static getCurrentSeason(): string {
     const now = new Date();
-    const currentYear = now.getFullYear();
-    const currentMonth = now.getMonth() + 1;
+    const startYear = getAcademicSeasonStartYear(now);
 
-    // Academic year starts in September
-    if (currentMonth >= 9) {
-      return `${currentYear}-${currentYear + 1}`;
-    } else {
-      return `${currentYear - 1}-${currentYear}`;
-    }
+    // Registration season starts on June 10 for the following academic year.
+    return `${startYear}-${startYear + 1}`;
   }
 
   /**
@@ -124,13 +131,13 @@ export class HolidaysService {
     // Actually, if we fail, maybe we shouldn't block everything.
     // Let's try to infer from typical months if holidays are missing.
 
-    const currentYear = now.getFullYear();
-    const toussaintEnd = holidays.toussaint?.end || new Date(currentYear, 10, 7); // ~Nov 7th default
+    const seasonStartYear = getAcademicSeasonStartYear(now);
+    const toussaintEnd = holidays.toussaint?.end || new Date(seasonStartYear, 10, 7); // ~Nov 7th default
     const christmasEnd =
-      holidays.christmas?.end || new Date(currentYear + (now.getMonth() >= 9 ? 1 : 0), 0, 6); // ~Jan 6th default
+      holidays.christmas?.end || new Date(seasonStartYear + 1, 0, 6); // ~Jan 6th default
 
     // Logic:
-    // 1. Sept -> Toussaint End: Open until Toussaint End
+    // 1. June 10 -> Toussaint End: Open until Toussaint End
     if (now <= toussaintEnd) {
       return toussaintEnd;
     }
@@ -141,7 +148,6 @@ export class HolidaysService {
     }
 
     // 3. Christmas End -> End of Season: Open everything (End of Season ~ July)
-    // Return a date far in the future
-    return new Date(now.getFullYear() + 1, 6, 31); // July 31st next year
+    return new Date(seasonStartYear + 1, 6, 31); // July 31st
   }
 }

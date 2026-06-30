@@ -1234,7 +1234,7 @@ Authorization: Bearer <CRON_SECRET>
 
 Les événements ne sont plus ouverts en bloc, mais progressivement selon le calendrier scolaire :
 
-1. **Rentrée (Septembre)** : Ouverture des événements jusqu'à la fin des vacances de la Toussaint.
+1. **10 juin** : Ouverture des événements jusqu'à la fin des vacances de la Toussaint.
 2. **Toussaint (Novembre)** : Ouverture des événements jusqu'à la fin des vacances de Noël.
 3. **Noël (Janvier)** : Ouverture de tous les événements restants de la saison.
 
@@ -1243,6 +1243,7 @@ Cette logique est gérée par `HolidaysService` qui :
 - Interroge l'API `data.education.gouv.fr` (Académie de Montpellier, Vacances scolaires)
 - Détermine la `openingLimitDate` actuelle
 - Appliquée lors du scraping (création) et via le cron `events/status-update` (mise à jour quotidienne)
+- Archive automatiquement les événements un an après leur dernière date, sauf si le champ `status` est protégé
 
 ### 9.6 Protection des Champs Événements (Nouveau v1.4.1)
 

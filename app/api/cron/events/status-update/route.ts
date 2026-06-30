@@ -8,10 +8,22 @@ import { HolidaysService } from '@/lib/services/holidays.service';
 
 export const dynamic = 'force-dynamic';
 
+function getLatestEventDate(dates: Date[]): Date {
+  return dates.reduce((latest, date) => (date > latest ? date : latest), dates[0]);
+}
+
+function shouldArchiveEvent(dates: Date[], now: Date): boolean {
+  const latestDate = getLatestEventDate(dates);
+  const archiveDate = new Date(latestDate);
+  archiveDate.setFullYear(archiveDate.getFullYear() + 1);
+  return archiveDate <= now;
+}
+
 /**
  * Update event statuses based on their dates.
  * Events with all dates in the past should be marked as CLOSED.
  * Events with at least one future date should be marked as OPEN.
+ * Events whose latest date is more than one year old should be marked as ARCHIVED.
  * @param req - NextRequest object containing the request data.
  * @returns NextResponse with update status and count.
  */
@@ -34,6 +46,7 @@ export async function GET(req: NextRequest) {
 
       let updatedToClosedCount = 0;
       let updatedToOpenCount = 0;
+      let updatedToArchivedCount = 0;
       const updatedEvents: {
         id: string;
         title: string;
@@ -64,7 +77,11 @@ export async function GET(req: NextRequest) {
 
         let newStatus: EventStatus | null = null;
 
-        if (allDatesInPast && event.status === EventStatus.OPEN) {
+        if (event.status !== EventStatus.ARCHIVED && shouldArchiveEvent(event.event_dates, now)) {
+          // Latest event date is more than one year old -> archive it
+          newStatus = EventStatus.ARCHIVED;
+          updatedToArchivedCount++;
+        } else if (allDatesInPast && event.status === EventStatus.OPEN) {
           // All dates are past and event is still OPEN -> should be CLOSED
           newStatus = EventStatus.CLOSED;
           updatedToClosedCount++;
@@ -90,7 +107,7 @@ export async function GET(req: NextRequest) {
         }
       }
 
-      const totalUpdated = updatedToClosedCount + updatedToOpenCount;
+      const totalUpdated = updatedToClosedCount + updatedToOpenCount + updatedToArchivedCount;
 
       return NextResponse.json({
         success: true,
@@ -100,6 +117,7 @@ export async function GET(req: NextRequest) {
           totalUpdated,
           updatedToClosedCount,
           updatedToOpenCount,
+          updatedToArchivedCount,
         },
         updatedEvents,
         timestamp: new Date().toISOString(),
@@ -149,6 +167,7 @@ export async function POST(req: NextRequest) {
 
       let toCloseCount = 0;
       let toOpenCount = 0;
+      let toArchiveCount = 0;
       const eventsToUpdate: {
         id: string;
         title: string;
@@ -179,7 +198,11 @@ export async function POST(req: NextRequest) {
 
         let newStatus: EventStatus | null = null;
 
-        if (allDatesInPast && event.status === EventStatus.OPEN) {
+        if (event.status !== EventStatus.ARCHIVED && shouldArchiveEvent(event.event_dates, now)) {
+          // Latest event date is more than one year old -> archive it
+          newStatus = EventStatus.ARCHIVED;
+          toArchiveCount++;
+        } else if (allDatesInPast && event.status === EventStatus.OPEN) {
           // All dates are past and event is still OPEN -> should be CLOSED
           newStatus = EventStatus.CLOSED;
           toCloseCount++;
@@ -208,7 +231,7 @@ export async function POST(req: NextRequest) {
         }
       }
 
-      const totalToUpdate = toCloseCount + toOpenCount;
+      const totalToUpdate = toCloseCount + toOpenCount + toArchiveCount;
 
       return NextResponse.json({
         success: true,
@@ -221,6 +244,7 @@ export async function POST(req: NextRequest) {
           totalToUpdate,
           toCloseCount,
           toOpenCount,
+          toArchiveCount,
         },
         eventsToUpdate,
         timestamp: new Date().toISOString(),
