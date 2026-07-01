@@ -24,14 +24,18 @@ jest.mock('next/server', () => {
 });
 
 // Mock Prisma
-jest.mock('@/lib/middleware/prismaConfig', () => ({
-  __esModule: true,
-  default: {
+jest.mock('@/lib/middleware/prismaConfig', () => {
+  const prismaMock: Record<string, any> = {
     event: {
       findMany: jest.fn(),
       create: jest.fn(),
       findUnique: jest.fn(),
       update: jest.fn(),
+    },
+    eventRegistrationBlock: {
+      deleteMany: jest.fn(),
+      update: jest.fn(),
+      create: jest.fn(),
     },
     scoringConfiguration: {
       findMany: jest.fn(),
@@ -39,8 +43,12 @@ jest.mock('@/lib/middleware/prismaConfig', () => ({
       findFirst: jest.fn(),
       updateMany: jest.fn(),
     },
-  },
-}));
+  };
+  prismaMock.$transaction = jest.fn((callback: (tx: typeof prismaMock) => unknown) =>
+    callback(prismaMock),
+  );
+  return { __esModule: true, default: prismaMock };
+});
 
 // Mock Middleware
 jest.mock('@/app/api/middleware', () => ({
