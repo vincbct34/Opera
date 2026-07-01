@@ -110,6 +110,91 @@ export async function PATCH(
         return NextResponse.json({ error: 'Inscription introuvable' }, { status: 404 });
       }
 
+      // Validate and prepare registration block selections if provided
+      let blockSelectionsToApply: Array<{
+        block_id: string;
+        wants_to_attend: boolean;
+        selected_date: Date | null;
+      }> | null = null;
+
+      if (body.registration_block_selections !== undefined) {
+        if (!Array.isArray(body.registration_block_selections)) {
+          return NextResponse.json(
+            { error: 'Sélections de blocs pédagogiques invalides' },
+            { status: 400 },
+          );
+        }
+
+        const eventBlocks = await prisma.eventRegistrationBlock.findMany({
+          where: { event_id: currentRegistration.event_id },
+        });
+        const blocksById = new Map(eventBlocks.map((block) => [block.id, block]));
+        const datesMatch = (selectedDate: string | null | undefined, dates: Date[]) => {
+          if (!selectedDate) return dates.length === 0;
+          const selectedTime = new Date(selectedDate).getTime();
+          return dates.some((date) => date.getTime() === selectedTime);
+        };
+
+        const selections = body.registration_block_selections as Array<{
+          block_id?: string;
+          wants_to_attend?: boolean;
+          selected_date?: string | null;
+        }>;
+
+        const selectionsByBlockId = new Map<string, (typeof selections)[number]>();
+        for (const selection of selections) {
+          if (!selection.block_id || typeof selection.wants_to_attend !== 'boolean') {
+            return NextResponse.json(
+              { error: 'Réponse de bloc pédagogique invalide' },
+              { status: 400 },
+            );
+          }
+
+          const block = blocksById.get(selection.block_id);
+          if (!block || block.enabled === false || !block.registration_enabled) {
+            return NextResponse.json(
+              { error: "Ce bloc pédagogique n'accepte pas d'inscription" },
+              { status: 400 },
+            );
+          }
+
+          if (
+            selection.wants_to_attend &&
+            block.dates.length > 0 &&
+            !datesMatch(selection.selected_date, block.dates)
+          ) {
+            return NextResponse.json(
+              { error: `Veuillez choisir une date valide pour "${block.title}"` },
+              { status: 400 },
+            );
+          }
+
+          selectionsByBlockId.set(selection.block_id, selection);
+        }
+
+        for (const block of eventBlocks) {
+          if (block.enabled === false || !block.registration_enabled || !block.mandatory) continue;
+          const selection = selectionsByBlockId.get(block.id);
+          if (!selection?.wants_to_attend) {
+            return NextResponse.json(
+              { error: `Le bloc "${block.title}" est obligatoire` },
+              { status: 400 },
+            );
+          }
+        }
+
+        blockSelectionsToApply = selections
+          .filter((selection) => selection.block_id && blocksById.has(selection.block_id))
+          .map((selection) => ({
+            block_id: selection.block_id!,
+            wants_to_attend: Boolean(selection.wants_to_attend),
+            selected_date:
+              selection.wants_to_attend && selection.selected_date
+                ? new Date(selection.selected_date)
+                : null,
+          }));
+      }
+
       // Build update data object
       const updateData: {
         status?: RegistrationStatus;
@@ -177,6 +262,25 @@ export async function PATCH(
           age_ranges: true,
           want_formation: true,
           want_preparation: true,
+          blockSelections: {
+            select: {
+              id: true,
+              wants_to_attend: true,
+              selected_date: true,
+              block: {
+                select: {
+                  id: true,
+                  title: true,
+                  mandatory: true,
+                },
+              },
+            },
+            orderBy: {
+              block: {
+                order: 'asc',
+              },
+            },
+          },
           user: {
             select: {
               id: true,
@@ -202,6 +306,24 @@ export async function PATCH(
           },
         },
       });
+
+      // Replace registration block selections if provided
+      if (blockSelectionsToApply) {
+        await prisma.registrationBlockSelection.deleteMany({
+          where: { registration_id: registrationId },
+        });
+
+        if (blockSelectionsToApply.length > 0) {
+          await prisma.registrationBlockSelection.createMany({
+            data: blockSelectionsToApply.map((selection) => ({
+              registration_id: registrationId,
+              block_id: selection.block_id,
+              wants_to_attend: selection.wants_to_attend,
+              selected_date: selection.selected_date,
+            })),
+          });
+        }
+      }
 
       // Update disabilities if provided
       if (body.disabilities && Array.isArray(body.disabilities)) {

@@ -28,6 +28,12 @@ interface MockRegistrationInput {
   want_formation?: boolean | null;
   want_preparation?: boolean | null;
   disabilities?: Array<{ count: number }>;
+  blockSelections?: Array<{
+    id: string;
+    wants_to_attend: boolean;
+    selected_date: Date | null;
+    block: { title: string };
+  }>;
   event: {
     id: string;
     title: string;
@@ -52,6 +58,12 @@ interface MockRegistration {
   want_formation?: boolean | null;
   want_preparation?: boolean | null;
   disabilities?: Array<{ count: number }>;
+  blockSelections?: Array<{
+    id: string;
+    wants_to_attend: boolean;
+    selected_date: Date | null;
+    block: { title: string };
+  }>;
   event: {
     id: string;
     title: string;
@@ -465,6 +477,20 @@ describe('registrationAnalytics', () => {
           want_formation: true,
           want_preparation: true,
           disabilities: [{ count: 2 }, { count: 1 }],
+          blockSelections: [
+            {
+              id: 'sel-1',
+              wants_to_attend: true,
+              selected_date: new Date('2024-01-05T10:00:00Z'),
+              block: { title: 'Atelier découverte' },
+            },
+            {
+              id: 'sel-2',
+              wants_to_attend: false,
+              selected_date: null,
+              block: { title: 'Répétition générale' },
+            },
+          ],
           event: { id: 'event-1', title: 'Event 1', location: 'Salle Mozart' },
         },
         {
@@ -512,6 +538,20 @@ describe('registrationAnalytics', () => {
       expect(result.recentRegistrations[0].wantPreparation).toBe(true);
       expect(result.recentRegistrations[0].disabilitiesCount).toBe(3);
       expect(result.recentRegistrations[0].eventLocation).toBe('Salle Mozart');
+      expect(result.recentRegistrations[0].blockSelections).toEqual([
+        {
+          id: 'sel-1',
+          wants_to_attend: true,
+          selected_date: '2024-01-05T10:00:00.000Z',
+          block: { title: 'Atelier découverte' },
+        },
+        {
+          id: 'sel-2',
+          wants_to_attend: false,
+          selected_date: null,
+          block: { title: 'Répétition générale' },
+        },
+      ]);
 
       // Check second registration with empty/null arrays (should be undefined)
       expect(result.recentRegistrations[1].caretakerCount).toBeUndefined();
@@ -523,6 +563,7 @@ describe('registrationAnalytics', () => {
       expect(result.recentRegistrations[1].wantPreparation).toBeUndefined();
       expect(result.recentRegistrations[1].disabilitiesCount).toBeUndefined();
       expect(result.recentRegistrations[1].eventLocation).toBeUndefined();
+      expect(result.recentRegistrations[1].blockSelections).toBeUndefined();
 
       // Check third registration without optional fields
       expect(result.recentRegistrations[2].bookedSeats).toBe(20);

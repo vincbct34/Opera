@@ -618,20 +618,52 @@ export default function AdminInstitutionDetailClient({
                         )}
 
                         {/* Formation and Preparation flags */}
-                        {((r.want_formation !== null && r.want_formation !== undefined) ||
-                          (r.want_preparation !== null && r.want_preparation !== undefined)) && (
+                        {r.blockSelections && r.blockSelections.length > 0 ? (
                           <div className="flex flex-wrap gap-2">
-                            {r.want_formation && (
-                              <span className="text-xs px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 font-ibm">
-                                🎓 Formation souhaitée
-                              </span>
-                            )}
-                            {r.want_preparation && (
-                              <span className="text-xs px-2 py-1 bg-teal-50 text-teal-700 border border-teal-200 font-ibm">
-                                🎵 Préparation musicale souhaitée
-                              </span>
+                            {r.blockSelections.map(
+                              (selection: {
+                                id: string;
+                                wants_to_attend: boolean;
+                                selected_date?: string | null;
+                                block: { title: string };
+                              }) => (
+                                <span
+                                  key={selection.id}
+                                  className="text-xs px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 font-ibm"
+                                >
+                                  {selection.wants_to_attend ? '✓' : 'Non'} {selection.block.title}
+                                  {selection.selected_date
+                                    ? ` - ${new Date(selection.selected_date).toLocaleString(
+                                        'fr-FR',
+                                        {
+                                          day: '2-digit',
+                                          month: 'short',
+                                          year: 'numeric',
+                                          hour: '2-digit',
+                                          minute: '2-digit',
+                                        },
+                                      )}`
+                                    : ''}
+                                </span>
+                              ),
                             )}
                           </div>
+                        ) : (
+                          ((r.want_formation !== null && r.want_formation !== undefined) ||
+                            (r.want_preparation !== null && r.want_preparation !== undefined)) && (
+                            <div className="flex flex-wrap gap-2">
+                              {r.want_formation && (
+                                <span className="text-xs px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 font-ibm">
+                                  🎓 Formation souhaitée
+                                </span>
+                              )}
+                              {r.want_preparation && (
+                                <span className="text-xs px-2 py-1 bg-teal-50 text-teal-700 border border-teal-200 font-ibm">
+                                  🎵 Préparation musicale souhaitée
+                                </span>
+                              )}
+                            </div>
+                          )
                         )}
 
                         {/* Contact Info */}
@@ -825,20 +857,52 @@ export default function AdminInstitutionDetailClient({
                         )}
 
                         {/* Formation and Preparation flags */}
-                        {((r.want_formation !== null && r.want_formation !== undefined) ||
-                          (r.want_preparation !== null && r.want_preparation !== undefined)) && (
+                        {r.blockSelections && r.blockSelections.length > 0 ? (
                           <div className="flex flex-wrap gap-2">
-                            {r.want_formation && (
-                              <span className="text-xs px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 font-ibm">
-                                🎓 Formation souhaitée
-                              </span>
-                            )}
-                            {r.want_preparation && (
-                              <span className="text-xs px-2 py-1 bg-teal-50 text-teal-700 border border-teal-200 font-ibm">
-                                🎵 Préparation musicale souhaitée
-                              </span>
+                            {r.blockSelections.map(
+                              (selection: {
+                                id: string;
+                                wants_to_attend: boolean;
+                                selected_date?: string | null;
+                                block: { title: string };
+                              }) => (
+                                <span
+                                  key={selection.id}
+                                  className="text-xs px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 font-ibm"
+                                >
+                                  {selection.wants_to_attend ? '✓' : 'Non'} {selection.block.title}
+                                  {selection.selected_date
+                                    ? ` - ${new Date(selection.selected_date).toLocaleString(
+                                        'fr-FR',
+                                        {
+                                          day: '2-digit',
+                                          month: 'short',
+                                          year: 'numeric',
+                                          hour: '2-digit',
+                                          minute: '2-digit',
+                                        },
+                                      )}`
+                                    : ''}
+                                </span>
+                              ),
                             )}
                           </div>
+                        ) : (
+                          ((r.want_formation !== null && r.want_formation !== undefined) ||
+                            (r.want_preparation !== null && r.want_preparation !== undefined)) && (
+                            <div className="flex flex-wrap gap-2">
+                              {r.want_formation && (
+                                <span className="text-xs px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 font-ibm">
+                                  🎓 Formation souhaitée
+                                </span>
+                              )}
+                              {r.want_preparation && (
+                                <span className="text-xs px-2 py-1 bg-teal-50 text-teal-700 border border-teal-200 font-ibm">
+                                  🎵 Préparation musicale souhaitée
+                                </span>
+                              )}
+                            </div>
+                          )
                         )}
 
                         {/* Contact Info */}

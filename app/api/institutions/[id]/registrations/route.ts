@@ -35,6 +35,25 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
             event: true,
             user: true,
             disabilities: true,
+            blockSelections: {
+              select: {
+                id: true,
+                wants_to_attend: true,
+                selected_date: true,
+                block: {
+                  select: {
+                    id: true,
+                    title: true,
+                    mandatory: true,
+                  },
+                },
+              },
+              orderBy: {
+                block: {
+                  order: 'asc',
+                },
+              },
+            },
           },
           orderBy: { created_at: 'desc' },
           ...(shouldPaginate && { skip, take: limit }),

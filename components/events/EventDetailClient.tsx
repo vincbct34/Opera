@@ -32,6 +32,16 @@ type DisplayEvent = Partial<PrismaEvent> & {
   age_ranges?: AgeRange[];
   has_initial_formation?: boolean | null;
   has_musical_preparation?: boolean | null;
+  registrationBlocks?: Array<{
+    id: string;
+    title: string;
+    description?: string | null;
+    dates: Array<string | Date>;
+    enabled: boolean;
+    registration_enabled: boolean;
+    mandatory: boolean;
+    order: number;
+  }>;
 };
 
 const formatDate = (d?: string | Date) => {
@@ -417,6 +427,7 @@ export default function EventDetailClient({
                 isArchived={event.status === 'ARCHIVED'}
                 eventHasFormation={event.has_initial_formation ?? false}
                 eventHasPreparation={event.has_musical_preparation ?? false}
+                eventRegistrationBlocks={event.registrationBlocks ?? []}
                 registrationStatusLabels={registrationStatusLabels}
                 accessibilityLabels={accessibilityLabels}
                 publicCategoryLabels={publicCategoryLabels}

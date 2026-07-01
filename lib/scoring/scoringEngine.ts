@@ -45,6 +45,12 @@ export interface InstitutionHistory {
     disabilitiesCount?: number;
     wantFormation?: boolean;
     wantPreparation?: boolean;
+    blockSelections?: Array<{
+      id: string;
+      wants_to_attend: boolean;
+      selected_date?: string | null;
+      block: { title: string };
+    }>;
   }>;
 }
 

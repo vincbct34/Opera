@@ -23,6 +23,12 @@ interface RegistrationRecord {
   want_formation?: boolean | null;
   want_preparation?: boolean | null;
   disabilities?: Array<{ count: number }>;
+  blockSelections?: Array<{
+    id: string;
+    wants_to_attend: boolean;
+    selected_date: Date | null;
+    block: { title: string };
+  }>;
   event: {
     id: string;
     title: string;
@@ -60,6 +66,23 @@ export async function calculateInstitutionHistory(
       age_ranges: true,
       want_formation: true,
       want_preparation: true,
+      blockSelections: {
+        select: {
+          id: true,
+          wants_to_attend: true,
+          selected_date: true,
+          block: {
+            select: {
+              title: true,
+            },
+          },
+        },
+        orderBy: {
+          block: {
+            order: 'asc',
+          },
+        },
+      },
       event: {
         select: {
           id: true,
@@ -139,6 +162,17 @@ export async function calculateInstitutionHistory(
         disabilitiesCount: disabilitiesCount > 0 ? disabilitiesCount : undefined,
         wantFormation: reg.want_formation || undefined,
         wantPreparation: reg.want_preparation || undefined,
+        blockSelections:
+          reg.blockSelections && reg.blockSelections.length > 0
+            ? reg.blockSelections.map((selection) => ({
+                id: selection.id,
+                wants_to_attend: selection.wants_to_attend,
+                selected_date: selection.selected_date
+                  ? selection.selected_date.toISOString()
+                  : null,
+                block: { title: selection.block.title },
+              }))
+            : undefined,
       });
     }
   }

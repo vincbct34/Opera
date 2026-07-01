@@ -309,6 +309,7 @@ export type AdminEventRegistrationBlock = {
   registration_enabled?: boolean;
   mandatory?: boolean;
   order?: number;
+  _count?: { selections: number };
 };
 
 export type AdminEventFormData = Omit<

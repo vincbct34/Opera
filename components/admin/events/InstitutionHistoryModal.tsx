@@ -230,6 +230,12 @@ export default function InstitutionHistoryModal({
                             disabilitiesCount?: number;
                             wantFormation?: boolean;
                             wantPreparation?: boolean;
+                            blockSelections?: Array<{
+                              id: string;
+                              wants_to_attend: boolean;
+                              selected_date?: string | null;
+                              block: { title: string };
+                            }>;
                           },
                           index: number,
                         ) => (
@@ -325,20 +331,35 @@ export default function InstitutionHistoryModal({
                                     ))}
                                 </div>
                               )}
-                              {(reg.wantFormation || reg.wantPreparation) && (
+                              {reg.blockSelections && reg.blockSelections.length > 0 ? (
                                 <div className="col-span-1 sm:col-span-2">
                                   <span className="font-semibold">Autour du spectacle :</span>{' '}
-                                  {reg.wantFormation && (
-                                    <span className="text-xs px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 inline-block">
-                                      🎓 Formation
+                                  {reg.blockSelections.map((selection) => (
+                                    <span
+                                      key={selection.id}
+                                      className="text-xs px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 inline-block mr-1"
+                                    >
+                                      {selection.wants_to_attend ? '✓' : 'Non'}{' '}
+                                      {selection.block.title}
                                     </span>
-                                  )}
-                                  {reg.wantPreparation && (
-                                    <span className="text-xs px-2 py-0.5 bg-teal-50 text-teal-700 border border-teal-200 inline-block ml-1">
-                                      🎵 Prép. musicale
-                                    </span>
-                                  )}
+                                  ))}
                                 </div>
+                              ) : (
+                                (reg.wantFormation || reg.wantPreparation) && (
+                                  <div className="col-span-1 sm:col-span-2">
+                                    <span className="font-semibold">Autour du spectacle :</span>{' '}
+                                    {reg.wantFormation && (
+                                      <span className="text-xs px-2 py-0.5 bg-amber-50 text-amber-700 border border-amber-200 inline-block">
+                                        🎓 Formation
+                                      </span>
+                                    )}
+                                    {reg.wantPreparation && (
+                                      <span className="text-xs px-2 py-0.5 bg-teal-50 text-teal-700 border border-teal-200 inline-block ml-1">
+                                        🎵 Prép. musicale
+                                      </span>
+                                    )}
+                                  </div>
+                                )
                               )}
                             </div>
 

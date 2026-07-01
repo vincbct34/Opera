@@ -120,6 +120,7 @@ export default function AdminEventDetailClient({
   isArchived = false,
   eventHasFormation = false,
   eventHasPreparation = false,
+  eventRegistrationBlocks = [],
   registrationStatusLabels,
   accessibilityLabels,
   publicCategoryLabels,
@@ -130,6 +131,16 @@ export default function AdminEventDetailClient({
   isArchived?: boolean;
   eventHasFormation?: boolean;
   eventHasPreparation?: boolean;
+  eventRegistrationBlocks?: Array<{
+    id: string;
+    title: string;
+    description?: string | null;
+    dates: Array<string | Date>;
+    enabled: boolean;
+    registration_enabled: boolean;
+    mandatory: boolean;
+    order: number;
+  }>;
   registrationStatusLabels?: Record<string, string>;
   accessibilityLabels?: Record<string, string>;
   publicCategoryLabels?: Record<string, string>;
@@ -395,6 +406,11 @@ export default function AdminEventDetailClient({
       comments?: string | null;
       want_formation?: boolean | null;
       want_preparation?: boolean | null;
+      registration_block_selections?: Array<{
+        block_id: string;
+        wants_to_attend: boolean;
+        selected_date?: string | null;
+      }>;
       disabilities?: Array<{ type: Accessibility; count: number; details?: string | null }>;
       category?: PublicCategory[];
       grades?: SchoolGrade[];
@@ -986,6 +1002,7 @@ export default function AdminEventDetailClient({
         }
         eventHasFormation={eventHasFormation}
         eventHasPreparation={eventHasPreparation}
+        registrationBlocks={eventRegistrationBlocks}
         onCancel={() => {
           setEditRegistrationModalOpen(false);
           setActionData(null);

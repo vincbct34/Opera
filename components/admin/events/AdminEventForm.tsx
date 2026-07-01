@@ -48,6 +48,7 @@ type LocalRegistrationBlock = {
   registration_enabled: boolean;
   mandatory: boolean;
   order: number;
+  selectionsCount?: number;
 };
 
 type RegistrationBlockMode = 'hidden' | 'optional' | 'required';
@@ -127,6 +128,7 @@ export default function AdminEventForm({
           registration_enabled: block.enabled !== false,
           mandatory: block.enabled !== false && (block.mandatory ?? false),
           order: block.order ?? index,
+          selectionsCount: block._count?.selections ?? 0,
         }))
       : initialData?.has_initial_formation
         ? [
@@ -265,6 +267,15 @@ export default function AdminEventForm({
   };
 
   const removeRegistrationBlock = (index: number) => {
+    const block = formData.registrationBlocks[index];
+    const selectionsCount = block?.selectionsCount ?? 0;
+    if (selectionsCount > 0) {
+      const confirmed = window.confirm(
+        `${selectionsCount} inscrit(s) ont déjà répondu à ce bloc ("${block.title}"). ` +
+          'Supprimer ce bloc effacera définitivement leurs réponses. Continuer ?',
+      );
+      if (!confirmed) return;
+    }
     setFormData((prev) => ({
       ...prev,
       registrationBlocks: prev.registrationBlocks.filter((_, blockIndex) => blockIndex !== index),

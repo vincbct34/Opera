@@ -95,6 +95,11 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
           accessibility: true,
           registrationBlocks: {
             orderBy: { order: 'asc' },
+            include: {
+              _count: {
+                select: { selections: true },
+              },
+            },
           },
           _count: {
             select: { registrations: true },

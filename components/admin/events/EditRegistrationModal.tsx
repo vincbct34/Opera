@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { X, Plus, Trash2, AlertTriangle } from '@deemlol/next-icons';
 import MultiSelect from '@/components/ui/MultiSelect';
 import UserSelector from '@/components/admin/users/UserSelector';
@@ -43,11 +43,32 @@ interface RegistrationData {
   comments?: string | null;
   want_formation?: boolean | null;
   want_preparation?: boolean | null;
+  blockSelections?: Array<{
+    id: string;
+    wants_to_attend: boolean;
+    selected_date?: string | null;
+    block: {
+      id: string;
+      title: string;
+      mandatory?: boolean;
+    };
+  }>;
   disabilities?: Array<{ type: Accessibility; count: number; details?: string | null }>;
   category?: PublicCategory[];
   grades?: SchoolGrade[];
   age_ranges?: AgeRange[];
   was_present_comment?: string | null;
+}
+
+interface RegistrationBlockOption {
+  id: string;
+  title: string;
+  description?: string | null;
+  dates: Array<string | Date>;
+  enabled: boolean;
+  registration_enabled: boolean;
+  mandatory: boolean;
+  order: number;
 }
 
 interface RegistrationUpdateData {
@@ -63,6 +84,11 @@ interface RegistrationUpdateData {
   comments?: string | null;
   want_formation?: boolean | null;
   want_preparation?: boolean | null;
+  registration_block_selections?: Array<{
+    block_id: string;
+    wants_to_attend: boolean;
+    selected_date?: string | null;
+  }>;
   disabilities?: Array<{ type: Accessibility; count: number; details?: string | null }>;
   category?: PublicCategory[];
   grades?: SchoolGrade[];
@@ -75,6 +101,7 @@ interface EditRegistrationModalProps {
   registration: RegistrationData | null;
   eventHasFormation: boolean;
   eventHasPreparation: boolean;
+  registrationBlocks?: RegistrationBlockOption[];
   onCancel: () => void;
   onConfirm: (data: RegistrationUpdateData) => Promise<void>;
   saving: boolean;
@@ -128,6 +155,7 @@ export default function EditRegistrationModal({
   registration,
   eventHasFormation,
   eventHasPreparation,
+  registrationBlocks = [],
   onCancel,
   onConfirm,
   saving,
@@ -136,6 +164,10 @@ export default function EditRegistrationModal({
 }: EditRegistrationModalProps) {
   const ACCESSIBILITY_LABELS = accessibilityLabels || DEFAULT_ACCESSIBILITY_LABELS;
   const PUBLIC_CATEGORY_LABELS = publicCategoryLabels || DEFAULT_PUBLIC_CATEGORY_LABELS;
+  const activeBlocks = useMemo(
+    () => registrationBlocks.filter((block) => block.enabled),
+    [registrationBlocks],
+  );
 
   // Form state
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
@@ -151,6 +183,9 @@ export default function EditRegistrationModal({
   const [was_present_comment, setWas_present_comment] = useState('');
   const [want_formation, setWant_formation] = useState(false);
   const [want_preparation, setWant_preparation] = useState(false);
+  const [blockSelections, setBlockSelections] = useState<
+    Record<string, { wantsToAttend: boolean; selectedDate: string }>
+  >({});
   const [disabilities, setDisabilities] = useState<DisabilityEntry[]>([]);
   const [category, setCategory] = useState<PublicCategory[]>([]);
   const [grades, setGrades] = useState<SchoolGrade[]>([]);
@@ -199,6 +234,26 @@ export default function EditRegistrationModal({
       setGrades(registration.grades || []);
       setAge_ranges(registration.age_ranges || []);
 
+      const existingBlockSelections = new Map(
+        (registration.blockSelections || []).map((selection) => [selection.block.id, selection]),
+      );
+      setBlockSelections(
+        Object.fromEntries(
+          activeBlocks.map((block) => {
+            const existing = existingBlockSelections.get(block.id);
+            return [
+              block.id,
+              {
+                wantsToAttend: existing ? existing.wants_to_attend : block.mandatory,
+                selectedDate: existing?.selected_date
+                  ? new Date(existing.selected_date).toISOString()
+                  : '',
+              },
+            ];
+          }),
+        ),
+      );
+
       // Convert disabilities to DisabilityEntry format
       if (registration.disabilities && registration.disabilities.length > 0) {
         setDisabilities(
@@ -215,7 +270,7 @@ export default function EditRegistrationModal({
 
       setErrors({});
     }
-  }, [registration]);
+  }, [registration, activeBlocks]);
 
   if (!open || !registration) return null;
 
@@ -238,6 +293,16 @@ export default function EditRegistrationModal({
       newErrors.manager_phone_number = 'Format de téléphone invalide';
     }
 
+    for (const block of activeBlocks) {
+      if (!block.registration_enabled) continue;
+      const selection = blockSelections[block.id];
+      if (block.mandatory && !selection?.wantsToAttend) {
+        newErrors[`block_${block.id}`] = `Le bloc "${block.title}" est obligatoire`;
+      } else if (selection?.wantsToAttend && block.dates.length > 0 && !selection.selectedDate) {
+        newErrors[`block_${block.id}`] = `Veuillez choisir une date pour "${block.title}"`;
+      }
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -258,6 +323,17 @@ export default function EditRegistrationModal({
       comments: comments || null,
       want_formation,
       want_preparation,
+      registration_block_selections:
+        activeBlocks.length > 0
+          ? activeBlocks.map((block) => {
+              const selection = blockSelections[block.id];
+              return {
+                block_id: block.id,
+                wants_to_attend: Boolean(selection?.wantsToAttend),
+                selected_date: selection?.wantsToAttend ? selection.selectedDate || null : null,
+              };
+            })
+          : undefined,
       disabilities: disabilities.map((d) => ({
         type: d.type,
         count: d.count,
@@ -294,7 +370,16 @@ export default function EditRegistrationModal({
       (caretaker_count === null || (caretaker_count >= 0 && caretaker_count <= 50)) &&
       (aesh_count === null || (aesh_count >= 0 && aesh_count <= 100)) &&
       (!manager_email || /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(manager_email)) &&
-      (!manager_phone_number || /^[0-9+\s()-]+$/.test(manager_phone_number))
+      (!manager_phone_number || /^[0-9+\s()-]+$/.test(manager_phone_number)) &&
+      activeBlocks.every((block) => {
+        if (!block.registration_enabled) return true;
+        const selection = blockSelections[block.id];
+        if (block.mandatory && !selection?.wantsToAttend) return false;
+        if (selection?.wantsToAttend && block.dates.length > 0 && !selection.selectedDate) {
+          return false;
+        }
+        return true;
+      })
     );
   };
 
@@ -507,26 +592,114 @@ export default function EditRegistrationModal({
           </div>
 
           {/* Section: Autour du spectacle */}
-          {(eventHasFormation || eventHasPreparation) && (
+          {(activeBlocks.length > 0 || eventHasFormation || eventHasPreparation) && (
             <div>
               <h3 className="text-sm font-poppins font-semibold text-gray-900 mb-3 pb-2 border-b border-gray-200">
                 Autour du spectacle
               </h3>
-              <div className="space-y-2">
-                {eventHasFormation && (
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={want_formation}
-                      onChange={(e) => setWant_formation(e.target.checked)}
-                      disabled={saving}
-                      className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-700 font-ibm">
-                      Souhaite la formation initiale
-                    </span>
-                  </label>
-                )}
+              <div className="space-y-3">
+                {activeBlocks.length > 0
+                  ? activeBlocks.map((block) => {
+                      const selection = blockSelections[block.id];
+                      return (
+                        <div
+                          key={block.id}
+                          className="p-3 bg-gray-50 border border-gray-200 space-y-2"
+                        >
+                          <div className="flex items-center justify-between gap-3">
+                            <span className="text-sm font-ibm text-gray-800 font-semibold">
+                              {block.title}
+                            </span>
+                            {block.mandatory && (
+                              <span className="px-2 py-0.5 text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-300">
+                                Obligatoire
+                              </span>
+                            )}
+                          </div>
+                          {block.registration_enabled ? (
+                            <>
+                              <label className="flex items-center gap-2 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={Boolean(selection?.wantsToAttend)}
+                                  disabled={saving || block.mandatory}
+                                  onChange={(e) =>
+                                    setBlockSelections((prev) => ({
+                                      ...prev,
+                                      [block.id]: {
+                                        wantsToAttend: e.target.checked,
+                                        selectedDate: e.target.checked
+                                          ? (prev[block.id]?.selectedDate ?? '')
+                                          : '',
+                                      },
+                                    }))
+                                  }
+                                  className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                                />
+                                <span className="text-sm text-gray-700 font-ibm">
+                                  Souhaite y assister
+                                </span>
+                              </label>
+                              {selection?.wantsToAttend && block.dates.length > 0 && (
+                                <select
+                                  value={selection.selectedDate}
+                                  disabled={saving}
+                                  onChange={(e) =>
+                                    setBlockSelections((prev) => ({
+                                      ...prev,
+                                      [block.id]: {
+                                        wantsToAttend: true,
+                                        selectedDate: e.target.value,
+                                      },
+                                    }))
+                                  }
+                                  className="w-full px-3 py-2 border border-gray-300 font-ibm text-sm focus:outline-none focus:border-blue-500 bg-white"
+                                >
+                                  <option value="">Sélectionner une date</option>
+                                  {block.dates.map((date) => {
+                                    const iso = new Date(date).toISOString();
+                                    return (
+                                      <option key={iso} value={iso}>
+                                        {new Date(date).toLocaleString('fr-FR', {
+                                          day: '2-digit',
+                                          month: 'long',
+                                          year: 'numeric',
+                                          hour: '2-digit',
+                                          minute: '2-digit',
+                                        })}
+                                      </option>
+                                    );
+                                  })}
+                                </select>
+                              )}
+                            </>
+                          ) : (
+                            <p className="text-xs text-gray-500 font-ibm">
+                              Inscription fermée pour ce bloc
+                            </p>
+                          )}
+                          {errors[`block_${block.id}`] && (
+                            <p className="text-xs text-red-500 font-ibm">
+                              {errors[`block_${block.id}`]}
+                            </p>
+                          )}
+                        </div>
+                      );
+                    })
+                  : eventHasFormation && (
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={want_formation}
+                          onChange={(e) => setWant_formation(e.target.checked)}
+                          disabled={saving}
+                          className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-700 font-ibm">
+                          Souhaite la formation initiale
+                        </span>
+                      </label>
+                    )}
                 {eventHasPreparation && (
                   <label className="flex items-center gap-2 cursor-pointer">
                     <input
