@@ -3,6 +3,12 @@ import type { NextConfig } from 'next';
 const isDevelopment = process.env.NODE_ENV === 'development';
 
 const nextConfig: NextConfig = {
+  // Cap build/static-generation worker count.
+  // Machine has 20 cores but limited RAM; unbounded workers peg every core.
+  experimental: {
+    cpus: 4,
+  },
+
   images: {
     unoptimized: true,
     remotePatterns: [new URL('https://www.opera-orchestre-montpellier.fr/**')],
