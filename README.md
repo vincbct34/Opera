@@ -10,11 +10,15 @@ The system handles multi-institution user management, automated event scraping f
 
 ✅ **Production-ready** - All core features are implemented, tested, and documented. The application is in maintenance mode with bug fixes and minor enhancements.
 
-**Latest Release**: June 30, 2026 (v1.7.0)
+**Latest Release**: July 1, 2026 (v1.7.1)
 
-**Latest Release Highlights (v1.7.0)**:
+**Latest Release Highlights (v1.7.1)**:
 
-- Migrated to Prisma ORM v7 with Direct TCP PostgreSQL adapter
+- Reverted Prisma ORM from v7 back to v6 — production runs on a Node version the v7 client does not support. Standard client, imports consolidated to `@prisma/client`.
+
+**Previous Release Highlights (v1.7.0)**:
+
+- Migrated to Prisma ORM v7 with Direct TCP PostgreSQL adapter (later reverted, see v1.7.1)
 - Event registration season now starts on June 10 for the following academic year
 - Events are automatically archived one year after their latest date
 - Admin events can now define multiple reusable pedagogical registration blocks (formations, ateliers, etc.) with custom titles, explanatory text, dates, and mandatory participation
@@ -27,7 +31,8 @@ The system handles multi-institution user management, automated event scraping f
 
 ### Recent Releases
 
-- **v1.7.0** (Jun 30, 2026): Migrated to Prisma ORM v7 (Rust-free client over a Direct TCP driver adapter, `@prisma/adapter-pg`); dropped Prisma Accelerate; enum imports moved to the runtime-free `/enums` subpath; local Postgres dev via Docker Compose; event registration season starts on June 10; events auto-archive one year after their latest date
+- **v1.7.1** (Jul 1, 2026): Reverted Prisma ORM v7 → v6.19 (production Node too old for the v7 Rust-free client); removed the `@prisma/adapter-pg` driver adapter and `prisma.config.ts`, restored the `url` in the schema `datasource`, and consolidated all Prisma imports (enums, model types, `Prisma` namespace) to `@prisma/client`
+- **v1.7.0** (Jun 30, 2026): Migrated to Prisma ORM v7 (Rust-free client over a Direct TCP driver adapter, `@prisma/adapter-pg`); dropped Prisma Accelerate; enum imports moved to the runtime-free `/enums` subpath; local Postgres dev via Docker Compose; event registration season starts on June 10; events auto-archive one year after their latest date **— Prisma changes reverted in v1.7.1**
 - **v1.6.7** (Feb 27, 2026): Fixed registration edit API, removed fuzzy matching from import
 - **v1.6.6** (Feb 26, 2026): Admin notes system, improved import error display with category grouping
 - **v1.6.5** (Feb 26, 2026): Fixed import type mapping with accent normalization, multiple type support with "+" separator, pending welcome emails system
@@ -87,7 +92,7 @@ The system handles multi-institution user management, automated event scraping f
 
 - **Next.js 16.0.7** (App Router, React Server Components, Turbopack)
 - **React 19.2.0** with TypeScript 5
-- **PostgreSQL** with [Prisma 7.8.0 ORM](https://www.prisma.io/) and `@prisma/adapter-pg`
+- **PostgreSQL** with [Prisma 6.19 ORM](https://www.prisma.io/) (standard client)
 - **Redis** ([ioredis 5.8.2](https://github.com/redis/ioredis)) for distributed state
 - **JWT** authentication with refresh token rotation
 - **Tailwind CSS 4** for styling
@@ -177,7 +182,6 @@ Both loaded via [`next/font/google`](https://nextjs.org/docs/app/building-your-a
 Service-culturel-plateforme-web/
 ├── app/                    # Next.js App Router pages and API routes
 │   ├── api/               # REST API endpoints (auth, users, events, admin, cron)
-│   ├── generated/         # Custom Prisma client output directory
 │   ├── account/           # User account management pages
 │   ├── admin/             # Admin dashboard pages
 │   ├── auth/              # Login, register, password reset pages

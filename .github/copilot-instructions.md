@@ -11,8 +11,8 @@
 
 ## Architecture
 
-- **Next.js 16 App Router** with React 19, Tailwind CSS 4, Prisma 7, PostgreSQL, Redis
-- **Prisma v7 client output**: `app/generated/prisma` (Rust-free client, Direct TCP via `@prisma/adapter-pg`). Import **enums** from `@/app/generated/prisma/enums` (runtime-free, browser-safe), **model types / the `Prisma` namespace** from `@/app/generated/prisma/client` (server only — never from a client component, its runtime breaks Turbopack bundling), and the **client instance** from `@/lib/middleware/prismaConfig`. Never import from `@prisma/client`
+- **Next.js 16 App Router** with React 19, Tailwind CSS 4, Prisma 6, PostgreSQL, Redis
+- **Prisma v6 client**: default generated client. Import **enums, model types, and the `Prisma` namespace** all from `@prisma/client`, and the shared **client instance** from `@/lib/middleware/prismaConfig`. (Prisma stays on v6 because production runs on an older Node that v7 does not support.)
 - **API routes** (`app/api/`): export HTTP method handlers wrapped with middleware from `@/app/api/middleware` (`requireAuth`, `requireAdmin`, `requireSuperAdmin`, `requireCronAuth`, `publicRoute`, or `createAuthMiddleware(options)`)
 - **Client components**: use `'use client'` directive, fetch data via `fetchJsonWithAuth` from `@/lib/api/fetchWithAuth`, use `useUser()` context, icons from `@deemlol/next-icons`, toasts via `@/lib/utils/toast`
 - **Server components**: default in App Router, access DB directly via Prisma
@@ -67,7 +67,7 @@ npx prisma db seed       # Seed database (tsx prisma/seed.ts)
 - **`context/UserContext.tsx`** — `useUser()` hook providing auth state in client components
 - **`components/guards/`** — `ProtectedRoute` and `GuestRoute` for route protection
 - **`components/ui/`** — shared UI: `Loader`, `ConfirmationModal`, `Toast`, `MultiSelect`, `NotificationDropdown`, `ContactModal`
-- **`types/api.ts`** — shared API response types (`SafeUser`, etc.); model types from `@/app/generated/prisma/client`, enums from `@/app/generated/prisma/enums`
+- **`types/api.ts`** — shared API response types (`SafeUser`, etc.); model types and enums from `@prisma/client`
 - **`proxy.ts`** — Next.js middleware handling CSP nonces, security headers
 
 ## Component Naming

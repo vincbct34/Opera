@@ -2,7 +2,20 @@
 
 All notable changes to the Opéra de Montpellier Registration Platform will be documented in this file.
 
-## [Unreleased]
+## [1.7.1] - 2026-07-01
+
+### Changed
+
+- **Prisma ORM v7 → v6.19**: reverted the v7 upgrade because production runs on a Node version older than the v7 client's `^20.19 || ^22.12 || >=24` requirement (v6.19 only needs Node `>=18.18`)
+  - removed the `@prisma/adapter-pg` driver adapter; the client now connects via the `url` restored to the `datasource` block (`env("DATABASE_URL")`)
+  - schema generator reverted from `prisma-client` back to `prisma-client-js`; dropped the custom `output` so the client generates to the default `@prisma/client` location
+  - deleted `prisma.config.ts`; the seed command moved to the `prisma.seed` field in `package.json`
+  - all Prisma imports (enums, model types, and the `Prisma` namespace) consolidated from the `@/app/generated/prisma/{enums,client}` subpaths to the single `@prisma/client` barrel
+  - removed the `__mocks__/prismaClient.ts` Jest stub (only needed for the v7 client's `import.meta` runtime)
+
+### Deployment Notes
+
+- **Production must run `npm ci` (not just pull code)** to swap the installed Prisma packages to v6 and regenerate the client; the stale `@prisma/adapter-pg` v7 tree must leave `node_modules`.
 
 ### Added
 

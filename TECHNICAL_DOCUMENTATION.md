@@ -62,7 +62,7 @@ Elle remplace un système basé sur Google Forms + Excel par une plateforme cent
 | **Framework**       | Next.js (App Router)   | 16.0.7       |
 | **Frontend**        | React + TypeScript     | 19.2.0 / 5.x |
 | **Styling**         | Tailwind CSS           | 4.x          |
-| **ORM**             | Prisma                 | 7.8.0        |
+| **ORM**             | Prisma                 | 6.19.x       |
 | **Base de Données** | PostgreSQL             | 14+          |
 | **Cache Distribué** | Redis (ioredis)        | 5.8.2        |
 | **Validation**      | Zod                    | 4.1.12       |
@@ -133,8 +133,6 @@ Service-culturel-plateforme-web/
 │   │   ├── registrations/        # Inscriptions
 │   │   ├── users/                # Gestion utilisateurs
 │   │   └── middleware.ts         # Middleware API centralisé
-│   ├── generated/                # Client Prisma généré
-│   │   └── prisma/               # Types et client DB
 │   ├── account/                  # Pages compte utilisateur
 │   ├── admin/                    # Pages administration
 │   ├── auth/                     # Pages authentification
@@ -277,21 +275,18 @@ export const GET = async (req: NextRequest) => {
 
 ### 4.1 Configuration Prisma
 
-Le client Prisma (v7, sans moteur Rust) est généré dans `app/generated/prisma` (et non `node_modules/@prisma/client`). La connexion à PostgreSQL se fait en TCP direct via l'adaptateur `@prisma/adapter-pg` (configuré dans `lib/middleware/prismaConfig.ts`).
+Le client Prisma (v6) est généré à son emplacement par défaut (`node_modules/@prisma/client`). La connexion à PostgreSQL utilise l'URL `DATABASE_URL` définie dans le bloc `datasource` du schéma (client configuré dans `lib/middleware/prismaConfig.ts`).
 
 ```typescript
-// Énumérations — sans runtime, sûres côté navigateur :
-import { Role, RegistrationStatus } from '@/app/generated/prisma/enums';
-
-// Types de modèles + namespace Prisma — serveur uniquement :
-import type { User, Event } from '@/app/generated/prisma/client';
-import { Prisma } from '@/app/generated/prisma/client';
+// Énumérations, types de modèles et namespace Prisma — tout depuis @prisma/client :
+import { Role, RegistrationStatus, Prisma } from '@prisma/client';
+import type { User, Event } from '@prisma/client';
 
 // Instance du client — singleton partagé :
 import prisma from '@/lib/middleware/prismaConfig';
 ```
 
-> ⚠️ Importer les énumérations depuis `/enums`, jamais `/client` : `client.ts` embarque le runtime Prisma (`node:module`), et le tirer dans un composant client casse le bundling Turbopack.
+> ℹ️ Prisma reste en v6 : la production tourne sur une version de Node trop ancienne pour le client v7. Ne pas repasser en v7 sans mettre Node à niveau en prod.
 
 ### 4.2 Modèles de Données
 
