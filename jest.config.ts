@@ -123,9 +123,6 @@ const config: Config = {
   // A map from regular expressions to module names or to arrays of module names that allow to stub out resources with a single module
   moduleNameMapper: {
     '^@\\/components\\/ui\\/Toast$': '<rootDir>/__mocks__/components/ui/Toast.ts',
-    // Prisma v7's generated client uses `import.meta`, which ts-jest's CommonJS
-    // transform can't execute. Unit tests don't need the real client, so stub it.
-    '^@\\/app\\/generated\\/prisma\\/client$': '<rootDir>/__mocks__/prismaClient.ts',
     '^@\\/(.*)$': '<rootDir>/$1',
     '^@deemlol/next-icons$': '<rootDir>/__mocks__/@deemlol/next-icons.ts',
   },

@@ -1,7 +1,7 @@
 /* eslint-disable */
 import { describe, expect, test, jest, beforeEach } from '@jest/globals';
 import { getClientInfo, getSeverityEmoji, logToConsoleInDev } from '@/lib/security/securityLogger';
-import { SecuritySeverity, SecurityLogType } from '@/app/generated/prisma/enums';
+import { SecuritySeverity, SecurityLogType } from '@prisma/client';
 
 jest.mock('@/lib/middleware/prismaConfig', () => ({
   __esModule: true,
@@ -94,7 +94,7 @@ describe('Security Logger', () => {
       cleanupOldSecurityLogs,
       getRecentFailedLogins,
     } = await import('@/lib/security/securityLogger');
-    const { SecurityLogType, SecuritySeverity } = await import('@/app/generated/prisma/enums');
+    const { SecurityLogType, SecuritySeverity } = await import('@prisma/client');
     const req = createMockRequest({});
 
     await logLoginSuccess('u1', req);
@@ -124,7 +124,7 @@ describe('Security Logger', () => {
     const mockedPrisma = await getMockedPrisma();
     mockedPrisma.securityLog.create.mockRejectedValueOnce(new Error('err'));
     const { logSecurityEvent } = await import('@/lib/security/securityLogger');
-    const { SecurityLogType } = await import('@/app/generated/prisma/enums');
+    const { SecurityLogType } = await import('@prisma/client');
     await logSecurityEvent({ type: SecurityLogType.LOGIN_FAILED });
     expect(true).toBe(true);
   });
@@ -139,7 +139,7 @@ describe('Security Logger', () => {
       const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {});
 
       const { logSecurityEvent } = await import('@/lib/security/securityLogger');
-      const { SecurityLogType, SecuritySeverity } = await import('@/app/generated/prisma/enums');
+      const { SecurityLogType, SecuritySeverity } = await import('@prisma/client');
 
       await logSecurityEvent({
         type: SecurityLogType.LOGIN_SUCCESS,
@@ -242,7 +242,7 @@ describe('Security Logger', () => {
       const { logSecurityEvent, generateCorrelationId } = await import(
         '@/lib/security/securityLogger'
       );
-      const { SecurityLogType } = await import('@/app/generated/prisma/enums');
+      const { SecurityLogType } = await import('@prisma/client');
       const correlationId = generateCorrelationId();
       await logSecurityEvent({ type: SecurityLogType.LOGIN_SUCCESS, correlationId });
       expect(mockedPrisma.securityLog.create).toHaveBeenCalledWith(

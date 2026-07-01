@@ -10,7 +10,7 @@
  *   const acronym = SCHOOL_GRADE_ACRONYMS[SchoolGrade.SIXIEME]; // Returns '6ème'
  */
 
-import { SchoolGrade, AgeRange } from '@/app/generated/prisma/enums';
+import { SchoolGrade, AgeRange } from '@prisma/client';
 
 // ============================================================================
 // School Grade Acronyms (for circular badges)

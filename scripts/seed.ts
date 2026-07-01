@@ -10,15 +10,13 @@
  */
 
 import 'dotenv/config';
-import { PrismaClient } from '../app/generated/prisma/client';
-import { PrismaPg } from '@prisma/adapter-pg';
+import { PrismaClient } from '@prisma/client';
 import { faker } from '@faker-js/faker';
 import bcrypt from 'bcrypt';
 
 faker.seed(2026); // deterministic data across runs
 
-const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL! });
-const prisma = new PrismaClient({ adapter });
+const prisma = new PrismaClient();
 
 // Same policy as lib/validation/validationSchemas.ts (min 10, upper/lower/digit/special).
 const TEST_PASSWORD = 'TestOpera2026!';

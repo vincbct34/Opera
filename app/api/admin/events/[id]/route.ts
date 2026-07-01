@@ -13,7 +13,7 @@ import {
   Accessibility,
   SchoolGrade,
   AgeRange,
-} from '@/app/generated/prisma/enums';
+} from '@prisma/client';
 import {
   getRegistrationBlocksWithLegacyFallback,
   serializeRegistrationBlock,

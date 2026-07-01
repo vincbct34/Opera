@@ -10,7 +10,7 @@ import { GET as GetRegistrations } from '@/app/api/institutions/[id]/registratio
 import { GET as SearchInstitutions } from '@/app/api/institutions/search/route';
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/middleware/prismaConfig';
-import { Role } from '@/app/generated/prisma/enums';
+import { Role } from '@prisma/client';
 import { calculateInstitutionHistoryWithCache } from '@/lib/events/registrationAnalytics';
 
 // Mock NextRequest/NextResponse

@@ -6,7 +6,7 @@ import {
 } from '@/app/api/cron/events/status-update/route';
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/middleware/prismaConfig';
-import { EventStatus } from '@/app/generated/prisma/enums';
+import { EventStatus } from '@prisma/client';
 import { HolidaysService } from '@/lib/services/holidays.service';
 
 // Mock NextRequest/NextResponse

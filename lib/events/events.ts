@@ -1,11 +1,5 @@
 import prisma from '../middleware/prismaConfig';
-import {
-  EventType,
-  PublicCategory,
-  SchoolGrade,
-  AgeRange,
-  EventStatus,
-} from '@/app/generated/prisma/enums';
+import { EventType, PublicCategory, SchoolGrade, AgeRange, EventStatus } from '@prisma/client';
 import { richTextToPlainText } from '@/lib/richText';
 
 /**

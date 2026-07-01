@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X } from '@deemlol/next-icons';
-import { RegistrationStatus } from '@/app/generated/prisma/enums';
+import { RegistrationStatus } from '@prisma/client';
 
 type AttendanceStatus = Extract<RegistrationStatus, 'ATTENDED' | 'NO_SHOW'>;
 

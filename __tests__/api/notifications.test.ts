@@ -7,7 +7,7 @@ import {
 } from '@/app/api/notifications/route';
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/middleware/prismaConfig';
-import { Role } from '@/app/generated/prisma/enums';
+import { Role } from '@prisma/client';
 
 // Mock NextRequest/NextResponse
 jest.mock('next/server', () => {

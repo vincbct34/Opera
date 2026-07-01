@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import prisma from '@/lib/middleware/prismaConfig';
 import { logger } from '@/lib/middleware/logger';
 import { sanitizeLogArgs } from '@/lib/security/logSanitization';
-import type { Accessibility } from '@/app/generated/prisma/enums';
+import type { Accessibility } from '@prisma/client';
 import {
   getRegistrationBlocksWithLegacyFallback,
   serializeRegistrationBlock,

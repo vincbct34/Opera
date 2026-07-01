@@ -5,7 +5,7 @@ import { changePasswordWithHistory } from '@/lib/auth/passwordHistory';
 import { logger } from '@/lib/middleware/logger';
 import { sanitizeLogArgs } from '@/lib/security/logSanitization';
 import { logPasswordChange, logSecurityEvent } from '@/lib/security/securityLogger';
-import { SecurityLogType, SecuritySeverity } from '@/app/generated/prisma/enums';
+import { SecurityLogType, SecuritySeverity } from '@prisma/client';
 
 /**
  * POST /api/users/change-password

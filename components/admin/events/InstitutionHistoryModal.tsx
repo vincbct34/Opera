@@ -10,7 +10,7 @@ import {
   SCHOOL_GRADE_LABELS as DEFAULT_SCHOOL_GRADE_LABELS,
   AGE_RANGE_LABELS as DEFAULT_AGE_RANGE_LABELS,
 } from '@/lib/config/labelMappings';
-import { RegistrationStatus } from '@/app/generated/prisma/enums';
+import { RegistrationStatus } from '@prisma/client';
 
 interface InstitutionHistoryModalProps {
   open: boolean;

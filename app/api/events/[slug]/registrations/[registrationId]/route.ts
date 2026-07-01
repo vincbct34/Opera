@@ -9,7 +9,7 @@ import {
   PublicCategory,
   SchoolGrade,
   AgeRange,
-} from '@/app/generated/prisma/enums';
+} from '@prisma/client';
 import { UnifiedNotificationService } from '@/lib/notifications/unifiedNotificationService';
 import { historyCache } from '@/lib/events/registrationAnalytics';
 import { sendEmail } from '@/lib/notifications/emailService';

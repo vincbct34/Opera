@@ -4,8 +4,7 @@ import { publicRoute, requireAdmin, AuthenticatedRequest } from '@/app/api/middl
 
 import prisma from '@/lib/middleware/prismaConfig';
 
-import { PublicCategory, SchoolGrade, AgeRange } from '@/app/generated/prisma/enums';
-import { Prisma } from '@/app/generated/prisma/client';
+import { PublicCategory, SchoolGrade, AgeRange, Prisma } from '@prisma/client';
 import { logger } from '@/lib/middleware/logger';
 import { sanitizeLogArgs } from '@/lib/security/logSanitization';
 import {

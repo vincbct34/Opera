@@ -14,7 +14,7 @@ import {
   WP_AGE_ID_MAP,
   AGE_NAME_MAP,
 } from '@/lib/cron/scraperMappings';
-import { PublicCategory, AgeRange } from '@/app/generated/prisma/enums';
+import { PublicCategory, AgeRange } from '@prisma/client';
 
 describe('scraperMappings', () => {
   // ============================================================================

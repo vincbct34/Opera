@@ -9,7 +9,7 @@ import { fetchJsonWithAuth, fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { logger } from '@/lib/middleware/logger';
 import toast from '@/lib/utils/toast';
 import { PublicCategory, InstitutionWithCounts } from '@/types/api';
-import { SchoolGrade, AgeRange } from '@/app/generated/prisma/enums';
+import { SchoolGrade, AgeRange } from '@prisma/client';
 import { SCHOOL_GRADE_LABELS, AGE_RANGE_LABELS } from '@/lib/config/labelMappings';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import AdminInstitutionCreateModal from './AdminInstitutionCreateModal';

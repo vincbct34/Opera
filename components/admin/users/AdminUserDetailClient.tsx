@@ -7,7 +7,7 @@ import Loader from '@/components/ui/Loader';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import { logger } from '@/lib/middleware/logger';
 import { Role, UserListItem } from '@/types/api';
-import { RegistrationStatus } from '@/app/generated/prisma/enums';
+import { RegistrationStatus } from '@prisma/client';
 import toast from '@/lib/utils/toast';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import Link from 'next/link';

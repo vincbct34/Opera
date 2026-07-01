@@ -9,7 +9,7 @@ import {
   EventType,
   PublicCategory,
   RegistrationStatus,
-} from '@/app/generated/prisma/enums';
+} from '@prisma/client';
 
 import {
   EVENT_TYPE_LABELS,

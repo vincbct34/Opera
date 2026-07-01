@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { requireAuth, AuthenticatedRequest } from '@/app/api/middleware';
 import prisma from '@/lib/middleware/prismaConfig';
-import { Prisma } from '@/app/generated/prisma/client';
+import { Prisma } from '@prisma/client';
 import { logger } from '@/lib/middleware/logger';
 import { sanitizeLogArgs } from '@/lib/security/logSanitization';
 

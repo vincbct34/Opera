@@ -3,8 +3,7 @@
 import { useState, useEffect, useCallback, useRef, startTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { useUser } from '@/context/UserContext';
-import { SecurityLogType, SecuritySeverity } from '@/app/generated/prisma/enums';
-import type { SecurityLog } from '@/app/generated/prisma/client';
+import { SecurityLogType, SecuritySeverity, type SecurityLog } from '@prisma/client';
 import Loader from '@/components/ui/Loader';
 import { fetchJsonWithAuth } from '@/lib/api/fetchWithAuth';
 import { logger } from '@/lib/middleware/logger';

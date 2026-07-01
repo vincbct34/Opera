@@ -7,7 +7,7 @@ import type {
   PublicCategory,
   SchoolGrade,
   AgeRange,
-} from '@/app/generated/prisma/enums';
+} from '@prisma/client';
 
 export interface CriterionConfig {
   type: ScoringCriterionType;

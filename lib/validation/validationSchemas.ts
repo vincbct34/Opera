@@ -1,6 +1,6 @@
 import { z } from 'zod';
 // Types imported for reference to ensure Zod enums match Prisma schema
-import { SchoolGrade, AgeRange, ScoringCriterionType } from '@/app/generated/prisma/enums';
+import { SchoolGrade, AgeRange, ScoringCriterionType } from '@prisma/client';
 
 /**
  * Validation schemas for authentication routes

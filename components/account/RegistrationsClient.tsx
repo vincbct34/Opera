@@ -28,7 +28,7 @@ import {
   SCHOOL_GRADE_LABELS as DEFAULT_SCHOOL_GRADE_LABELS,
   AGE_RANGE_LABELS as DEFAULT_AGE_RANGE_LABELS,
 } from '@/lib/config/labelMappings';
-import { RegistrationStatus, Accessibility } from '@/app/generated/prisma/enums';
+import { RegistrationStatus, Accessibility } from '@prisma/client';
 import { HelpWidget } from '@/components/ui/HelpWidget';
 import { HELP_CONTENTS } from '@/lib/help/helpContents';
 

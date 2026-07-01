@@ -3,13 +3,7 @@
  * All dictionaries and mapping functions used by eventsScraper.ts
  */
 
-import {
-  Accessibility,
-  PublicCategory,
-  SchoolGrade,
-  AgeRange,
-  EventType,
-} from '@/app/generated/prisma/enums';
+import { Accessibility, PublicCategory, SchoolGrade, AgeRange, EventType } from '@prisma/client';
 
 // Re-export EventType for backward compatibility
 export { EventType };

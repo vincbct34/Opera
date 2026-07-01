@@ -5,8 +5,7 @@
 
 import prisma from '@/lib/middleware/prismaConfig';
 import { calculateFrenchSimilarity } from '@/lib/search/fuzzySearch';
-import type { PublicCategory } from '@/app/generated/prisma/enums';
-import type { Institution } from '@/app/generated/prisma/client';
+import type { PublicCategory, Institution } from '@prisma/client';
 
 type InstitutionWithAddress = Institution & {
   address: {

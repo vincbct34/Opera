@@ -1,7 +1,7 @@
 import { NextResponse, NextRequest } from 'next/server';
 
 import { requireCronAuth } from '@/lib/middleware/cronAuth';
-import { EventStatus } from '@/app/generated/prisma/enums';
+import { EventStatus } from '@prisma/client';
 import prisma from '@/lib/middleware/prismaConfig';
 import { logger } from '@/lib/middleware/logger';
 import { HolidaysService } from '@/lib/services/holidays.service';

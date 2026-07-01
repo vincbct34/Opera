@@ -3,7 +3,7 @@
  */
 
 import type { ScoringCriterionType, ParameterValue } from '@/lib/scoring/criteriaDefinitions';
-import type { RegistrationStatus } from '@/app/generated/prisma/enums';
+import type { RegistrationStatus } from '@prisma/client';
 
 /**
  * Configuration data for the scoring system.

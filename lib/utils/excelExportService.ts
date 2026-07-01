@@ -8,8 +8,8 @@ import {
   AgeRange,
   Accessibility,
   EventType,
-} from '@/app/generated/prisma/enums';
-import { Prisma } from '@/app/generated/prisma/client';
+  Prisma,
+} from '@prisma/client';
 import {
   getAgeRangeLabelsMapAsync,
   getPublicCategoryLabelsMapAsync,

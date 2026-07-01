@@ -9,8 +9,7 @@ import {
   calculateInstitutionHistoryWithCache,
 } from '../events/registrationAnalytics';
 import type { InstitutionHistory } from '../scoring/scoringEngine';
-import { RegistrationStatus } from '@/app/generated/prisma/enums';
-import { type PrismaClient } from '@/app/generated/prisma/client';
+import { RegistrationStatus, type PrismaClient } from '@prisma/client';
 
 // Type for mock registration records (using string for easier test writing)
 interface MockRegistrationInput {

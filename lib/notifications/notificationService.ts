@@ -1,5 +1,5 @@
 import prisma from '../middleware/prismaConfig';
-import { NotificationType } from '@/app/generated/prisma/enums';
+import { NotificationType } from '@prisma/client';
 import { logger } from '../middleware/logger';
 
 /**

@@ -4,7 +4,7 @@ import { PATCH as UpdateGroup, DELETE as DeleteGroup } from '@/app/api/groups/[g
 import { POST as ReportCSP } from '@/app/api/csp-report/route';
 import { NextRequest } from 'next/server';
 import prisma from '@/lib/middleware/prismaConfig';
-import { Role } from '@/app/generated/prisma/enums';
+import { Role } from '@prisma/client';
 
 // Mock NextRequest/NextResponse
 jest.mock('next/server', () => {

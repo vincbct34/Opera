@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { requireAdmin, AuthenticatedRequest } from '@/app/api/middleware';
 import { logger } from '@/lib/middleware/logger';
 import { sanitizeLogArgs } from '@/lib/security/logSanitization';
-import { SecurityLogType, SecuritySeverity } from '@/app/generated/prisma/enums';
+import { SecurityLogType, SecuritySeverity } from '@prisma/client';
 import { getSecurityLogs, SecurityLogsFilter } from '@/lib/security/securityLogger';
 
 /**

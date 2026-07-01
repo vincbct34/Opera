@@ -1,7 +1,7 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
 import { POST as LoginPOST } from '@/app/api/auth/login/route';
 import { POST as RegisterPOST } from '@/app/api/auth/register/route';
-import { Role } from '@/app/generated/prisma/enums';
+import { Role } from '@prisma/client';
 import prisma from '@/lib/middleware/prismaConfig';
 
 // Mock next/server to handle NextResponse.json and cookies

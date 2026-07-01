@@ -7,7 +7,7 @@ import { logAdminAccess, logDataModification } from '@/lib/security/securityLogg
 import { z } from 'zod';
 import { CRITERIA_DEFINITIONS } from '@/lib/scoring/criteriaDefinitions';
 import { CreateScoringConfigSchema } from '@/lib/validation/validationSchemas';
-import { ScoringCriterionType } from '@/app/generated/prisma/enums';
+import { ScoringCriterionType } from '@prisma/client';
 
 /**
  * GET /api/admin/scoring-config

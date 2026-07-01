@@ -12,15 +12,13 @@ import {
   RegistrationStatus,
   SchoolGrade,
   AgeRange,
-} from '@/app/generated/prisma/enums';
-import type {
-  User,
-  Institution,
-  Address,
-  Event,
-  Registration,
-  Notification,
-} from '@/app/generated/prisma/client';
+  type User,
+  type Institution,
+  type Address,
+  type Event,
+  type Registration,
+  type Notification,
+} from '@prisma/client';
 
 // ============================================
 // Types User
@@ -64,12 +62,12 @@ export type UserListItemSerialized = Omit<UserListItem, 'created_at' | 'updated_
  * User avec détails complets (groups et registrations)
  */
 export type GroupWithoutUserId = Pick<
-  import('@/app/generated/prisma/client').Group,
+  import('@prisma/client').Group,
   'id' | 'name' | 'category' | 'updated_at' | 'students_count' | 'grades' | 'age_ranges'
 > & {
   disabilities?: Array<{
     id: string;
-    type: import('@/app/generated/prisma/client').Accessibility;
+    type: import('@prisma/client').Accessibility;
     count: number;
     details?: string | null;
   }>;

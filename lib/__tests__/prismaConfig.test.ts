@@ -1,11 +1,7 @@
 /* eslint-disable */
 import { describe, expect, test, jest } from '@jest/globals';
 
-jest.mock('@prisma/adapter-pg', () => ({
-  PrismaPg: jest.fn().mockImplementation(() => ({})),
-}));
-
-jest.mock('@/app/generated/prisma/client', () => ({
+jest.mock('@prisma/client', () => ({
   PrismaClient: jest.fn().mockImplementation(() => ({})),
 }));
 
