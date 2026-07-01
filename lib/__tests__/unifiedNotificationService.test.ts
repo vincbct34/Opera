@@ -102,6 +102,57 @@ describe('UnifiedNotificationService', () => {
       );
     });
 
+    it('should include formation name in email when provided', async () => {
+      // @ts-ignore
+      prisma.user.findUnique.mockResolvedValue(mockUser);
+      // @ts-ignore
+      NotificationService.notifyRegistrationConfirmed.mockResolvedValue(undefined);
+      // @ts-ignore
+      sendEmail.mockResolvedValue(undefined);
+
+      await UnifiedNotificationService.notifyRegistrationConfirmed({
+        userId: 'user-123',
+        eventTitle: 'La Traviata',
+        eventDate: '15 mars 2025',
+        eventTime: '20:00',
+        eventId: 'event-123',
+        formationName: 'Formation initiale',
+      });
+
+      expect(sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          template_data: expect.objectContaining({
+            formation_name: 'Formation initiale',
+          }),
+        }),
+      );
+    });
+
+    it('should default formation name to empty string when not provided', async () => {
+      // @ts-ignore
+      prisma.user.findUnique.mockResolvedValue(mockUser);
+      // @ts-ignore
+      NotificationService.notifyRegistrationConfirmed.mockResolvedValue(undefined);
+      // @ts-ignore
+      sendEmail.mockResolvedValue(undefined);
+
+      await UnifiedNotificationService.notifyRegistrationConfirmed({
+        userId: 'user-123',
+        eventTitle: 'La Traviata',
+        eventDate: '15 mars 2025',
+        eventTime: '20:00',
+        eventId: 'event-123',
+      });
+
+      expect(sendEmail).toHaveBeenCalledWith(
+        expect.objectContaining({
+          template_data: expect.objectContaining({
+            formation_name: '',
+          }),
+        }),
+      );
+    });
+
     it('should not send email when email_notifications_enabled is false', async () => {
       // @ts-ignore
       prisma.user.findUnique.mockResolvedValue({

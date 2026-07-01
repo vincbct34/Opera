@@ -352,8 +352,24 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
               details: true,
             },
           },
+          blockSelections: {
+            select: {
+              wants_to_attend: true,
+              block: {
+                select: {
+                  title: true,
+                },
+              },
+            },
+          },
         },
       });
+
+      const formationName =
+        updatedRegistration.blockSelections
+          .filter((selection) => selection.wants_to_attend)
+          .map((selection) => selection.block.title)
+          .join(', ') || (updatedRegistration.want_formation ? 'Formation initiale' : null);
 
       // Update disabilities if provided
       if (body.disabilities && Array.isArray(body.disabilities)) {
@@ -443,6 +459,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
               modifiedFields,
               previousValues,
               newValues,
+              formationName,
             });
 
             logger.info('Registration modification notification sent to Opera staff', {
@@ -492,6 +509,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
               eventTitle: updatedRegistration.event.title,
               eventDate,
               cancelledBy: 'user',
+              formationName,
             });
           } catch (notificationError) {
             // Log but don't fail the request if notification fails

@@ -87,10 +87,12 @@ describe('Registrations API', () => {
     institution_id: 'inst-1',
     status: 'PENDING',
     booked_seats: 5,
+    want_formation: null,
     created_at: new Date(),
     event: { title: 'Event' },
     institution: { name: 'Inst' },
     disabilities: [],
+    blockSelections: [],
   };
 
   beforeEach(() => {

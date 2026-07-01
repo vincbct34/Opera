@@ -26,6 +26,7 @@ interface RegistrationConfirmedParams extends BaseNotificationParams {
   eventId: string;
   eventSlug?: string | null;
   eventImage?: string | null;
+  formationName?: string | null;
 }
 
 interface RegistrationRejectedParams extends BaseNotificationParams {
@@ -33,6 +34,7 @@ interface RegistrationRejectedParams extends BaseNotificationParams {
   eventDate: string;
   reason?: string;
   eventImage?: string | null;
+  formationName?: string | null;
 }
 
 interface RegistrationCancelledParams extends BaseNotificationParams {
@@ -41,6 +43,7 @@ interface RegistrationCancelledParams extends BaseNotificationParams {
   reason?: string;
   cancelledBy: 'user' | 'admin';
   eventImage?: string | null;
+  formationName?: string | null;
 }
 
 interface EventReminderParams extends BaseNotificationParams {
@@ -52,6 +55,7 @@ interface EventReminderParams extends BaseNotificationParams {
   eventSlug?: string | null;
   daysUntilEvent: number;
   eventImage?: string | null;
+  formationName?: string | null;
 }
 
 interface RegistrationModifiedForAdminParams {
@@ -67,6 +71,7 @@ interface RegistrationModifiedForAdminParams {
   modifiedFields: string[];
   previousValues?: Record<string, unknown>;
   newValues?: Record<string, unknown>;
+  formationName?: string | null;
 }
 
 interface RegistrationSubmittedParams {
@@ -77,6 +82,7 @@ interface RegistrationSubmittedParams {
   eventLocation?: string;
   eventSlug?: string | null;
   eventImage?: string | null;
+  formationName?: string | null;
 }
 
 export class UnifiedNotificationService {
@@ -151,6 +157,7 @@ export class UnifiedNotificationService {
             minute: '2-digit',
           }),
           modified_fields: params.modifiedFields.join(', '),
+          formation_name: params.formationName || '',
           unsubscribe_url: `${getServerBaseUrl()}/account`,
         },
       });
@@ -172,6 +179,7 @@ export class UnifiedNotificationService {
       eventLocation,
       eventSlug,
       eventImage,
+      formationName,
       sendEmail: forceSendEmail,
     } = params;
 
@@ -203,6 +211,7 @@ export class UnifiedNotificationService {
               ? `${getServerBaseUrl()}/events/${eventSlug}`
               : `${getServerBaseUrl()}/events`,
             event_image: eventImage,
+            formation_name: formationName || '',
             unsubscribe_url: `${getServerBaseUrl()}/account`,
           },
         });
@@ -220,8 +229,16 @@ export class UnifiedNotificationService {
    * @param params - Parameters including user ID and event details.
    */
   static async notifyRegistrationSubmitted(params: RegistrationSubmittedParams) {
-    const { userId, eventTitle, eventDate, eventTime, eventLocation, eventSlug, eventImage } =
-      params;
+    const {
+      userId,
+      eventTitle,
+      eventDate,
+      eventTime,
+      eventLocation,
+      eventSlug,
+      eventImage,
+      formationName,
+    } = params;
 
     try {
       // Get user details for email
@@ -246,6 +263,7 @@ export class UnifiedNotificationService {
           event_url: eventSlug
             ? `${getServerBaseUrl()}/events/${eventSlug}`
             : `${getServerBaseUrl()}/events`,
+          formation_name: formationName || '',
           unsubscribe_url: `${getServerBaseUrl()}/account`,
         },
       });
@@ -260,7 +278,15 @@ export class UnifiedNotificationService {
    * Send registration rejected notification (in-app + email)
    */
   static async notifyRegistrationRejected(params: RegistrationRejectedParams) {
-    const { userId, eventTitle, eventDate, reason, eventImage, sendEmail: forceSendEmail } = params;
+    const {
+      userId,
+      eventTitle,
+      eventDate,
+      reason,
+      eventImage,
+      formationName,
+      sendEmail: forceSendEmail,
+    } = params;
 
     try {
       // Create in-app notification
@@ -284,6 +310,7 @@ export class UnifiedNotificationService {
             last_name: user.last_name,
             event_name: eventTitle,
             event_image: eventImage,
+            formation_name: formationName || '',
             program_url: `${getServerBaseUrl()}/events`,
             unsubscribe_url: `${getServerBaseUrl()}/account`,
           },
@@ -307,6 +334,7 @@ export class UnifiedNotificationService {
       reason,
       cancelledBy,
       eventImage,
+      formationName,
       sendEmail: forceSendEmail,
     } = params;
 
@@ -335,6 +363,7 @@ export class UnifiedNotificationService {
             reason,
             cancelled_by: cancelledBy,
             event_image: eventImage,
+            formation_name: formationName || '',
             program_url: `${getServerBaseUrl()}/events`,
             unsubscribe_url: `${getServerBaseUrl()}/account`,
           },
@@ -359,6 +388,7 @@ export class UnifiedNotificationService {
       eventLocation,
       daysUntilEvent,
       eventImage,
+      formationName,
       sendEmail: forceSendEmail,
     } = params;
 
@@ -388,6 +418,7 @@ export class UnifiedNotificationService {
             event_location: eventLocation,
             event_image: eventImage,
             days_until_event: daysUntilEvent,
+            formation_name: formationName || '',
             ticket_url: `${getServerBaseUrl()}/account/registrations`,
             program_url: `${getServerBaseUrl()}/events`,
             unsubscribe_url: `${getServerBaseUrl()}/account`,
@@ -422,6 +453,12 @@ export class UnifiedNotificationService {
       const reminderPromises = users.flatMap((user) =>
         user.registrations.map(async (registration) => {
           try {
+            const formationName =
+              registration.blockSelections
+                .filter((selection) => selection.wants_to_attend)
+                .map((selection) => selection.block.title)
+                .join(', ') || (registration.want_formation ? 'Formation initiale' : null);
+
             await this.notifyEventReminder({
               userId: user.id,
               eventTitle: registration.event.title,
@@ -440,6 +477,7 @@ export class UnifiedNotificationService {
               eventSlug: registration.event.slug,
               eventImage: registration.event.image_url || undefined,
               daysUntilEvent,
+              formationName,
             });
           } catch (error) {
             logger.error(

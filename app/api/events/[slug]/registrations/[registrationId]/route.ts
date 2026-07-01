@@ -419,6 +419,11 @@ export async function PATCH(
           hour: '2-digit',
           minute: '2-digit',
         });
+        const formationName =
+          updatedRegistration.blockSelections
+            .filter((selection) => selection.wants_to_attend)
+            .map((selection) => selection.block.title)
+            .join(', ') || (updatedRegistration.want_formation ? 'Formation initiale' : null);
 
         try {
           if (body.status === 'CONFIRMED') {
@@ -432,6 +437,7 @@ export async function PATCH(
               eventId: updatedRegistration.event.id,
               eventSlug: updatedRegistration.event.slug,
               eventImage: updatedRegistration.event.image_url || undefined,
+              formationName,
             });
 
             // Send notification email to Opera staff if user requested musical preparation
@@ -490,6 +496,7 @@ export async function PATCH(
               eventDate,
               reason: body.was_present_comment,
               eventImage: updatedRegistration.event.image_url || undefined,
+              formationName,
             });
           } else if (body.status === 'CANCELLED' && currentRegistration.status !== 'PENDING') {
             // Registration cancelled by admin (not user self-cancellation)
@@ -500,6 +507,7 @@ export async function PATCH(
               reason: body.was_present_comment,
               cancelledBy: 'admin',
               eventImage: updatedRegistration.event.image_url || undefined,
+              formationName,
             });
           }
         } catch (notificationError) {

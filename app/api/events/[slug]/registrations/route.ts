@@ -634,6 +634,13 @@ export async function POST(req: NextRequest, context: { params: Promise<{ slug: 
           const minutes = event.duration % 60;
           const formattedTime = `${String(hours).padStart(2, '0')}h${String(minutes).padStart(2, '0')}`;
 
+          const formationName =
+            selectionsToCreate
+              .filter((selection) => selection.wants_to_attend)
+              .map((selection) => blocksById.get(selection.block_id as string)?.title)
+              .filter((title): title is string => Boolean(title))
+              .join(', ') || (want_formation ? 'Formation initiale' : null);
+
           await UnifiedNotificationService.notifyRegistrationSubmitted({
             userId,
             eventTitle: event.title,
@@ -642,6 +649,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ slug: 
             eventLocation: event.location,
             eventSlug: event.slug,
             eventImage: event.image_url,
+            formationName,
           });
         }
       } catch (emailError) {

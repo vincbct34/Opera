@@ -184,6 +184,16 @@ export class NotificationService {
             },
             include: {
               event: true,
+              blockSelections: {
+                select: {
+                  wants_to_attend: true,
+                  block: {
+                    select: {
+                      title: true,
+                    },
+                  },
+                },
+              },
             },
           },
         },
