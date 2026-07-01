@@ -54,3 +54,46 @@ export function serializeRegistrationBlock(block: EventRegistrationBlockLike) {
     ),
   };
 }
+
+export type FormationSelectionLike = {
+  wants_to_attend: boolean;
+  selected_date: Date | string | null;
+  block: { title: string };
+};
+
+/**
+ * Builds the "formation" label shown in registration emails, including the
+ * selected date/time when the block has one (blocks without dates just show the title).
+ */
+export function formatFormationName(
+  blockSelections: FormationSelectionLike[],
+  wantFormation?: boolean | null,
+): string | null {
+  const attended = blockSelections.filter((selection) => selection.wants_to_attend);
+
+  if (attended.length === 0) {
+    return wantFormation ? 'Formation initiale' : null;
+  }
+
+  return attended
+    .map((selection) => {
+      if (!selection.selected_date) {
+        return selection.block.title;
+      }
+
+      const date = new Date(selection.selected_date);
+      const formattedDate = date.toLocaleDateString('fr-FR', {
+        weekday: 'long',
+        day: 'numeric',
+        month: 'long',
+        year: 'numeric',
+      });
+      const formattedTime = date.toLocaleTimeString('fr-FR', {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+
+      return `${selection.block.title} (${formattedDate} à ${formattedTime})`;
+    })
+    .join(', ');
+}

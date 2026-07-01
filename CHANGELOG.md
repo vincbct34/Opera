@@ -85,6 +85,10 @@ All notable changes to the Opéra de Montpellier Registration Platform will be d
   - event dates are compared at minute precision to match the `datetime-local` admin input
   - unchanged normalized fields are omitted from the Prisma update payload
 
+- **Missing Formation Name in Registration Emails**: All registration email notifications (submitted, confirmed, rejected, cancelled, reminder, admin-modified) now include the formation/pedagogical block the user selected, previously only shown in the admin/user UI
+  - Added `lib/events/registrationBlocks.ts#formatFormationName`, a shared helper that builds the label from attended `RegistrationBlockSelection`s (falling back to legacy `want_formation`) and formats the selected date/time when the block has one
+  - New `formation_name` template variable sent to the SMTP2GO templates for all six notification emails
+
 ### Security
 
 - **Rich Text Sanitization**: Event descriptions are sanitized on create/update and again before rich HTML rendering

@@ -13,6 +13,7 @@ import {
 import { UnifiedNotificationService } from '@/lib/notifications/unifiedNotificationService';
 import { historyCache } from '@/lib/events/registrationAnalytics';
 import { sendEmail } from '@/lib/notifications/emailService';
+import { formatFormationName } from '@/lib/events/registrationBlocks';
 
 // SMTP2GO Template ID for musical preparation requests to Opera staff
 const PREPARATION_REQUEST_TEMPLATE_ID = '4049381';
@@ -419,11 +420,10 @@ export async function PATCH(
           hour: '2-digit',
           minute: '2-digit',
         });
-        const formationName =
-          updatedRegistration.blockSelections
-            .filter((selection) => selection.wants_to_attend)
-            .map((selection) => selection.block.title)
-            .join(', ') || (updatedRegistration.want_formation ? 'Formation initiale' : null);
+        const formationName = formatFormationName(
+          updatedRegistration.blockSelections,
+          updatedRegistration.want_formation,
+        );
 
         try {
           if (body.status === 'CONFIRMED') {

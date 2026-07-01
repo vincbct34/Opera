@@ -11,6 +11,7 @@ import {
   AgeRange,
 } from '@prisma/client';
 import { UnifiedNotificationService } from '@/lib/notifications/unifiedNotificationService';
+import { formatFormationName } from '@/lib/events/registrationBlocks';
 
 /**
  * GET /api/registrations/[id]
@@ -355,6 +356,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
           blockSelections: {
             select: {
               wants_to_attend: true,
+              selected_date: true,
               block: {
                 select: {
                   title: true,
@@ -365,11 +367,10 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
         },
       });
 
-      const formationName =
-        updatedRegistration.blockSelections
-          .filter((selection) => selection.wants_to_attend)
-          .map((selection) => selection.block.title)
-          .join(', ') || (updatedRegistration.want_formation ? 'Formation initiale' : null);
+      const formationName = formatFormationName(
+        updatedRegistration.blockSelections,
+        updatedRegistration.want_formation,
+      );
 
       // Update disabilities if provided
       if (body.disabilities && Array.isArray(body.disabilities)) {

@@ -3,6 +3,7 @@ import { sendEmail } from './emailService';
 import { getServerBaseUrl } from '../utils/getBaseUrl';
 import prisma from '../middleware/prismaConfig';
 import { logger } from '../middleware/logger';
+import { formatFormationName } from '../events/registrationBlocks';
 
 /**
  * Unified Notification Service.
@@ -453,11 +454,10 @@ export class UnifiedNotificationService {
       const reminderPromises = users.flatMap((user) =>
         user.registrations.map(async (registration) => {
           try {
-            const formationName =
-              registration.blockSelections
-                .filter((selection) => selection.wants_to_attend)
-                .map((selection) => selection.block.title)
-                .join(', ') || (registration.want_formation ? 'Formation initiale' : null);
+            const formationName = formatFormationName(
+              registration.blockSelections,
+              registration.want_formation,
+            );
 
             await this.notifyEventReminder({
               userId: user.id,

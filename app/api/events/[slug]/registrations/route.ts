@@ -10,6 +10,7 @@ import type { CriterionConfig } from '@/lib/scoring/scoringEngine';
 import { CRITERIA_DEFINITIONS } from '@/lib/scoring/criteriaDefinitions';
 import type { ScoringCriterionType, ParameterValue } from '@/lib/scoring/criteriaDefinitions';
 import { UnifiedNotificationService } from '@/lib/notifications/unifiedNotificationService';
+import { formatFormationName } from '@/lib/events/registrationBlocks';
 
 /**
  * GET /api/events/[slug]/registrations
@@ -634,12 +635,16 @@ export async function POST(req: NextRequest, context: { params: Promise<{ slug: 
           const minutes = event.duration % 60;
           const formattedTime = `${String(hours).padStart(2, '0')}h${String(minutes).padStart(2, '0')}`;
 
-          const formationName =
+          const formationName = formatFormationName(
             selectionsToCreate
-              .filter((selection) => selection.wants_to_attend)
-              .map((selection) => blocksById.get(selection.block_id as string)?.title)
-              .filter((title): title is string => Boolean(title))
-              .join(', ') || (want_formation ? 'Formation initiale' : null);
+              .filter((selection) => blocksById.has(selection.block_id as string))
+              .map((selection) => ({
+                wants_to_attend: Boolean(selection.wants_to_attend),
+                selected_date: selection.selected_date ?? null,
+                block: { title: blocksById.get(selection.block_id as string)!.title },
+              })),
+            want_formation,
+          );
 
           await UnifiedNotificationService.notifyRegistrationSubmitted({
             userId,
