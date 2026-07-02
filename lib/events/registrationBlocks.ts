@@ -87,10 +87,12 @@ export function formatFormationName(
         day: 'numeric',
         month: 'long',
         year: 'numeric',
+        timeZone: 'Europe/Paris',
       });
       const formattedTime = date.toLocaleTimeString('fr-FR', {
         hour: '2-digit',
         minute: '2-digit',
+        timeZone: 'Europe/Paris',
       });
 
       return `${selection.block.title} (${formattedDate} à ${formattedTime})`;
