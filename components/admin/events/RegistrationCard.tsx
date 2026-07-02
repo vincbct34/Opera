@@ -260,7 +260,15 @@ export default function RegistrationCard({
               </div>
               <div className="flex items-center gap-2">
                 <Calendar size={14} className="shrink-0" />
-                <span>{new Date(registration.date).toLocaleDateString('fr-FR')}</span>
+                <span>
+                  {new Date(registration.date).toLocaleString('fr-FR', {
+                    day: '2-digit',
+                    month: '2-digit',
+                    year: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                  })}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <Mail size={14} className="shrink-0" />
