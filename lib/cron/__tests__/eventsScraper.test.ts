@@ -1293,8 +1293,9 @@ describe('eventsScraper (API mode)', () => {
     expect(events.length).toBe(1);
     expect(events[0].has_initial_formation).toBe(true);
     expect(events[0].has_musical_preparation).toBe(true);
-    expect(events[0].description).toBe('Une description');
-    expect(events[0].description).not.toContain('Autour du concert');
+    expect(events[0].description).toBe(
+      'Une description\n\nAutour du concert\n Formation\n Préparation musicale\n Carnet spectacle',
+    );
   });
 
   test('parseDescriptionForEducationalContent without Formation or Préparation', async () => {
@@ -1399,8 +1400,9 @@ describe('eventsScraper (API mode)', () => {
     expect(events.length).toBe(1);
     expect(events[0].has_initial_formation).toBe(true);
     expect(events[0].has_musical_preparation).toBe(true);
-    expect(events[0].description).toBe('Description du spectacle musical.');
-    expect(events[0].description).not.toContain('Autour du spectacle');
+    expect(events[0].description).toBe(
+      'Description du spectacle musical.\n\nAutour du spectacle\n Formation\n Préparation musicale',
+    );
   });
 
   test('mapPublicIdsToCategories maps WordPress taxonomy IDs to PublicCategory', async () => {
@@ -1980,10 +1982,10 @@ describe('eventsScraper utility functions', () => {
       expect(result.hasMusicalPreparation).toBe(true);
     });
 
-    test('removes Autour section from description', () => {
+    test('keeps Autour section in description', () => {
       const { parseDescriptionForEducationalContent } = require('@/lib/cron/eventsScraper');
       const result = parseDescriptionForEducationalContent('Main text\nAutour du concert\nExtra');
-      expect(result.enhancedDescription).toBe('Main text');
+      expect(result.enhancedDescription).toBe('Main text\nAutour du concert\nExtra');
     });
   });
 

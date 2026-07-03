@@ -243,7 +243,6 @@ export function stripHtml(html: string | null): string | null {
 
 /**
  * Parse description to extract formation and preparation information
- * and remove the "Autour du concert" or "Autour du spectacle" section
  */
 export function parseDescriptionForEducationalContent(description: string | null): {
   hasInitialFormation: boolean;
@@ -266,15 +265,10 @@ export function parseDescriptionForEducationalContent(description: string | null
   const hasMusicalPreparation =
     /Autour du (?:concert|spectacle)[\s\S]*?\s*Préparation musicale/i.test(description);
 
-  // Remove "Autour du concert" or "Autour du spectacle" section from description
-  const enhancedDescription = description
-    .replace(/Autour du (?:concert|spectacle)[\s\S]*/i, '')
-    .trim();
-
   return {
     hasInitialFormation,
     hasMusicalPreparation,
-    enhancedDescription,
+    enhancedDescription: description.trim(),
   };
 }
 
