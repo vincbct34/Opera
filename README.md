@@ -400,4 +400,4 @@ This software is the exclusive property of the Opéra Orchestre National Montpel
 
 Built for the **Opéra Orchestre National Montpellier Occitanie** to modernize their event registration system for schools and cultural associations.
 
-**Version**: 1.7.0 - Production-ready (maintenance mode)
+**Version**: 1.9.0 - Production-ready (maintenance mode)
