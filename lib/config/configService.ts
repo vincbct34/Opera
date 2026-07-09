@@ -242,6 +242,32 @@ export async function getConfigValue(
 }
 
 /**
+ * Read the homepage hero image path directly from the database, bypassing the
+ * config cache.
+ *
+ * The homepage is force-dynamic and must always reflect the most recent upload,
+ * even when Redis is down. In that case the config cache falls back to an
+ * in-memory Map that is NOT shared across module instances, so a cache clear in
+ * the upload route never reaches the page's cache and the homepage would keep
+ * serving a stale value for up to the TTL. A direct read is cheap (one row, once
+ * per home render) and always correct.
+ *
+ * @returns The stored path, or null when unset/empty (caller uses the bundled default).
+ */
+export async function getHeroImagePath(): Promise<string | null> {
+  try {
+    const entry = await prisma.appConfig.findUnique({
+      where: { category_key: { category: 'site_assets', key: HERO_IMAGE_KEY } },
+    });
+    const value = entry?.value?.trim();
+    return value ? value : null;
+  } catch (error) {
+    logger.error('Failed to read hero image path:', error);
+    return null;
+  }
+}
+
+/**
  * Update a config entry (upsert)
  */
 export async function setConfigValue(

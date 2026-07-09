@@ -10,6 +10,8 @@ const mockFindMany = jest.fn<any>();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockUpsert = jest.fn<any>();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
+const mockFindUnique = jest.fn<any>();
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockDeleteMany = jest.fn<any>();
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const mockTransaction = jest.fn<any>();
@@ -19,6 +21,7 @@ jest.mock('@/lib/middleware/prismaConfig', () => ({
   default: {
     appConfig: {
       findMany: mockFindMany,
+      findUnique: mockFindUnique,
       upsert: mockUpsert,
       deleteMany: mockDeleteMany,
     },
@@ -62,6 +65,7 @@ import {
   clearConfigCache,
   getConfig,
   getConfigValue,
+  getHeroImagePath,
   setConfigValue,
   setConfigValues,
   resetConfigToDefaults,
@@ -286,6 +290,56 @@ describe('configService', () => {
       const result = await getConfigValue('accessibility_labels', 'NONE');
 
       expect(result).toBe('Custom Value');
+    });
+  });
+
+  // ==========================================================================
+  // getHeroImagePath
+  // ==========================================================================
+
+  describe('getHeroImagePath', () => {
+    it('should return the stored path directly from the database', async () => {
+      mockFindUnique.mockResolvedValueOnce({
+        category: 'site_assets',
+        key: 'hero_image',
+        value: '/uploads/hero-123.jpg',
+      });
+
+      const result = await getHeroImagePath();
+
+      expect(result).toBe('/uploads/hero-123.jpg');
+      expect(mockFindUnique).toHaveBeenCalledWith({
+        where: { category_key: { category: 'site_assets', key: 'hero_image' } },
+      });
+    });
+
+    it('should return null when no row exists', async () => {
+      mockFindUnique.mockResolvedValueOnce(null);
+
+      const result = await getHeroImagePath();
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null when the stored value is empty or whitespace', async () => {
+      mockFindUnique.mockResolvedValueOnce({
+        category: 'site_assets',
+        key: 'hero_image',
+        value: '   ',
+      });
+
+      const result = await getHeroImagePath();
+
+      expect(result).toBeNull();
+    });
+
+    it('should return null and log when the database read fails', async () => {
+      mockFindUnique.mockRejectedValueOnce(new Error('Database error'));
+
+      const result = await getHeroImagePath();
+
+      expect(result).toBeNull();
+      expect(logger.error).toHaveBeenCalled();
     });
   });
 

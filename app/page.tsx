@@ -1,12 +1,14 @@
 import HomePageClient from '@/components/misc/HomePageClient';
-import { getConfigValue, HERO_IMAGE_KEY } from '@/lib/config/configService';
+import { getHeroImagePath } from '@/lib/config/configService';
 
 // Force dynamic rendering to ensure fresh config
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
 export default async function Home() {
-  const heroImage = await getConfigValue('site_assets', HERO_IMAGE_KEY);
+  // Read directly from the DB (not the cache) so a fresh upload shows immediately
+  // even when Redis is down. See getHeroImagePath for the rationale.
+  const heroImage = await getHeroImagePath();
 
-  return <HomePageClient heroImage={heroImage || null} />;
+  return <HomePageClient heroImage={heroImage} />;
 }
