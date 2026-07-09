@@ -188,6 +188,7 @@ export class NotificationService {
                 select: {
                   wants_to_attend: true,
                   selected_date: true,
+                  selected_end_date: true,
                   block: {
                     select: {
                       title: true,

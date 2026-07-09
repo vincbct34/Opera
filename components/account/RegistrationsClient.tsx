@@ -9,6 +9,7 @@ import toast from '@/lib/utils/toast';
 import Image from 'next/image';
 import Link from 'next/link';
 import { getEventUrl } from '@/lib/events/eventUrl';
+import { formatSlotEndSuffix } from '@/lib/events/registrationBlocks';
 import {
   Calendar,
   MapPin,
@@ -62,6 +63,7 @@ type RegistrationWithDetails = Registration & {
     id: string;
     wants_to_attend: boolean;
     selected_date?: string | null;
+    selected_end_date?: string | null;
     block: {
       id: string;
       title: string;
@@ -871,7 +873,9 @@ export default function RegistrationsClient({
                                     {selection.wants_to_attend ? 'Oui' : 'Non'} -{' '}
                                     {selection.block.title}
                                     {selection.selected_date
-                                      ? ` (${formatDateTime(selection.selected_date)})`
+                                      ? ` (${formatDateTime(selection.selected_date)}${formatSlotEndSuffix(
+                                          selection.selected_end_date,
+                                        )})`
                                       : ''}
                                   </span>
                                 ))}

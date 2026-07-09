@@ -54,6 +54,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
               id: true,
               wants_to_attend: true,
               selected_date: true,
+              selected_end_date: true,
               block: {
                 select: {
                   id: true,
@@ -357,6 +358,7 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
             select: {
               wants_to_attend: true,
               selected_date: true,
+              selected_end_date: true,
               block: {
                 select: {
                   title: true,

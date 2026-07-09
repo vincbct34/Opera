@@ -234,6 +234,7 @@ export default function InstitutionHistoryModal({
                               id: string;
                               wants_to_attend: boolean;
                               selected_date?: string | null;
+                              selected_end_date?: string | null;
                               block: { title: string };
                             }>;
                           },

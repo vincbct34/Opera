@@ -13,7 +13,7 @@ import {
 import { UnifiedNotificationService } from '@/lib/notifications/unifiedNotificationService';
 import { historyCache } from '@/lib/events/registrationAnalytics';
 import { sendEmail } from '@/lib/notifications/emailService';
-import { formatFormationName } from '@/lib/events/registrationBlocks';
+import { findSlotEndDate, formatFormationName } from '@/lib/events/registrationBlocks';
 
 // SMTP2GO Template ID for musical preparation requests to Opera staff
 const PREPARATION_REQUEST_TEMPLATE_ID = '4049381';
@@ -116,6 +116,7 @@ export async function PATCH(
         block_id: string;
         wants_to_attend: boolean;
         selected_date: Date | null;
+        selected_end_date: Date | null;
       }> | null = null;
 
       if (body.registration_block_selections !== undefined) {
@@ -186,14 +187,20 @@ export async function PATCH(
 
         blockSelectionsToApply = selections
           .filter((selection) => selection.block_id && blocksById.has(selection.block_id))
-          .map((selection) => ({
-            block_id: selection.block_id!,
-            wants_to_attend: Boolean(selection.wants_to_attend),
-            selected_date:
+          .map((selection) => {
+            const selectedDate =
               selection.wants_to_attend && selection.selected_date
                 ? new Date(selection.selected_date)
+                : null;
+            return {
+              block_id: selection.block_id!,
+              wants_to_attend: Boolean(selection.wants_to_attend),
+              selected_date: selectedDate,
+              selected_end_date: selectedDate
+                ? findSlotEndDate(blocksById.get(selection.block_id!)!, selectedDate)
                 : null,
-          }));
+            };
+          });
       }
 
       // Build update data object
@@ -268,6 +275,7 @@ export async function PATCH(
               id: true,
               wants_to_attend: true,
               selected_date: true,
+              selected_end_date: true,
               block: {
                 select: {
                   id: true,
@@ -321,6 +329,7 @@ export async function PATCH(
               block_id: selection.block_id,
               wants_to_attend: selection.wants_to_attend,
               selected_date: selection.selected_date,
+              selected_end_date: selection.selected_end_date,
             })),
           });
         }

@@ -35,21 +35,21 @@ Elle remplace un système basé sur Google Forms + Excel par une plateforme cent
 
 ### 1.2 Fonctionnalités Principales
 
-| Fonctionnalité                   | Description                                                       |
-| -------------------------------- | ----------------------------------------------------------------- |
-| **Authentification JWT**         | Access tokens (15min) + Refresh tokens (7 jours) avec rotation    |
-| **Gestion Multi-Établissements** | Un utilisateur peut appartenir à plusieurs institutions           |
-| **Scraping Automatique**         | Synchronisation des événements depuis l'API WordPress de l'Opéra  |
-| **Protection des Champs**        | Système de protection des champs événements contre le scraping    |
-| **Blocs Pédagogiques**           | Formations/ateliers liés aux événements, avec dates et obligation |
-| **Notifications Préparation**    | Emails automatiques au staff Opéra pour demandes de préparation   |
-| **Sélecteur d'Institutions**     | Affichage des établissements attachés à l'utilisateur             |
-| **Style Guide Interactif**       | Guide de style avec composants interactifs (slider, dropdown)     |
-| **Scoring Automatique**          | Algorithme de tri des inscriptions configurable par événement     |
-| **Recherche Fuzzy**              | Algorithme Levenshtein pour la recherche d'institutions           |
-| **Export Excel**                 | Export avancé (filtres, anonymisation, sélection de feuilles)     |
-| **Notifications**                | Système d'emails (SMTP2GO) + notifications in-app                 |
-| **Sécurité Avancée**             | CSRF, Rate Limiting, Account Lockout, CSP                         |
+| Fonctionnalité                   | Description                                                                 |
+| -------------------------------- | --------------------------------------------------------------------------- |
+| **Authentification JWT**         | Access tokens (15min) + Refresh tokens (7 jours) avec rotation              |
+| **Gestion Multi-Établissements** | Un utilisateur peut appartenir à plusieurs institutions                     |
+| **Scraping Automatique**         | Synchronisation des événements depuis l'API WordPress de l'Opéra            |
+| **Protection des Champs**        | Système de protection des champs événements contre le scraping              |
+| **Blocs Pédagogiques**           | Formations/ateliers liés aux événements, avec plages horaires et obligation |
+| **Notifications Préparation**    | Emails automatiques au staff Opéra pour demandes de préparation             |
+| **Sélecteur d'Institutions**     | Affichage des établissements attachés à l'utilisateur                       |
+| **Style Guide Interactif**       | Guide de style avec composants interactifs (slider, dropdown)               |
+| **Scoring Automatique**          | Algorithme de tri des inscriptions configurable par événement               |
+| **Recherche Fuzzy**              | Algorithme Levenshtein pour la recherche d'institutions                     |
+| **Export Excel**                 | Export avancé (filtres, anonymisation, sélection de feuilles)               |
+| **Notifications**                | Système d'emails (SMTP2GO) + notifications in-app                           |
+| **Sécurité Avancée**             | CSRF, Rate Limiting, Account Lockout, CSP                                   |
 
 ---
 
@@ -326,6 +326,7 @@ import prisma from '@/lib/middleware/prismaConfig';
                   │ title                   │
                   │ description             │
                   │ dates[]                 │
+                  │ end_dates[]             │
                   │ registration_enabled    │
                   │ mandatory               │
                   └────────────┬────────────┘
@@ -335,6 +336,7 @@ import prisma from '@/lib/middleware/prismaConfig';
                   ├─────────────────────────┤
                   │ wants_to_attend         │
                   │ selected_date           │
+                  │ selected_end_date       │
                   └─────────────────────────┘
 ```
 
@@ -366,10 +368,16 @@ import prisma from '@/lib/middleware/prismaConfig';
 
 Les blocs pédagogiques permettent à l'admin d'ajouter plusieurs contenus autour d'un événement :
 formations, ateliers, rencontres ou autres activités. Chaque bloc porte son propre titre, texte
-explicatif, liste de dates et mode côté utilisateur.
+explicatif, liste de plages horaires et mode côté utilisateur.
 
-- `EventRegistrationBlock` stocke les blocs configurés sur un événement.
-- `RegistrationBlockSelection` stocke la réponse d'une inscription à un bloc, avec la date choisie.
+- `EventRegistrationBlock` stocke les blocs configurés sur un événement. Les plages horaires sont
+  représentées par deux tableaux alignés index par index : `dates` (débuts, identifiant de la
+  plage) et `end_dates` (fins). Un bloc historique sans `end_dates` reste valide et n'affiche que
+  les heures de début.
+- `RegistrationBlockSelection` stocke la réponse d'une inscription à un bloc, avec le début de la
+  plage choisie (`selected_date`) et sa fin (`selected_end_date`). La fin est calculée côté
+  serveur via `findSlotEndDate` (`lib/events/registrationBlocks.ts`) — le client n'envoie jamais
+  `selected_end_date`.
 - Les champs historiques `Event.has_initial_formation`, `Event.is_formation_mandatory` et
   `Registration.want_formation` restent en base pour compatibilité et exports.
 - Un événement ancien avec `has_initial_formation = true` mais sans bloc réel est exposé via un
@@ -377,8 +385,11 @@ explicatif, liste de dates et mode côté utilisateur.
 - L'admin choisit un mode par bloc : masqué, inscription optionnelle ou inscription obligatoire.
   Un bloc visible accepte toujours une réponse d'inscription ; le mode "information seule" n'est
   pas supporté.
-- Le serveur refuse une inscription si un bloc obligatoire n'est pas sélectionné ou si la date
-  choisie ne fait pas partie des dates du bloc.
+- Le serveur refuse une inscription si un bloc obligatoire n'est pas sélectionné ou si la plage
+  choisie (identifiée par son début) ne fait pas partie des plages du bloc.
+- Côté admin, chaque plage se saisit comme un début (`datetime-local`) et une heure de fin le même
+  jour ; la validation (client et Zod côté serveur) exige une fin strictement postérieure au début
+  et des tableaux `dates`/`end_dates` de même longueur quand `end_dates` est fourni.
 - Le serveur ignore les blocs masqués dans la validation des obligations et refuse toute réponse
   envoyée pour un bloc masqué.
 
@@ -748,9 +759,9 @@ npx prisma db seed
 
 `GET /api/events` utilise une projection Prisma explicite (`select`) pour renvoyer uniquement les champs nécessaires à la liste et aux sélecteurs d'export : identité, titre, slug, description, typologies, publics, niveaux, lieu, capacités, statut, image, dates, indicateurs de formation/préparation et accessibilité. Les relations non nécessaires, notamment les inscriptions, ne sont pas chargées.
 
-`GET /api/events/[slug]` renvoie `registrationBlocks` pour la section "Autour du spectacle".
-Les blocs legacy synthétiques ont un id préfixé par `legacy-` et servent uniquement à préserver
-l'affichage des anciennes formations initiales.
+`GET /api/events/[slug]` renvoie `registrationBlocks` (avec `dates` et `end_dates`) pour la
+section "Autour du spectacle". Les blocs legacy synthétiques ont un id préfixé par `legacy-` et
+servent uniquement à préserver l'affichage des anciennes formations initiales.
 
 `POST /api/events/[slug]/registrations` accepte `registration_block_selections` :
 
@@ -764,8 +775,9 @@ l'affichage des anciennes formations initiales.
 ]
 ```
 
-Le serveur valide les blocs obligatoires, les dates choisies et l'appartenance des blocs à
-l'événement avant de créer l'inscription.
+`selected_date` est le début de la plage horaire choisie. Le serveur valide les blocs
+obligatoires, les plages choisies et l'appartenance des blocs à l'événement avant de créer
+l'inscription, puis dérive lui-même `selected_end_date` depuis les `end_dates` du bloc.
 
 ### 5.5 Endpoints Institutions
 
@@ -809,7 +821,9 @@ l'événement avant de créer l'inscription.
 
 Les payloads `POST /api/admin/events` et `PUT /api/admin/events/[id]` acceptent
 `registrationBlocks`. Les blocs avec `id` sont mis à jour, les blocs sans `id` sont créés, et les
-blocs retirés du formulaire admin sont supprimés.
+blocs retirés du formulaire admin sont supprimés. Chaque bloc porte ses plages horaires via les
+tableaux `dates` (débuts) et `end_dates` (fins) ; quand `end_dates` est fourni, il doit avoir la
+même longueur que `dates` et chaque fin doit être postérieure à son début.
 
 ### 5.8 Endpoints Cron
 

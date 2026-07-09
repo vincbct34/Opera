@@ -39,11 +39,18 @@ const PROTECTABLE_FIELDS = [
   { key: 'has_musical_preparation', label: 'Préparation musicale' },
 ] as const;
 
+type LocalRegistrationBlockSlot = {
+  // Start of the time slot, datetime-local format (YYYY-MM-DDTHH:mm)
+  start: string;
+  // End of the time slot, time format (HH:mm), same day as start
+  end: string;
+};
+
 type LocalRegistrationBlock = {
   id?: string;
   title: string;
   description: string;
-  dates: string[];
+  slots: LocalRegistrationBlockSlot[];
   enabled: boolean;
   registration_enabled: boolean;
   mandatory: boolean;
@@ -117,13 +124,44 @@ export default function AdminEventForm({
     return date.toISOString();
   };
 
+  // Helper: Extract local HH:mm from a UTC ISO string
+  const utcToLocalTime = (isoString: string): string => {
+    const date = new Date(isoString);
+    return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
+  };
+
+  // Helper: Combine a slot's start (datetime-local) with its end time (HH:mm, same day) into a UTC ISO string
+  const slotEndToUtc = (slot: LocalRegistrationBlockSlot): string => {
+    const [datePart] = slot.start.split('T');
+    return datetimeLocalToUtc(`${datePart}T${slot.end}`);
+  };
+
+  // Helper: Default end time = start + 1h (HH:mm)
+  const defaultEndTime = (startDatetimeLocal: string): string => {
+    const [datePart, timePart] = startDatetimeLocal.split('T');
+    const [year, month, day] = datePart.split('-').map(Number);
+    const [hours, minutes] = timePart.split(':').map(Number);
+    const end = new Date(year, month - 1, day, hours + 1, minutes);
+    return `${String(end.getHours()).padStart(2, '0')}:${String(end.getMinutes()).padStart(2, '0')}`;
+  };
+
+  const blockDatesToSlots = (
+    dates: string[] | undefined,
+    endDates: string[] | undefined,
+  ): LocalRegistrationBlockSlot[] =>
+    (dates || []).map((date, index) => {
+      const start = utcToDatetimeLocal(date);
+      const end = endDates?.[index] ? utcToLocalTime(endDates[index]) : defaultEndTime(start);
+      return { start, end };
+    });
+
   const initialRegistrationBlocks: LocalRegistrationBlock[] =
     initialData?.registrationBlocks && initialData.registrationBlocks.length > 0
       ? initialData.registrationBlocks.map((block, index) => ({
           id: block.id,
           title: block.title,
           description: block.description ?? '',
-          dates: (block.dates || []).map((date) => utcToDatetimeLocal(date)),
+          slots: blockDatesToSlots(block.dates, block.end_dates),
           enabled: block.enabled ?? true,
           registration_enabled: block.enabled !== false,
           mandatory: block.enabled !== false && (block.mandatory ?? false),
@@ -135,7 +173,7 @@ export default function AdminEventForm({
             {
               title: 'Formation initiale',
               description: '',
-              dates: [],
+              slots: [],
               enabled: true,
               registration_enabled: true,
               mandatory: initialData.is_formation_mandatory ?? false,
@@ -175,12 +213,26 @@ export default function AdminEventForm({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    const registrationBlocks = formData.registrationBlocks.map((block, index) => ({
+    for (const block of formData.registrationBlocks) {
+      const invalidSlot = block.slots.find(
+        (slot) =>
+          new Date(slotEndToUtc(slot)).getTime() <=
+          new Date(datetimeLocalToUtc(slot.start)).getTime(),
+      );
+      if (invalidSlot) {
+        window.alert(
+          `Bloc "${block.title}" : la fin de chaque plage horaire doit être postérieure à son début.`,
+        );
+        return;
+      }
+    }
+    const registrationBlocks = formData.registrationBlocks.map(({ slots, ...block }, index) => ({
       ...block,
       registration_enabled: block.enabled,
       mandatory: block.enabled && block.mandatory,
       order: index,
-      dates: block.dates.map((date) => datetimeLocalToUtc(date)),
+      dates: slots.map((slot) => datetimeLocalToUtc(slot.start)),
+      end_dates: slots.map((slot) => slotEndToUtc(slot)),
     }));
     const hasRegistrationBlocks = registrationBlocks.some((block) => block.enabled);
     const hasMandatoryRegistrationBlock = registrationBlocks.some(
@@ -234,7 +286,7 @@ export default function AdminEventForm({
         {
           title: 'Formation initiale',
           description: '',
-          dates: [],
+          slots: [],
           enabled: true,
           registration_enabled: true,
           mandatory: false,
@@ -282,26 +334,31 @@ export default function AdminEventForm({
     }));
   };
 
-  const addRegistrationBlockDate = (index: number) => {
+  const addRegistrationBlockSlot = (index: number) => {
     const now = new Date();
-    const datetimeLocal = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const start = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}T${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+    const slot: LocalRegistrationBlockSlot = { start, end: defaultEndTime(start) };
     setFormData((prev) => ({
       ...prev,
       registrationBlocks: prev.registrationBlocks.map((block, blockIndex) =>
-        blockIndex === index ? { ...block, dates: [...block.dates, datetimeLocal] } : block,
+        blockIndex === index ? { ...block, slots: [...block.slots, slot] } : block,
       ),
     }));
   };
 
-  const updateRegistrationBlockDate = (blockIndex: number, dateIndex: number, value: string) => {
+  const updateRegistrationBlockSlot = (
+    blockIndex: number,
+    slotIndex: number,
+    updates: Partial<LocalRegistrationBlockSlot>,
+  ) => {
     setFormData((prev) => ({
       ...prev,
       registrationBlocks: prev.registrationBlocks.map((block, currentBlockIndex) =>
         currentBlockIndex === blockIndex
           ? {
               ...block,
-              dates: block.dates.map((date, currentDateIndex) =>
-                currentDateIndex === dateIndex ? value : date,
+              slots: block.slots.map((slot, currentSlotIndex) =>
+                currentSlotIndex === slotIndex ? { ...slot, ...updates } : slot,
               ),
             }
           : block,
@@ -309,14 +366,14 @@ export default function AdminEventForm({
     }));
   };
 
-  const removeRegistrationBlockDate = (blockIndex: number, dateIndex: number) => {
+  const removeRegistrationBlockSlot = (blockIndex: number, slotIndex: number) => {
     setFormData((prev) => ({
       ...prev,
       registrationBlocks: prev.registrationBlocks.map((block, currentBlockIndex) =>
         currentBlockIndex === blockIndex
           ? {
               ...block,
-              dates: block.dates.filter((_, currentDateIndex) => currentDateIndex !== dateIndex),
+              slots: block.slots.filter((_, currentSlotIndex) => currentSlotIndex !== slotIndex),
             }
           : block,
       ),
@@ -618,29 +675,46 @@ export default function AdminEventForm({
 
               <div className="mt-4">
                 <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-700">Dates du bloc</label>
+                  <label className="block text-sm font-medium text-gray-700">
+                    Plages horaires du bloc
+                  </label>
                   <button
                     type="button"
-                    onClick={() => addRegistrationBlockDate(blockIndex)}
+                    onClick={() => addRegistrationBlockSlot(blockIndex)}
                     className="text-sm text-blue-600 hover:text-blue-800 flex items-center gap-1"
                   >
-                    <Plus size={16} /> Ajouter une date
+                    <Plus size={16} /> Ajouter une plage horaire
                   </button>
                 </div>
                 <div className="space-y-2">
-                  {block.dates.map((date, dateIndex) => (
-                    <div key={`${blockIndex}-${dateIndex}`} className="flex gap-2">
+                  {block.slots.map((slot, slotIndex) => (
+                    <div key={`${blockIndex}-${slotIndex}`} className="flex items-center gap-2">
                       <input
                         type="datetime-local"
-                        value={date}
+                        value={slot.start}
                         onChange={(e) =>
-                          updateRegistrationBlockDate(blockIndex, dateIndex, e.target.value)
+                          updateRegistrationBlockSlot(blockIndex, slotIndex, {
+                            start: e.target.value,
+                          })
                         }
                         className="flex-1 p-2 border border-gray-300 rounded-none focus:outline-none focus:ring-2 focus:ring-black bg-white"
+                        required
+                      />
+                      <span className="text-sm text-gray-500">à</span>
+                      <input
+                        type="time"
+                        value={slot.end}
+                        onChange={(e) =>
+                          updateRegistrationBlockSlot(blockIndex, slotIndex, {
+                            end: e.target.value,
+                          })
+                        }
+                        className="p-2 border border-gray-300 rounded-none focus:outline-none focus:ring-2 focus:ring-black bg-white"
+                        required
                       />
                       <button
                         type="button"
-                        onClick={() => removeRegistrationBlockDate(blockIndex, dateIndex)}
+                        onClick={() => removeRegistrationBlockSlot(blockIndex, slotIndex)}
                         className="p-2 text-red-600 hover:bg-red-50 transition-colors"
                         title="Supprimer"
                       >
@@ -648,9 +722,9 @@ export default function AdminEventForm({
                       </button>
                     </div>
                   ))}
-                  {block.dates.length === 0 && (
+                  {block.slots.length === 0 && (
                     <p className="text-sm text-gray-500 italic">
-                      Aucune date définie pour ce bloc.
+                      Aucune plage horaire définie pour ce bloc.
                     </p>
                   )}
                 </div>

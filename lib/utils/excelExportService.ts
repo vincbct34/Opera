@@ -20,6 +20,7 @@ import {
   getAccessibilityLabelsMapAsync,
 } from '@/lib/config/labelMappingsServer';
 import prisma from '@/lib/middleware/prismaConfig';
+import { formatSlotEndSuffix } from '@/lib/events/registrationBlocks';
 
 // ============================================================================
 // Types
@@ -867,7 +868,7 @@ async function addRegistrationsSheet(
     const registrationBlocks = reg.blockSelections
       .map((selection) => {
         const selectedDate = selection.selected_date
-          ? ` - ${formatDate(selection.selected_date)}`
+          ? ` - ${formatDate(selection.selected_date)}${formatSlotEndSuffix(selection.selected_end_date)}`
           : '';
         return `${selection.block.title}: ${selection.wants_to_attend ? 'Oui' : 'Non'}${selectedDate}`;
       })

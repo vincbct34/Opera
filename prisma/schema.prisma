@@ -131,6 +131,7 @@ model EventRegistrationBlock {
   title                String
   description          String?
   dates                DateTime[]                   @default([])
+  end_dates            DateTime[]                   @default([])
   enabled              Boolean                      @default(true)
   registration_enabled Boolean                      @default(true)
   mandatory            Boolean                      @default(false)
@@ -182,15 +183,16 @@ model Registration {
 }
 
 model RegistrationBlockSelection {
-  id              String                 @id @default(cuid())
-  registration_id String
-  block_id        String
-  wants_to_attend Boolean
-  selected_date   DateTime?
-  created_at      DateTime               @default(now())
-  updated_at      DateTime               @updatedAt
-  registration    Registration           @relation(fields: [registration_id], references: [id], onDelete: Cascade)
-  block           EventRegistrationBlock @relation(fields: [block_id], references: [id], onDelete: Cascade)
+  id                String                 @id @default(cuid())
+  registration_id   String
+  block_id          String
+  wants_to_attend   Boolean
+  selected_date     DateTime?
+  selected_end_date DateTime?
+  created_at        DateTime               @default(now())
+  updated_at        DateTime               @updatedAt
+  registration      Registration           @relation(fields: [registration_id], references: [id], onDelete: Cascade)
+  block             EventRegistrationBlock @relation(fields: [block_id], references: [id], onDelete: Cascade)
 
   @@unique([registration_id, block_id])
   @@index([block_id])

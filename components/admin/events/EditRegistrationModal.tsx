@@ -65,6 +65,7 @@ interface RegistrationBlockOption {
   title: string;
   description?: string | null;
   dates: Array<string | Date>;
+  end_dates?: Array<string | Date>;
   enabled: boolean;
   registration_enabled: boolean;
   mandatory: boolean;
@@ -655,9 +656,10 @@ export default function EditRegistrationModal({
                                   }
                                   className="w-full px-3 py-2 border border-gray-300 font-ibm text-sm focus:outline-none focus:border-blue-500 bg-white"
                                 >
-                                  <option value="">Sélectionner une date</option>
-                                  {block.dates.map((date) => {
+                                  <option value="">Sélectionner une plage horaire</option>
+                                  {block.dates.map((date, dateIndex) => {
                                     const iso = new Date(date).toISOString();
+                                    const endDate = block.end_dates?.[dateIndex];
                                     return (
                                       <option key={iso} value={iso}>
                                         {new Date(date).toLocaleString('fr-FR', {
@@ -667,6 +669,12 @@ export default function EditRegistrationModal({
                                           hour: '2-digit',
                                           minute: '2-digit',
                                         })}
+                                        {endDate
+                                          ? ` à ${new Date(endDate).toLocaleTimeString('fr-FR', {
+                                              hour: '2-digit',
+                                              minute: '2-digit',
+                                            })}`
+                                          : ''}
                                       </option>
                                     );
                                   })}

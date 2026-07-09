@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { useUser } from '@/context/UserContext';
 import Loader from '@/components/ui/Loader';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
+import { formatSlotEndSuffix } from '@/lib/events/registrationBlocks';
 import { logger } from '@/lib/middleware/logger';
 import toast from '@/lib/utils/toast';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
@@ -625,6 +626,7 @@ export default function AdminInstitutionDetailClient({
                                 id: string;
                                 wants_to_attend: boolean;
                                 selected_date?: string | null;
+                                selected_end_date?: string | null;
                                 block: { title: string };
                               }) => (
                                 <span
@@ -642,7 +644,7 @@ export default function AdminInstitutionDetailClient({
                                           hour: '2-digit',
                                           minute: '2-digit',
                                         },
-                                      )}`
+                                      )}${formatSlotEndSuffix(selection.selected_end_date)}`
                                     : ''}
                                 </span>
                               ),
@@ -864,6 +866,7 @@ export default function AdminInstitutionDetailClient({
                                 id: string;
                                 wants_to_attend: boolean;
                                 selected_date?: string | null;
+                                selected_end_date?: string | null;
                                 block: { title: string };
                               }) => (
                                 <span
@@ -881,7 +884,7 @@ export default function AdminInstitutionDetailClient({
                                           hour: '2-digit',
                                           minute: '2-digit',
                                         },
-                                      )}`
+                                      )}${formatSlotEndSuffix(selection.selected_end_date)}`
                                     : ''}
                                 </span>
                               ),

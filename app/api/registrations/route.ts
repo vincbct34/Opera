@@ -55,6 +55,7 @@ export async function GET(req: NextRequest) {
                 id: true,
                 wants_to_attend: true,
                 selected_date: true,
+                selected_end_date: true,
                 block: {
                   select: {
                     id: true,

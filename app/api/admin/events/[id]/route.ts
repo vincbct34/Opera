@@ -19,16 +19,30 @@ import {
   serializeRegistrationBlock,
 } from '@/lib/events/registrationBlocks';
 
-const RegistrationBlockSchema = z.object({
-  id: z.string().optional(),
-  title: z.string().min(1, 'Le titre du bloc est requis'),
-  description: z.string().optional().nullable(),
-  dates: z.array(z.string().datetime()).optional(),
-  enabled: z.boolean().optional(),
-  registration_enabled: z.boolean().optional(),
-  mandatory: z.boolean().optional(),
-  order: z.number().int().min(0).optional(),
-});
+const RegistrationBlockSchema = z
+  .object({
+    id: z.string().optional(),
+    title: z.string().min(1, 'Le titre du bloc est requis'),
+    description: z.string().optional().nullable(),
+    dates: z.array(z.string().datetime()).optional(),
+    end_dates: z.array(z.string().datetime()).optional(),
+    enabled: z.boolean().optional(),
+    registration_enabled: z.boolean().optional(),
+    mandatory: z.boolean().optional(),
+    order: z.number().int().min(0).optional(),
+  })
+  .refine(
+    (block) => {
+      const endDates = block.end_dates ?? [];
+      if (endDates.length === 0) return true;
+      const dates = block.dates ?? [];
+      return (
+        endDates.length === dates.length &&
+        endDates.every((end, index) => new Date(end).getTime() > new Date(dates[index]).getTime())
+      );
+    },
+    { message: 'Chaque plage horaire doit avoir une fin postérieure à son début' },
+  );
 
 // List of fields that can be protected from scraping
 export const PROTECTABLE_FIELDS = [
@@ -415,6 +429,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
               // so strip any markup to plain text instead of storing rich HTML.
               description: richTextToPlainText(block.description) || null,
               dates: (block.dates || []).map((date) => new Date(date)),
+              end_dates: (block.end_dates || []).map((date) => new Date(date)),
               enabled: block.enabled ?? true,
               registration_enabled: block.enabled !== false,
               mandatory: block.enabled !== false && (block.mandatory ?? false),

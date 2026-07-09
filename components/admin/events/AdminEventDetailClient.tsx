@@ -83,6 +83,7 @@ interface RegistrationData {
     id: string;
     wants_to_attend: boolean;
     selected_date?: string | null;
+    selected_end_date?: string | null;
     block: {
       id: string;
       title: string;
@@ -136,6 +137,7 @@ export default function AdminEventDetailClient({
     title: string;
     description?: string | null;
     dates: Array<string | Date>;
+    end_dates?: Array<string | Date>;
     enabled: boolean;
     registration_enabled: boolean;
     mandatory: boolean;

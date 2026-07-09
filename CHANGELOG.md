@@ -2,6 +2,22 @@
 
 All notable changes to the Opéra de Montpellier Registration Platform will be documented in this file.
 
+## [1.8.0] - 2026-07-09
+
+### Changed
+
+- **Pedagogical Block Time Slots**: Block dates are now time slots (plages horaires) with a start and an end instead of single precise appointment times
+  - `EventRegistrationBlock` gains an `end_dates` array aligned index-by-index with `dates`; `RegistrationBlockSelection` gains `selected_end_date`
+  - Admin event form edits each slot as a start (`datetime-local`) plus an end time on the same day; new slots default to start + 1h
+  - Client and server (Zod) validation require each end to be strictly after its start and `end_dates` to match `dates` in length when provided
+  - The registration APIs still receive only `selected_date` (slot start); the server derives `selected_end_date` from the block's `end_dates`
+  - User selection dropdowns, admin registration views, account pages, Excel exports, and notification emails now display the full range (e.g. "mardi 13 octobre 2026 de 09:30 à 11:30")
+  - Backward compatible: blocks without `end_dates` keep displaying start times only, and legacy synthetic formation blocks are unaffected
+
+### Deployment Notes
+
+- Run `npx prisma db push` (or apply the equivalent migration) before deploying: adds the `EventRegistrationBlock.end_dates` and `RegistrationBlockSelection.selected_end_date` columns (both additive and nullable/default-empty)
+
 ## [1.7.1] - 2026-07-01
 
 ### Changed

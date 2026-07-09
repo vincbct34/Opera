@@ -56,6 +56,7 @@ interface EventRegistrationBlock {
   title: string;
   description?: string | null;
   dates: string[];
+  end_dates?: string[];
   enabled: boolean;
   registration_enabled: boolean;
   mandatory: boolean;
@@ -66,6 +67,7 @@ interface RegistrationBlockSelection {
   id: string;
   wants_to_attend: boolean;
   selected_date?: string | null;
+  selected_end_date?: string | null;
   block: {
     id: string;
     title: string;
@@ -635,7 +637,14 @@ export default function UserEventDetailClient({
                               year: 'numeric',
                               hour: '2-digit',
                               minute: '2-digit',
-                            })}`
+                            })}${
+                              selection.selected_end_date
+                                ? ` à ${new Date(selection.selected_end_date).toLocaleTimeString(
+                                    'fr-FR',
+                                    { hour: '2-digit', minute: '2-digit' },
+                                  )}`
+                                : ''
+                            }`
                           : ''}
                       </span>
                     ))}
@@ -1439,18 +1448,27 @@ export default function UserEventDetailClient({
                                   }
                                   className="w-full p-2 border border-gray-300 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-black font-ibm bg-white"
                                 >
-                                  <option value="">Sélectionner une date</option>
-                                  {block.dates.map((date) => (
-                                    <option key={date} value={date}>
-                                      {new Date(date).toLocaleString('fr-FR', {
-                                        day: '2-digit',
-                                        month: 'long',
-                                        year: 'numeric',
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                      })}
-                                    </option>
-                                  ))}
+                                  <option value="">Sélectionner une plage horaire</option>
+                                  {block.dates.map((date, dateIndex) => {
+                                    const endDate = block.end_dates?.[dateIndex];
+                                    return (
+                                      <option key={date} value={date}>
+                                        {new Date(date).toLocaleString('fr-FR', {
+                                          day: '2-digit',
+                                          month: 'long',
+                                          year: 'numeric',
+                                          hour: '2-digit',
+                                          minute: '2-digit',
+                                        })}
+                                        {endDate
+                                          ? ` à ${new Date(endDate).toLocaleTimeString('fr-FR', {
+                                              hour: '2-digit',
+                                              minute: '2-digit',
+                                            })}`
+                                          : ''}
+                                      </option>
+                                    );
+                                  })}
                                 </select>
                               )}
                             </>

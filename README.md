@@ -1,6 +1,6 @@
 # Service culturel - Plateforme web
 
-> **Version 1.7.0** - Production-ready (June 30, 2026)
+> **Version 1.8.0** - Production-ready (July 9, 2026)
 
 A full-stack web application for managing school and association registrations for cultural events at the Opéra de Montpellier. Built to replace a legacy Google Forms + Excel workflow with a centralized platform featuring separate portals for institutions and administrators.
 
@@ -10,9 +10,13 @@ The system handles multi-institution user management, automated event scraping f
 
 ✅ **Production-ready** - All core features are implemented, tested, and documented. The application is in maintenance mode with bug fixes and minor enhancements.
 
-**Latest Release**: July 1, 2026 (v1.7.1)
+**Latest Release**: July 9, 2026 (v1.8.0)
 
-**Latest Release Highlights (v1.7.1)**:
+**Latest Release Highlights (v1.8.0)**:
+
+- Pedagogical registration block dates are now time slots (plages horaires) with a start and an end instead of single precise appointment times; the chosen slot's end is stored on each registration answer and shown in every admin/user view, email, and Excel export
+
+**Previous Release Highlights (v1.7.1)**:
 
 - Reverted Prisma ORM from v7 back to v6 — production runs on a Node version the v7 client does not support. Standard client, imports consolidated to `@prisma/client`.
 
@@ -66,7 +70,7 @@ The system handles multi-institution user management, automated event scraping f
 - ✅ Registration management with automatic scoring algorithms (14 criteria including `EVENT_CATEGORY_MATCH` and `AESH_COUNT`)
 - ✅ Admin dashboard with comprehensive statistics, analytics, and event management (full CRUD)
 - ✅ Admin event management with create, edit, delete, rich text descriptions, and normalized manual edit tracking
-- ✅ Reusable pedagogical registration blocks on events (formations, ateliers, etc.) with custom title/text/dates, hidden/optional/mandatory user modes
+- ✅ Reusable pedagogical registration blocks on events (formations, ateliers, etc.) with custom title/text/time slots, hidden/optional/mandatory user modes
 - ✅ Dynamic configuration system for customizable labels (accessibility, event types, public categories, school grades, age ranges, statuses)
 - ✅ Async label retrieval system for server components with database integration
 - ✅ Redis distributed caching with 5-minute TTL and immediate invalidation across instances
@@ -129,7 +133,7 @@ The system handles multi-institution user management, automated event scraping f
 
 - **Custom Prisma Output**: Client generated to [`app/generated/prisma`](app/generated/prisma) instead of `node_modules/@prisma/client` (see [`prisma/schema.prisma`](prisma/schema.prisma))
 - **Array Fields**: PostgreSQL native arrays for `Event.event_dates` (DateTime[]), `Event.type` (EventType[]), `Event.category` (PublicCategory[]), `Event.grades` (SchoolGrade[]), `Event.age_ranges` (AgeRange[]), `Institution.type` (PublicCategory[]), `Institution.grades` (SchoolGrade[]), `Institution.age_ranges` (AgeRange[])
-- **Pedagogical Registration Blocks**: `EventRegistrationBlock` stores reusable blocks attached to an event (title, description, dates, visibility, registration enabled, mandatory flag). `RegistrationBlockSelection` stores each registration's answer and selected block date. Legacy `has_initial_formation` / `want_formation` fields are retained for backward compatibility.
+- **Pedagogical Registration Blocks**: `EventRegistrationBlock` stores reusable blocks attached to an event (title, description, time slots as parallel `dates`/`end_dates` arrays, visibility, registration enabled, mandatory flag). `RegistrationBlockSelection` stores each registration's answer with the selected slot start (`selected_date`) and its server-computed end (`selected_end_date`). Legacy `has_initial_formation` / `want_formation` fields are retained for backward compatibility.
 - **Soft Relations**: User-to-institution many-to-many via `UserInstitution` with cascade deletes
 - **Security Tables**: Dedicated models for `SecurityLog`, `RefreshTokenBlacklist`, `PasswordResetToken`, `PasswordHistory`
 
@@ -363,7 +367,7 @@ After deployment:
 - **Redis requirement**: In-memory fallback mode is NOT suitable for multi-instance production deployments (horizontal scaling). Redis must be configured to share CSRF tokens, rate limits, and session data across instances.
 - **Event scraping**: Depends on Opera WordPress API availability. If API structure changes, scraper in `lib/cron/eventsScraper.ts` may need updates. The scraper switches to the next academic season on June 10.
 - **Event lifecycle cron**: `/api/cron/events/status-update` progressively opens events, closes past events, and archives events one year after their latest date unless `status` is protected.
-- **Pedagogical blocks deployment order**: this feature adds two tables (`EventRegistrationBlock`, `RegistrationBlockSelection`). Apply the schema before the application deploy; old data remains readable through the legacy formation fallback.
+- **Pedagogical blocks deployment order**: this feature adds two tables (`EventRegistrationBlock`, `RegistrationBlockSelection`) plus the time-slot columns `EventRegistrationBlock.end_dates` and `RegistrationBlockSelection.selected_end_date` (v1.8.0). Apply the schema before the application deploy; old data remains readable through the legacy formation fallback, and blocks without `end_dates` keep displaying start times only.
 - **Email templates**: SMTP2GO templates must be pre-configured in the SMTP2GO dashboard before use (verification, password reset, registration notifications).
 - **Email delivery**: Ensure SMTP2GO API key is valid and has sufficient quota for expected email volume.
 

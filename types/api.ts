@@ -305,6 +305,7 @@ export type AdminEventRegistrationBlock = {
   title: string;
   description?: string | null;
   dates: string[];
+  end_dates?: string[];
   enabled?: boolean;
   registration_enabled?: boolean;
   mandatory?: boolean;

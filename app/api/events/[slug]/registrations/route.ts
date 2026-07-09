@@ -10,7 +10,7 @@ import type { CriterionConfig } from '@/lib/scoring/scoringEngine';
 import { CRITERIA_DEFINITIONS } from '@/lib/scoring/criteriaDefinitions';
 import type { ScoringCriterionType, ParameterValue } from '@/lib/scoring/criteriaDefinitions';
 import { UnifiedNotificationService } from '@/lib/notifications/unifiedNotificationService';
-import { formatFormationName } from '@/lib/events/registrationBlocks';
+import { findSlotEndDate, formatFormationName } from '@/lib/events/registrationBlocks';
 
 /**
  * GET /api/events/[slug]/registrations
@@ -86,6 +86,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ slug: s
                 id: true,
                 wants_to_attend: true,
                 selected_date: true,
+                selected_end_date: true,
                 block: {
                   select: {
                     id: true,
@@ -347,6 +348,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ slug: 
               id: true,
               title: true,
               dates: true,
+              end_dates: true,
               enabled: true,
               registration_enabled: true,
               mandatory: true,
@@ -380,6 +382,7 @@ export async function POST(req: NextRequest, context: { params: Promise<{ slug: 
                 id: true,
                 title: true,
                 dates: true,
+                end_dates: true,
                 enabled: true,
                 registration_enabled: true,
                 mandatory: true,
@@ -599,15 +602,21 @@ export async function POST(req: NextRequest, context: { params: Promise<{ slug: 
 
         if (selectionsToCreate.length > 0) {
           await tx.registrationBlockSelection.createMany({
-            data: selectionsToCreate.map((selection) => ({
-              registration_id: created.id,
-              block_id: selection.block_id!,
-              wants_to_attend: Boolean(selection.wants_to_attend),
-              selected_date:
+            data: selectionsToCreate.map((selection) => {
+              const selectedDate =
                 selection.wants_to_attend && selection.selected_date
                   ? new Date(selection.selected_date)
+                  : null;
+              return {
+                registration_id: created.id,
+                block_id: selection.block_id!,
+                wants_to_attend: Boolean(selection.wants_to_attend),
+                selected_date: selectedDate,
+                selected_end_date: selectedDate
+                  ? findSlotEndDate(blocksById.get(selection.block_id!)!, selectedDate)
                   : null,
-            })),
+              };
+            }),
           });
         }
 
@@ -641,6 +650,10 @@ export async function POST(req: NextRequest, context: { params: Promise<{ slug: 
               .map((selection) => ({
                 wants_to_attend: Boolean(selection.wants_to_attend),
                 selected_date: selection.selected_date ?? null,
+                selected_end_date: findSlotEndDate(
+                  blocksById.get(selection.block_id as string)!,
+                  selection.selected_date ?? null,
+                ),
                 block: { title: blocksById.get(selection.block_id as string)!.title },
               })),
             want_formation,

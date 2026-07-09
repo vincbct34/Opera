@@ -18,6 +18,7 @@ import {
   SCHOOL_GRADE_LABELS,
   AGE_RANGE_LABELS,
 } from '@/lib/config/labelMappings';
+import { formatSlotEndSuffix } from '@/lib/events/registrationBlocks';
 import {
   RegistrationStatus,
   Accessibility,
@@ -78,6 +79,7 @@ interface RegistrationData {
     id: string;
     wants_to_attend: boolean;
     selected_date?: string | null;
+    selected_end_date?: string | null;
     block: {
       id: string;
       title: string;
@@ -565,7 +567,7 @@ export default function RegistrationCard({
                             year: 'numeric',
                             hour: '2-digit',
                             minute: '2-digit',
-                          })}`
+                          })}${formatSlotEndSuffix(selection.selected_end_date)}`
                         : ''}
                     </span>
                   ))}
