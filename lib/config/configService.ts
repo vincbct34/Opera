@@ -56,7 +56,14 @@ export type ConfigCategory =
   | 'registration_status_labels'
   | 'event_status_labels'
   | 'school_grade_labels'
-  | 'age_range_labels';
+  | 'age_range_labels'
+  | 'site_assets';
+
+/**
+ * Config key for the homepage hero image path (category: site_assets).
+ * Empty value means "use the bundled default image".
+ */
+export const HERO_IMAGE_KEY = 'hero_image';
 
 export interface ConfigEntry {
   category: ConfigCategory;
@@ -166,6 +173,9 @@ function getDefaultValues(category: ConfigCategory): Record<string, string> {
       return DEFAULT_SCHOOL_GRADE_LABELS;
     case 'age_range_labels':
       return DEFAULT_AGE_RANGE_LABELS;
+    case 'site_assets':
+      // Empty hero image path => HomePageClient falls back to the bundled asset.
+      return { [HERO_IMAGE_KEY]: '' };
     default:
       return {};
   }

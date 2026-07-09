@@ -58,3 +58,6 @@ tmp/backups/*
 *.csv
 *.xlsx
 .rtk/
+
+# Local codegraph daemon state (contains a unix socket that breaks file walkers)
+.codegraph/

@@ -1,6 +1,6 @@
 # Service culturel - Plateforme web
 
-> **Version 1.8.0** - Production-ready (July 9, 2026)
+> **Version 1.9.0** - Production-ready (July 9, 2026)
 
 A full-stack web application for managing school and association registrations for cultural events at the Opéra de Montpellier. Built to replace a legacy Google Forms + Excel workflow with a centralized platform featuring separate portals for institutions and administrators.
 
@@ -10,9 +10,14 @@ The system handles multi-institution user management, automated event scraping f
 
 ✅ **Production-ready** - All core features are implemented, tested, and documented. The application is in maintenance mode with bug fixes and minor enhancements.
 
-**Latest Release**: July 9, 2026 (v1.8.0)
+**Latest Release**: July 9, 2026 (v1.9.0)
 
-**Latest Release Highlights (v1.8.0)**:
+**Latest Release Highlights (v1.9.0)**:
+
+- Admins can now upload the homepage hero image from **Admin → Paramètres** (JPEG/PNG/WebP, 8 MB max); the file is stored under `public/uploads` and its path recorded in the `site_assets` config, with a one-click reset to the bundled default
+- Footer polish: contact hours now read "Du lundi au vendredi", the Opera site link is labelled "Retour au site principal", the X (Twitter) icon was removed from "Suivez-nous", and the homepage hero caption was dropped
+
+**Previous Release Highlights (v1.8.0)**:
 
 - Pedagogical registration block dates are now time slots (plages horaires) with a start and an end instead of single precise appointment times; the chosen slot's end is stored on each registration answer and shown in every admin/user view, email, and Excel export
 
@@ -35,6 +40,8 @@ The system handles multi-institution user management, automated event scraping f
 
 ### Recent Releases
 
+- **v1.9.0** (Jul 9, 2026): Admin-uploadable homepage hero image (stored in `public/uploads`, path in the `site_assets` config, reset to default), plus footer copy fixes (contact hours, main-site link label, X icon removed, hero caption dropped)
+- **v1.8.0** (Jul 9, 2026): Pedagogical registration block dates became start/end time slots, surfaced across admin/user views, emails, and Excel exports
 - **v1.7.1** (Jul 1, 2026): Reverted Prisma ORM v7 → v6.19 (production Node too old for the v7 Rust-free client); removed the `@prisma/adapter-pg` driver adapter and `prisma.config.ts`, restored the `url` in the schema `datasource`, and consolidated all Prisma imports (enums, model types, `Prisma` namespace) to `@prisma/client`
 - **v1.7.0** (Jun 30, 2026): Migrated to Prisma ORM v7 (Rust-free client over a Direct TCP driver adapter, `@prisma/adapter-pg`); dropped Prisma Accelerate; enum imports moved to the runtime-free `/enums` subpath; local Postgres dev via Docker Compose; event registration season starts on June 10; events auto-archive one year after their latest date **— Prisma changes reverted in v1.7.1**
 - **v1.6.7** (Feb 27, 2026): Fixed registration edit API, removed fuzzy matching from import
@@ -368,6 +375,7 @@ After deployment:
 - **Event scraping**: Depends on Opera WordPress API availability. If API structure changes, scraper in `lib/cron/eventsScraper.ts` may need updates. The scraper switches to the next academic season on June 10.
 - **Event lifecycle cron**: `/api/cron/events/status-update` progressively opens events, closes past events, and archives events one year after their latest date unless `status` is protected.
 - **Pedagogical blocks deployment order**: this feature adds two tables (`EventRegistrationBlock`, `RegistrationBlockSelection`) plus the time-slot columns `EventRegistrationBlock.end_dates` and `RegistrationBlockSelection.selected_end_date` (v1.8.0). Apply the schema before the application deploy; old data remains readable through the legacy formation fallback, and blocks without `end_dates` keep displaying start times only.
+- **Uploaded homepage image persistence** (v1.9.0): admin-uploaded hero images are written to `public/uploads/` (gitignored). This directory must be on **persistent storage shared across deploys**; the current self-hosted Node server satisfies this. Horizontal scaling or ephemeral/serverless hosting would require moving uploads to object storage (S3/Blob).
 - **Email templates**: SMTP2GO templates must be pre-configured in the SMTP2GO dashboard before use (verification, password reset, registration notifications).
 - **Email delivery**: Ensure SMTP2GO API key is valid and has sufficient quota for expected email volume.
 

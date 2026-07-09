@@ -799,25 +799,32 @@ l'inscription, puis dérive lui-même `selected_end_date` depuis les `end_dates`
 
 ### 5.7 Endpoints Administration
 
-| Méthode | Endpoint                                 | Description             | Auth  |
-| ------- | ---------------------------------------- | ----------------------- | ----- |
-| GET     | `/api/admin/stats`                       | Statistiques résumées   | Admin |
-| GET     | `/api/admin/stats/detailed`              | Statistiques détaillées | Admin |
-| POST    | `/api/admin/export`                      | Export Excel            | Admin |
-| GET     | `/api/admin/events`                      | Lister événements       | Admin |
-| POST    | `/api/admin/events`                      | Créer événement         | Admin |
-| GET     | `/api/admin/events/[id]`                 | Détails événement       | Admin |
-| PUT     | `/api/admin/events/[id]`                 | Modifier événement      | Admin |
-| DELETE  | `/api/admin/events/[id]`                 | Supprimer événement     | Admin |
-| GET     | `/api/admin/upcoming-events`             | Événements à venir      | Admin |
-| GET     | `/api/admin/scoring-config`              | Config scoring          | Admin |
-| POST    | `/api/admin/scoring-config`              | Créer config scoring    | Admin |
-| PATCH   | `/api/admin/scoring-config/[id]`         | Modifier scoring        | Admin |
-| POST    | `/api/admin/scoring-config/[id]/preview` | Prévisualiser scoring   | Admin |
-| GET     | `/api/admin/backups`                     | Lister sauvegardes      | Admin |
-| POST    | `/api/admin/backups`                     | Créer une sauvegarde    | Admin |
-| POST    | `/api/admin/backups/compare`             | Comparer avec DB        | Admin |
-| POST    | `/api/admin/backups/restore`             | Restaurer sauvegarde    | Admin |
+| Méthode | Endpoint                                 | Description                 | Auth  |
+| ------- | ---------------------------------------- | --------------------------- | ----- |
+| GET     | `/api/admin/stats`                       | Statistiques résumées       | Admin |
+| GET     | `/api/admin/stats/detailed`              | Statistiques détaillées     | Admin |
+| POST    | `/api/admin/export`                      | Export Excel                | Admin |
+| GET     | `/api/admin/events`                      | Lister événements           | Admin |
+| POST    | `/api/admin/events`                      | Créer événement             | Admin |
+| GET     | `/api/admin/events/[id]`                 | Détails événement           | Admin |
+| PUT     | `/api/admin/events/[id]`                 | Modifier événement          | Admin |
+| DELETE  | `/api/admin/events/[id]`                 | Supprimer événement         | Admin |
+| GET     | `/api/admin/upcoming-events`             | Événements à venir          | Admin |
+| GET     | `/api/admin/scoring-config`              | Config scoring              | Admin |
+| POST    | `/api/admin/scoring-config`              | Créer config scoring        | Admin |
+| PATCH   | `/api/admin/scoring-config/[id]`         | Modifier scoring            | Admin |
+| POST    | `/api/admin/scoring-config/[id]/preview` | Prévisualiser scoring       | Admin |
+| GET     | `/api/admin/backups`                     | Lister sauvegardes          | Admin |
+| POST    | `/api/admin/backups`                     | Créer une sauvegarde        | Admin |
+| POST    | `/api/admin/backups/compare`             | Comparer avec DB            | Admin |
+| POST    | `/api/admin/backups/restore`             | Restaurer sauvegarde        | Admin |
+| POST    | `/api/admin/hero-image`                  | Téléverser photo accueil    | Admin |
+| DELETE  | `/api/admin/hero-image`                  | Réinitialiser photo accueil | Admin |
+
+La photo d'accueil est téléversée en `multipart/form-data` (champ `file`, JPEG/PNG/WebP, 8 Mo max),
+écrite dans `public/uploads/`, et son chemin public est enregistré dans la catégorie de configuration
+`site_assets` (clé `hero_image`). `DELETE` restaure l'image livrée par défaut. La page d'accueil lit
+ce chemin côté serveur et retombe sur `assets/hero.jpg` si aucune image n'est configurée.
 
 Les payloads `POST /api/admin/events` et `PUT /api/admin/events/[id]` acceptent
 `registrationBlocks`. Les blocs avec `id` sont mis à jour, les blocs sans `id` sont créés, et les

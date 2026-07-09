@@ -11,9 +11,16 @@ import Loader from '@/components/ui/Loader';
 import { HelpWidget } from '@/components/ui/HelpWidget';
 import { HELP_CONTENTS } from '@/lib/help/helpContents';
 
-export default function HomePageClient() {
+interface HomePageClientProps {
+  /** Custom hero image path (from admin config). Falls back to the bundled asset when empty. */
+  heroImage?: string | null;
+}
+
+export default function HomePageClient({ heroImage }: HomePageClientProps = {}) {
   const { user, loading } = useUser();
   const router = useRouter();
+
+  const heroSrc = heroImage || Hero;
 
   return (
     <main>
@@ -123,22 +130,12 @@ export default function HomePageClient() {
         <div className="flex-1 relative">
           <div className="relative h-64 lg:h-full min-h-96">
             <Image
-              src={Hero}
+              src={heroSrc}
               alt="Opéra de Montpellier - Salle de spectacle"
               className="object-cover w-full h-full"
               fill
               priority
             />
-
-            {/* Decorative element */}
-
-            <div className="absolute bottom-8 left-8 right-8">
-              <div className="bg-opacity-95 p-6 backdrop-blur-sm">
-                <p className="font-ibm text-white text-center italic text-2xl">
-                  Ici ce qui nous unit se fait entendre.
-                </p>
-              </div>
-            </div>
           </div>
         </div>
       </div>

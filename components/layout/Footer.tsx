@@ -47,7 +47,7 @@ export default function Footer() {
               <div className="flex flex-col md:flex-row items-center md:items-start gap-3 text-center md:text-left">
                 <Clock size={20} className="shrink-0 text-gray-300" />
                 <div className="text-sm font-ibm text-gray-300">
-                  <p>Du mardi au samedi</p>
+                  <p>Du lundi au vendredi</p>
                   <p>9h - 12h et 14h - 17h</p>
                 </div>
               </div>
@@ -100,7 +100,7 @@ export default function Footer() {
                 rel="noopener noreferrer"
                 className="block text-sm font-ibm text-gray-300 hover:text-white"
               >
-                Site de l&apos;Opéra Orchestre national Montpellier Occitanie ↗
+                Retour au site principal ↗
               </a>
             </nav>
           </div>
@@ -119,24 +119,6 @@ export default function Footer() {
                 aria-label="Facebook"
               >
                 <Facebook size={24} />
-              </a>
-              <a
-                href="https://x.com/OONMLR"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-gray-300 hover:text-white"
-                aria-label="Twitter"
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  width="24"
-                  height="24"
-                  viewBox="0 0 16 16"
-                  fill="currentColor"
-                  stroke="none"
-                >
-                  <path d="M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 .75h5.063l3.495 4.633L12.601.75Zm-.86 13.028h1.36L4.323 2.145H2.865z" />
-                </svg>
               </a>
               <a
                 href="https://www.instagram.com/opera_orchestre_montpellier/"

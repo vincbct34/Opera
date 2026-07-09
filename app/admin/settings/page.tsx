@@ -1,5 +1,10 @@
 import AdminSettingsClient from '@/components/admin/misc/AdminSettingsClient';
-import { getConfig, type ConfigCategory } from '@/lib/config/configService';
+import {
+  getConfig,
+  getConfigValue,
+  HERO_IMAGE_KEY,
+  type ConfigCategory,
+} from '@/lib/config/configService';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
@@ -28,5 +33,9 @@ export default async function AdminSettingsPage() {
     Record<string, string>
   >;
 
-  return <AdminSettingsClient initialConfigs={initialConfigs} />;
+  const heroImage = await getConfigValue('site_assets', HERO_IMAGE_KEY);
+
+  return (
+    <AdminSettingsClient initialConfigs={initialConfigs} initialHeroImage={heroImage || null} />
+  );
 }

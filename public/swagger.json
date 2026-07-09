@@ -3,7 +3,7 @@
   "info": {
     "title": "Service culturel - Plateforme web API",
     "description": "API de gestion des inscriptions scolaires aux événements de l'Opéra Orchestre National Montpellier Occitanie.",
-    "version": "1.8.0",
+    "version": "1.9.0",
     "contact": {
       "name": "Service culturel - Plateforme web",
       "url": "https://github.com/vincbct34/service-culturel-plateforme-web"
@@ -4327,6 +4327,92 @@
                       "additionalProperties": {
                         "type": "string"
                       }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/admin/hero-image": {
+      "post": {
+        "tags": ["Admin"],
+        "summary": "Téléverser la photo d'accueil",
+        "description": "Remplace l'image affichée à droite de la page d'accueil. Le fichier (JPEG, PNG ou WebP, 8 Mo maximum) est stocké sous public/uploads et son chemin enregistré dans la configuration site_assets. Revalide la page d'accueil.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": ["file"],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Image mise à jour",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "url": {
+                      "type": "string",
+                      "description": "Chemin public de l'image (ex. /uploads/hero-1720512000000.jpg)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Fichier manquant, format non supporté ou trop volumineux"
+          }
+        }
+      },
+      "delete": {
+        "tags": ["Admin"],
+        "summary": "Réinitialiser la photo d'accueil",
+        "description": "Supprime l'image personnalisée et restaure l'image livrée par défaut. Revalide la page d'accueil.",
+        "security": [
+          {
+            "BearerAuth": []
+          },
+          {
+            "CSRFToken": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Image réinitialisée",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
                     }
                   }
                 }

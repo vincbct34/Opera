@@ -2,6 +2,26 @@
 
 All notable changes to the Opéra de Montpellier Registration Platform will be documented in this file.
 
+## [1.9.0] - 2026-07-09
+
+### Added
+
+- **Admin-uploadable homepage hero image**: Admins can replace the photo shown on the right of the homepage from **Admin → Paramètres**
+  - New `POST /api/admin/hero-image` (multipart) accepts JPEG/PNG/WebP up to 8 MB, writes the file to `public/uploads`, and records its public path under a new `site_assets` config category (`hero_image` key); `DELETE /api/admin/hero-image` restores the bundled default
+  - Uploads replace the previous file (old upload is deleted) and revalidate the homepage so the change appears immediately
+  - The homepage reads the configured path server-side and falls back to the bundled `hero.jpg` when none is set
+  - New "Photo d'accueil" card on the settings page with a vertical preview, upload, and reset-to-default (with confirmation)
+
+### Changed
+
+- **Footer copy**: contact hours now read "Du lundi au vendredi" (was "Du mardi au samedi"); the Opera website link is labelled "Retour au site principal"; the X (Twitter) icon was removed from "Suivez-nous" (Facebook, Instagram, YouTube remain)
+- **Homepage**: removed the "Ici ce qui nous unit se fait entendre." caption overlaid on the hero image
+
+### Deployment Notes
+
+- `public/uploads/` must live on **persistent storage shared across deploys** (it is gitignored). On the current self-hosted Node server this is the case. A move to ephemeral/multi-instance hosting (serverless, scaled containers) would require object storage (S3/Blob) instead.
+- No database migration required: the `site_assets` config is stored in the existing generic `AppConfig` table.
+
 ## [1.8.0] - 2026-07-09
 
 ### Changed

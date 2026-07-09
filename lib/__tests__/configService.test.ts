@@ -75,6 +75,7 @@ import {
   DEFAULT_EVENT_STATUS_LABELS,
   DEFAULT_SCHOOL_GRADE_LABELS,
   DEFAULT_AGE_RANGE_LABELS,
+  HERO_IMAGE_KEY,
   type ConfigCategory,
 } from '../config/configService';
 
@@ -450,6 +451,12 @@ describe('configService', () => {
       const result = getConfigSync('age_range_labels');
 
       expect(result).toEqual(DEFAULT_AGE_RANGE_LABELS);
+    });
+
+    it('should return an empty hero image default for site_assets when cache empty', () => {
+      const result = getConfigSync('site_assets');
+
+      expect(result).toEqual({ [HERO_IMAGE_KEY]: '' });
     });
   });
 

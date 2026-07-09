@@ -8,9 +8,11 @@ import type { ConfigCategory } from '@/lib/config/configService';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
 import { HelpWidget } from '@/components/ui/HelpWidget';
 import { HELP_CONTENTS } from '@/lib/help/helpContents';
+import HeroImageSettings from '@/components/admin/misc/HeroImageSettings';
 
 interface AdminSettingsClientProps {
   initialConfigs: Record<ConfigCategory, Record<string, string>>;
+  initialHeroImage: string | null;
 }
 
 const CATEGORY_LABELS: Partial<Record<ConfigCategory, { title: string; description: string }>> = {
@@ -44,7 +46,10 @@ const CATEGORY_LABELS: Partial<Record<ConfigCategory, { title: string; descripti
   },
 };
 
-export default function AdminSettingsClient({ initialConfigs }: AdminSettingsClientProps) {
+export default function AdminSettingsClient({
+  initialConfigs,
+  initialHeroImage,
+}: AdminSettingsClientProps) {
   const [configs, setConfigs] = useState(initialConfigs);
   const [editingCategory, setEditingCategory] = useState<ConfigCategory | null>(null);
   const [editValues, setEditValues] = useState<Record<string, string>>({});
@@ -176,6 +181,8 @@ export default function AdminSettingsClient({ initialConfigs }: AdminSettingsCli
 
         {/* Content */}
         <div className="space-y-4">
+          <HeroImageSettings initialHeroImage={initialHeroImage} />
+
           {(Object.keys(CATEGORY_LABELS) as ConfigCategory[]).map((category) => {
             const labelConfig = CATEGORY_LABELS[category];
             if (!labelConfig) return null;
