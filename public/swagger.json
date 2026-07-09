@@ -3,7 +3,7 @@
   "info": {
     "title": "Service culturel - Plateforme web API",
     "description": "API de gestion des inscriptions scolaires aux événements de l'Opéra Orchestre National Montpellier Occitanie.",
-    "version": "1.7.0",
+    "version": "1.8.0",
     "contact": {
       "name": "Service culturel - Plateforme web",
       "url": "https://github.com/vincbct34/service-culturel-plateforme-web"
@@ -428,6 +428,14 @@
               "format": "date-time"
             }
           },
+          "end_dates": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "description": "Fins des plages horaires, alignées index par index avec dates. Vide pour les blocs sans plage définie."
+          },
           "enabled": {
             "type": "boolean"
           },
@@ -461,6 +469,12 @@
             "type": "string",
             "format": "date-time",
             "nullable": true
+          },
+          "selected_end_date": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Fin de la plage horaire choisie, dérivée côté serveur depuis end_dates du bloc."
           },
           "block": {
             "$ref": "#/components/schemas/EventRegistrationBlock"
