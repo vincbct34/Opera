@@ -322,6 +322,17 @@ model AppConfig {
   @@index([category])
 }
 
+model Backup {
+  id          String   @id @default(cuid())
+  filename    String   @unique
+  content     Json
+  size_bytes  Int
+  table_count Int
+  created_at  DateTime @default(now())
+
+  @@index([created_at])
+}
+
 model AdminNote {
   id         String   @id @default(cuid())
   page_id    String   @unique

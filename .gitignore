@@ -54,7 +54,6 @@ SOUTENANCE.md
 public/uploads/
 app.js
 server.cjs
-tmp/backups/*
 *.csv
 *.xlsx
 .rtk/

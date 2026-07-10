@@ -2,15 +2,16 @@
  * Database Backup Service
  * Provides functionality to create, list, compare, and restore JSON backups
  * of all Prisma database tables.
+ *
+ * Backups are stored as rows in the `Backup` table (not on local disk) so they
+ * are shared across all server instances and survive redeploys/restarts. Local
+ * filesystem storage is unsafe here: this app runs load-balanced (Redis is
+ * mandatory in production) and container filesystems are ephemeral.
  */
 
-import { promises as fs } from 'fs';
-import path from 'path';
+import { randomBytes } from 'crypto';
 import prisma from '@/lib/middleware/prismaConfig';
 import { logger } from '@/lib/middleware/logger';
-
-// Backup directory relative to project root
-const BACKUP_DIR = path.join(process.cwd(), 'tmp', 'backups');
 
 // Maximum number of backups to retain
 const MAX_BACKUPS = 30;
@@ -89,13 +90,6 @@ interface BackupData {
 }
 
 /**
- * Ensures the backup directory exists
- */
-async function ensureBackupDir(): Promise<void> {
-  await fs.mkdir(BACKUP_DIR, { recursive: true });
-}
-
-/**
  * Fetches all records from a Prisma table
  */
 async function fetchTableData(tableName: TableName): Promise<unknown[]> {
@@ -121,15 +115,22 @@ async function countTableData(tableName: TableName): Promise<number> {
 }
 
 /**
- * Creates a JSON backup of all database tables
+ * Generates a unique backup filename. Includes millisecond precision plus a
+ * random suffix so concurrent backups (e.g. cron + admin, or the safety backup
+ * created during a restore) never collide on the `filename` unique constraint.
+ */
+function generateFilename(now: Date): string {
+  const timestamp = now.toISOString().replace(/[:.]/g, '-');
+  const suffix = randomBytes(3).toString('hex');
+  return `backup-${timestamp}-${suffix}.json`;
+}
+
+/**
+ * Creates a JSON backup of all database tables, stored as a row in the Backup table.
  */
 export async function createBackup(): Promise<BackupResult> {
-  await ensureBackupDir();
-
   const now = new Date();
-  const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, 19);
-  const filename = `backup-${timestamp}.json`;
-  const filepath = path.join(BACKUP_DIR, filename);
+  const filename = generateFilename(now);
 
   const tables: Record<string, unknown[]> = {};
   const recordCounts: Record<string, number> = {};
@@ -156,21 +157,27 @@ export async function createBackup(): Promise<BackupResult> {
     tables,
   };
 
-  const jsonContent = JSON.stringify(backupData, null, 2);
-  await fs.writeFile(filepath, jsonContent, 'utf-8');
+  const sizeBytes = Buffer.byteLength(JSON.stringify(backupData), 'utf-8');
 
-  const stats = await fs.stat(filepath);
+  await prisma.backup.create({
+    data: {
+      filename,
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      content: backupData as any,
+      size_bytes: sizeBytes,
+      table_count: TABLE_NAMES.length,
+      created_at: now,
+    },
+  });
 
   // Cleanup old backups
   const cleanedUp = await cleanupOldBackups();
 
-  logger.info(
-    `Backup created: ${filename} (${stats.size} bytes, ${cleanedUp} old backups removed)`,
-  );
+  logger.info(`Backup created: ${filename} (${sizeBytes} bytes, ${cleanedUp} old backups removed)`);
 
   return {
     filename,
-    sizeBytes: stats.size,
+    sizeBytes,
     tableCount: TABLE_NAMES.length,
     recordCounts,
     cleanedUp,
@@ -178,106 +185,61 @@ export async function createBackup(): Promise<BackupResult> {
 }
 
 /**
- * Removes old backups beyond the retention limit
+ * Removes old backups beyond the retention limit (oldest first).
  */
 async function cleanupOldBackups(): Promise<number> {
-  const files = await getBackupFiles();
+  const old = await prisma.backup.findMany({
+    orderBy: { created_at: 'desc' },
+    skip: MAX_BACKUPS,
+    select: { id: true },
+  });
 
-  if (files.length <= MAX_BACKUPS) {
+  if (old.length === 0) {
     return 0;
   }
 
-  // Sort by modification time, newest first
-  const sorted = files.sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
-  const toDelete = sorted.slice(MAX_BACKUPS);
-
-  let deleted = 0;
-  for (const file of toDelete) {
-    try {
-      await fs.unlink(path.join(BACKUP_DIR, file.name));
-      deleted++;
-    } catch (error) {
-      logger.error(`Error deleting old backup "${file.name}":`, error);
-    }
-  }
-
-  return deleted;
-}
-
-/**
- * Gets backup files with their stats
- */
-async function getBackupFiles(): Promise<Array<{ name: string; mtime: Date; size: number }>> {
   try {
-    await ensureBackupDir();
-    const entries = await fs.readdir(BACKUP_DIR);
-    const backupFiles = entries.filter((f) => f.startsWith('backup-') && f.endsWith('.json'));
-
-    const filesWithStats = await Promise.all(
-      backupFiles.map(async (name) => {
-        const stat = await fs.stat(path.join(BACKUP_DIR, name));
-        return { name, mtime: stat.mtime, size: stat.size };
-      }),
-    );
-
-    return filesWithStats;
-  } catch {
-    return [];
+    const result = await prisma.backup.deleteMany({
+      where: { id: { in: old.map((b) => b.id) } },
+    });
+    return result.count;
+  } catch (error) {
+    logger.error('Error deleting old backups:', error);
+    return 0;
   }
 }
 
 /**
- * Lists all available backups with metadata
+ * Lists all available backups with metadata, newest first.
  */
 export async function listBackups(): Promise<BackupInfo[]> {
-  const files = await getBackupFiles();
+  const rows = await prisma.backup.findMany({
+    orderBy: { created_at: 'desc' },
+    select: { filename: true, created_at: true, size_bytes: true, table_count: true },
+  });
 
-  // Sort newest first
-  files.sort((a, b) => b.mtime.getTime() - a.mtime.getTime());
-
-  const backups: BackupInfo[] = [];
-
-  for (const file of files) {
-    try {
-      const content = await fs.readFile(path.join(BACKUP_DIR, file.name), 'utf-8');
-      const data = JSON.parse(content) as BackupData;
-      backups.push({
-        filename: file.name,
-        createdAt: data.metadata?.createdAt || file.mtime.toISOString(),
-        sizeBytes: file.size,
-        tableCount: data.metadata?.tableCount || Object.keys(data.tables || {}).length,
-      });
-    } catch {
-      // If we can't parse the file, still include it with basic info
-      backups.push({
-        filename: file.name,
-        createdAt: file.mtime.toISOString(),
-        sizeBytes: file.size,
-        tableCount: 0,
-      });
-    }
-  }
-
-  return backups;
+  return rows.map((row) => ({
+    filename: row.filename,
+    createdAt: row.created_at.toISOString(),
+    sizeBytes: row.size_bytes,
+    tableCount: row.table_count,
+  }));
 }
 
 /**
- * Loads and parses a backup file
+ * Loads and parses a backup by filename.
  */
 export async function loadBackup(filename: string): Promise<BackupData> {
-  // Sanitize filename to prevent path traversal
-  const sanitized = path.basename(filename);
-  const filepath = path.join(BACKUP_DIR, sanitized);
+  const row = await prisma.backup.findUnique({
+    where: { filename },
+    select: { content: true },
+  });
 
-  try {
-    const content = await fs.readFile(filepath, 'utf-8');
-    return JSON.parse(content) as BackupData;
-  } catch (error) {
-    if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
-      throw new Error(`Backup file "${sanitized}" not found`);
-    }
-    throw new Error(`Failed to read backup file "${sanitized}": ${(error as Error).message}`);
+  if (!row) {
+    throw new Error(`Backup file "${filename}" not found`);
   }
+
+  return row.content as unknown as BackupData;
 }
 
 /**
@@ -445,10 +407,13 @@ async function performRestore(
 }
 
 /**
- * Restores the database from a backup file.
+ * Restores the database from a backup.
  * Creates a safety backup before restoring.
  * Tries an interactive Prisma transaction for atomicity (direct PostgreSQL).
  * Falls back to sequential operations if transactions are unsupported (Prisma Accelerate/data proxy).
+ *
+ * Note: the Backup table is not part of TABLE_NAMES, so existing backups
+ * (including the safety backup) are preserved across a restore.
  */
 export async function restoreBackup(filename: string): Promise<{
   restoredFrom: string;
@@ -505,4 +470,4 @@ export async function restoreBackup(filename: string): Promise<{
 }
 
 // Export for testing
-export { BACKUP_DIR, MAX_BACKUPS, TABLE_NAMES, ensureBackupDir, countTableData };
+export { MAX_BACKUPS, TABLE_NAMES, countTableData };
