@@ -1,92 +1,66 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import Image from 'next/image';
-import { Upload, RotateCcw, Save } from '@deemlol/next-icons';
+import { Save, RotateCcw, Link as LinkIcon } from '@deemlol/next-icons';
 
 import toast from '@/lib/utils/toast';
 import { fetchWithAuth } from '@/lib/api/fetchWithAuth';
 import ConfirmationModal from '@/components/ui/ConfirmationModal';
+import { validateHeroImageUrl, HERO_IMAGE_DOMAIN } from '@/lib/config/heroImageUrl';
 
 interface HeroImageSettingsProps {
-  /** Current custom hero image path, or null when the bundled default is in use. */
+  /** Current custom hero image URL, or null when the bundled default is in use. */
   initialHeroImage: string | null;
 }
 
-const ACCEPTED = 'image/jpeg,image/png,image/webp';
-const MAX_SIZE_BYTES = 8 * 1024 * 1024;
-
 /**
  * Admin control for the homepage hero image.
- * Lets an admin upload a custom photo (stored under public/uploads) or restore
- * the bundled default. The image is shown on the right of the homepage in a
- * tall, roughly vertical frame, so the preview mirrors that aspect ratio.
+ * Lets an admin point the hero to an external image URL (which must be hosted on
+ * the Opera domain or a subdomain) or restore the bundled default. The image is
+ * shown on the right of the homepage in a tall, roughly vertical frame, so the
+ * preview mirrors that aspect ratio.
  */
 export default function HeroImageSettings({ initialHeroImage }: HeroImageSettingsProps) {
   const [currentImage, setCurrentImage] = useState<string | null>(initialHeroImage);
-  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
+  const [url, setUrl] = useState('');
+  const [saving, setSaving] = useState(false);
   const [resetting, setResetting] = useState(false);
   const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+  // Live preview only for a valid URL, so we never point next/image at junk.
+  const validation = url.trim() ? validateHeroImageUrl(url) : null;
+  const previewUrl = validation && 'url' in validation ? validation.url : null;
+  const displayedImage = previewUrl || currentImage;
 
-    if (!ACCEPTED.split(',').includes(file.type)) {
-      toast('Format non supporté. Utilisez JPEG, PNG ou WebP.', 'error');
+  const handleSave = async () => {
+    const result = validateHeroImageUrl(url);
+    if ('error' in result) {
+      toast(result.error, 'error');
       return;
     }
 
-    if (file.size > MAX_SIZE_BYTES) {
-      toast("L'image ne doit pas dépasser 8 Mo", 'error');
-      return;
-    }
-
-    // Revoke any previous object URL before creating a new one.
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setSelectedFile(file);
-    setPreviewUrl(URL.createObjectURL(file));
-  };
-
-  const clearSelection = () => {
-    if (previewUrl) URL.revokeObjectURL(previewUrl);
-    setPreviewUrl(null);
-    setSelectedFile(null);
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
-
-  const handleUpload = async () => {
-    if (!selectedFile) return;
-
-    setUploading(true);
+    setSaving(true);
     try {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
-
       const res = await fetchWithAuth('/api/admin/hero-image', {
         method: 'POST',
-        body: formData,
-        // Let the browser set multipart boundaries.
-        _contentType: null,
+        body: JSON.stringify({ url: result.url }),
       });
 
       const data = await res.json();
 
       if (!res.ok || !data.success) {
-        throw new Error(data.error || "Échec de l'envoi");
+        throw new Error(data.error || "Échec de l'enregistrement");
       }
 
       setCurrentImage(data.url);
-      clearSelection();
+      setUrl('');
       toast("Photo d'accueil mise à jour", 'success');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erreur inconnue';
       toast(message, 'error');
     } finally {
-      setUploading(false);
+      setSaving(false);
     }
   };
 
@@ -102,7 +76,7 @@ export default function HeroImageSettings({ initialHeroImage }: HeroImageSetting
       }
 
       setCurrentImage(null);
-      clearSelection();
+      setUrl('');
       toast("Photo d'accueil réinitialisée", 'success');
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Erreur inconnue';
@@ -111,8 +85,6 @@ export default function HeroImageSettings({ initialHeroImage }: HeroImageSetting
       setResetting(false);
     }
   };
-
-  const displayedImage = previewUrl || currentImage;
 
   return (
     <div className="bg-white border border-gray-200 overflow-hidden">
@@ -149,35 +121,31 @@ export default function HeroImageSettings({ initialHeroImage }: HeroImageSetting
 
           {/* Controls */}
           <div className="flex-1 space-y-4">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept={ACCEPTED}
-              onChange={handleFileSelect}
-              className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:border-0 file:bg-black file:text-white file:font-poppins file:text-sm file:cursor-pointer hover:file:bg-gray-800"
-            />
+            <div className="relative">
+              <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+              <input
+                type="url"
+                inputMode="url"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder={`https://${HERO_IMAGE_DOMAIN}/...`}
+                className="block w-full pl-9 pr-3 py-2 border border-gray-300 text-sm text-gray-900 focus:outline-none focus:ring-1 focus:ring-black"
+              />
+            </div>
             <p className="text-xs text-gray-500">
-              Formats acceptés : JPEG, PNG, WebP — 8 Mo maximum.
+              URL d&apos;une image hébergée sur {HERO_IMAGE_DOMAIN} ou un de ses sous-domaines
+              (HTTPS).
             </p>
 
             <div className="flex flex-wrap items-center gap-3 pt-2">
               <button
-                onClick={handleUpload}
-                disabled={!selectedFile || uploading}
+                onClick={handleSave}
+                disabled={!url.trim() || saving}
                 className="flex items-center gap-2 px-4 py-2 bg-black text-white text-sm font-poppins font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {uploading ? <Save className="w-4 h-4" /> : <Upload className="w-4 h-4" />}
-                {uploading ? 'Envoi...' : 'Enregistrer la photo'}
+                <Save className="w-4 h-4" />
+                {saving ? 'Enregistrement...' : 'Enregistrer la photo'}
               </button>
-
-              {selectedFile && !uploading && (
-                <button
-                  onClick={clearSelection}
-                  className="px-4 py-2 border border-gray-300 text-sm font-poppins font-medium text-gray-700 hover:bg-gray-100 transition-colors"
-                >
-                  Annuler
-                </button>
-              )}
 
               {currentImage && (
                 <button
@@ -197,7 +165,7 @@ export default function HeroImageSettings({ initialHeroImage }: HeroImageSetting
       <ConfirmationModal
         open={resetConfirmOpen}
         title="Réinitialiser la photo d'accueil"
-        description="Êtes-vous sûr de vouloir restaurer l'image par défaut du site ? La photo actuelle sera supprimée."
+        description="Êtes-vous sûr de vouloir restaurer l'image par défaut du site ? L'URL actuelle sera supprimée."
         onCancel={() => setResetConfirmOpen(false)}
         onConfirm={confirmReset}
       />

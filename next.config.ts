@@ -11,7 +11,10 @@ const nextConfig: NextConfig = {
 
   images: {
     unoptimized: true,
-    remotePatterns: [new URL('https://www.opera-orchestre-montpellier.fr/**')],
+    remotePatterns: [
+      { protocol: 'https', hostname: 'opera-orchestre-montpellier.fr' },
+      { protocol: 'https', hostname: '**.opera-orchestre-montpellier.fr' },
+    ],
   },
 
   // Force HTTPS redirects in production
@@ -51,8 +54,8 @@ const nextConfig: NextConfig = {
       "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
       // Font policy
       "font-src 'self' https://fonts.gstatic.com data:",
-      // Image policy: allow Opera website for event images
-      "img-src 'self' https://www.opera-orchestre-montpellier.fr data: blob:",
+      // Image policy: allow the Opera domain and its subdomains (event images + hero image)
+      "img-src 'self' https://opera-orchestre-montpellier.fr https://*.opera-orchestre-montpellier.fr data: blob:",
       // Connect policy: allow API calls
       "connect-src 'self'",
       // Frame policy
