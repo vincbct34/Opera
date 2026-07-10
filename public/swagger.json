@@ -3,7 +3,7 @@
   "info": {
     "title": "Service culturel - Plateforme web API",
     "description": "API de gestion des inscriptions scolaires aux événements de l'Opéra Orchestre National Montpellier Occitanie.",
-    "version": "1.9.0",
+    "version": "1.9.1",
     "contact": {
       "name": "Service culturel - Plateforme web",
       "url": "https://github.com/vincbct34/service-culturel-plateforme-web"
@@ -4339,8 +4339,8 @@
     "/api/admin/hero-image": {
       "post": {
         "tags": ["Admin"],
-        "summary": "Téléverser la photo d'accueil",
-        "description": "Remplace l'image affichée à droite de la page d'accueil. Le fichier (JPEG, PNG ou WebP, 8 Mo maximum) est stocké sous public/uploads et son chemin enregistré dans la configuration site_assets. Revalide la page d'accueil.",
+        "summary": "Définir la photo d'accueil",
+        "description": "Remplace l'image affichée à droite de la page d'accueil par une URL externe. L'URL doit être en HTTPS et hébergée sur opera-orchestre-montpellier.fr ou un de ses sous-domaines. Enregistrée dans la configuration site_assets. Revalide la page d'accueil.",
         "security": [
           {
             "BearerAuth": []
@@ -4352,14 +4352,16 @@
         "requestBody": {
           "required": true,
           "content": {
-            "multipart/form-data": {
+            "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["file"],
+                "required": ["url"],
                 "properties": {
-                  "file": {
+                  "url": {
                     "type": "string",
-                    "format": "binary"
+                    "format": "uri",
+                    "description": "URL HTTPS de l'image sur opera-orchestre-montpellier.fr ou un sous-domaine",
+                    "example": "https://www.opera-orchestre-montpellier.fr/img/hero.jpg"
                   }
                 }
               }
@@ -4379,7 +4381,7 @@
                     },
                     "url": {
                       "type": "string",
-                      "description": "Chemin public de l'image (ex. /uploads/hero-1720512000000.jpg)"
+                      "description": "URL enregistrée de l'image"
                     }
                   }
                 }
@@ -4387,7 +4389,7 @@
             }
           },
           "400": {
-            "description": "Fichier manquant, format non supporté ou trop volumineux"
+            "description": "URL manquante, invalide, non-HTTPS ou hors du domaine autorisé"
           }
         }
       },

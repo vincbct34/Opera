@@ -1,6 +1,6 @@
 # Service culturel - Plateforme web
 
-> **Version 1.9.0** - Production-ready (July 9, 2026)
+> **Version 1.9.1** - Production-ready (July 10, 2026)
 
 A full-stack web application for managing school and association registrations for cultural events at the Opéra de Montpellier. Built to replace a legacy Google Forms + Excel workflow with a centralized platform featuring separate portals for institutions and administrators.
 
@@ -10,11 +10,16 @@ The system handles multi-institution user management, automated event scraping f
 
 ✅ **Production-ready** - All core features are implemented, tested, and documented. The application is in maintenance mode with bug fixes and minor enhancements.
 
-**Latest Release**: July 9, 2026 (v1.9.0)
+**Latest Release**: July 10, 2026 (v1.9.1)
 
-**Latest Release Highlights (v1.9.0)**:
+**Latest Release Highlights (v1.9.1)**:
 
-- Admins can now upload the homepage hero image from **Admin → Paramètres** (JPEG/PNG/WebP, 8 MB max); the file is stored under `public/uploads` and its path recorded in the `site_assets` config, with a one-click reset to the bundled default
+- Database backups moved from local disk (`tmp/backups`) to a new `Backup` table, so they are shared across instances and survive redeploys — fixing silent data loss in the load-balanced production setup
+- The homepage hero image is now set via an on-domain HTTPS URL (validated against `opera-orchestre-montpellier.fr` and its subdomains) instead of a file upload, removing the last local-disk dependency
+
+**Previous Release Highlights (v1.9.0)**:
+
+- Admins can set the homepage hero image from **Admin → Paramètres**, with a one-click reset to the bundled default (originally a file upload; changed to an on-domain URL in v1.9.1)
 - Footer polish: contact hours now read "Du lundi au vendredi", the Opera site link is labelled "Retour au site principal", the X (Twitter) icon was removed from "Suivez-nous", and the homepage hero caption was dropped
 
 **Previous Release Highlights (v1.8.0)**:
@@ -40,6 +45,7 @@ The system handles multi-institution user management, automated event scraping f
 
 ### Recent Releases
 
+- **v1.9.1** (Jul 10, 2026): Backups moved from local disk to a `Backup` DB table (multi-instance safe, survive redeploys); homepage hero image switched from file upload to a validated on-domain HTTPS URL (removes the `public/uploads` local-disk dependency)
 - **v1.9.0** (Jul 9, 2026): Admin-uploadable homepage hero image (stored in `public/uploads`, path in the `site_assets` config, reset to default), plus footer copy fixes (contact hours, main-site link label, X icon removed, hero caption dropped)
 - **v1.8.0** (Jul 9, 2026): Pedagogical registration block dates became start/end time slots, surfaced across admin/user views, emails, and Excel exports
 - **v1.7.1** (Jul 1, 2026): Reverted Prisma ORM v7 → v6.19 (production Node too old for the v7 Rust-free client); removed the `@prisma/adapter-pg` driver adapter and `prisma.config.ts`, restored the `url` in the schema `datasource`, and consolidated all Prisma imports (enums, model types, `Prisma` namespace) to `@prisma/client`
@@ -375,7 +381,8 @@ After deployment:
 - **Event scraping**: Depends on Opera WordPress API availability. If API structure changes, scraper in `lib/cron/eventsScraper.ts` may need updates. The scraper switches to the next academic season on June 10.
 - **Event lifecycle cron**: `/api/cron/events/status-update` progressively opens events, closes past events, and archives events one year after their latest date unless `status` is protected.
 - **Pedagogical blocks deployment order**: this feature adds two tables (`EventRegistrationBlock`, `RegistrationBlockSelection`) plus the time-slot columns `EventRegistrationBlock.end_dates` and `RegistrationBlockSelection.selected_end_date` (v1.8.0). Apply the schema before the application deploy; old data remains readable through the legacy formation fallback, and blocks without `end_dates` keep displaying start times only.
-- **Uploaded homepage image persistence** (v1.9.0): admin-uploaded hero images are written to `public/uploads/` (gitignored). This directory must be on **persistent storage shared across deploys**; the current self-hosted Node server satisfies this. Horizontal scaling or ephemeral/serverless hosting would require moving uploads to object storage (S3/Blob).
+- **Backup storage** (v1.9.1): database backups are stored in the `Backup` table (not on local disk), so they are shared across instances and survive redeploys. Run `npx prisma db push` before deploying to add the additive `Backup` table.
+- **Homepage hero image** (v1.9.1): the hero image is now an external on-domain HTTPS URL (validated against `opera-orchestre-montpellier.fr` and subdomains), no longer a `public/uploads` file. Hero URLs stored as legacy `/uploads/...` paths will not resolve — re-set the image from **Admin → Paramètres** or leave it empty for the bundled default. If the URL uses a new subdomain, keep the CSP `img-src` and `next/image` `remotePatterns` in `next.config.ts` in sync.
 - **Email templates**: SMTP2GO templates must be pre-configured in the SMTP2GO dashboard before use (verification, password reset, registration notifications).
 - **Email delivery**: Ensure SMTP2GO API key is valid and has sufficient quota for expected email volume.
 
@@ -400,4 +407,4 @@ This software is the exclusive property of the Opéra Orchestre National Montpel
 
 Built for the **Opéra Orchestre National Montpellier Occitanie** to modernize their event registration system for schools and cultural associations.
 
-**Version**: 1.9.0 - Production-ready (maintenance mode)
+**Version**: 1.9.1 - Production-ready (maintenance mode)

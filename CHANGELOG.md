@@ -2,6 +2,24 @@
 
 All notable changes to the Opéra de Montpellier Registration Platform will be documented in this file.
 
+## [1.9.1] - 2026-07-10
+
+### Changed
+
+- **Backups moved from local disk to the database**: backups are now stored as rows in a new `Backup` table instead of `tmp/backups/` on the local filesystem
+  - Fixes multi-instance production: local disk is per-instance and ephemeral, so a backup written by one instance was invisible to another (broken list/restore) and every backup was lost on redeploy/restart. DB storage is shared across instances and durable.
+  - The `Backup` table is excluded from the restore scope, so existing backups — including the pre-restore safety backup — survive a restore
+  - Backup filenames now include millisecond precision plus a random suffix to avoid collisions between concurrent backups
+- **Homepage hero image is now an external URL instead of a file upload**: same disk-persistence problem as backups, resolved by storing a URL
+  - `POST /api/admin/hero-image` now accepts a JSON `{ url }` body; the URL must be HTTPS and hosted on `opera-orchestre-montpellier.fr` or a subdomain (validated server- and client-side against arbitrary/look-alike domains)
+  - CSP `img-src` and `next/image` `remotePatterns` broadened from the `www` host to the apex domain plus subdomains so the image loads
+  - The "Photo d'accueil" settings card is now a URL field with a live preview; upload/file handling and `public/uploads` writes were removed
+
+### Deployment Notes
+
+- Run `npx prisma db push` (or apply the equivalent migration) before deploying: adds the additive `Backup` table
+- Existing hero images previously stored as `/uploads/...` paths will no longer resolve; re-set the hero image via **Admin → Paramètres** with an on-domain URL, or leave it empty to use the bundled default
+
 ## [1.9.0] - 2026-07-09
 
 ### Added

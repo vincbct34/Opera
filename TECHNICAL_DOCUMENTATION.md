@@ -818,13 +818,21 @@ l'inscription, puis dérive lui-même `selected_end_date` depuis les `end_dates`
 | POST    | `/api/admin/backups`                     | Créer une sauvegarde        | Admin |
 | POST    | `/api/admin/backups/compare`             | Comparer avec DB            | Admin |
 | POST    | `/api/admin/backups/restore`             | Restaurer sauvegarde        | Admin |
-| POST    | `/api/admin/hero-image`                  | Téléverser photo accueil    | Admin |
+| POST    | `/api/admin/hero-image`                  | Définir URL photo accueil   | Admin |
 | DELETE  | `/api/admin/hero-image`                  | Réinitialiser photo accueil | Admin |
 
-La photo d'accueil est téléversée en `multipart/form-data` (champ `file`, JPEG/PNG/WebP, 8 Mo max),
-écrite dans `public/uploads/`, et son chemin public est enregistré dans la catégorie de configuration
-`site_assets` (clé `hero_image`). `DELETE` restaure l'image livrée par défaut. La page d'accueil lit
-ce chemin côté serveur et retombe sur `assets/hero.jpg` si aucune image n'est configurée.
+La photo d'accueil est fournie sous forme d'URL externe (`application/json`, champ `url`). L'URL doit
+être en HTTPS et hébergée sur `opera-orchestre-montpellier.fr` ou un de ses sous-domaines (validée
+côté serveur par `validateHeroImageUrl`, reflétée dans la directive CSP `img-src`). Elle est enregistrée
+dans la catégorie de configuration `site_assets` (clé `hero_image`). `DELETE` restaure l'image livrée
+par défaut. La page d'accueil lit cette URL côté serveur et retombe sur `assets/hero.jpg` si aucune
+image n'est configurée.
+
+Les sauvegardes (`/api/admin/backups`, `/api/cron/backup`) sont stockées en base dans la table
+`Backup` (une ligne par sauvegarde, contenu JSON), et non sur le disque local : elles sont ainsi
+partagées entre instances et survivent aux redéploiements. Rétention : 30 sauvegardes. La table
+`Backup` est exclue du périmètre de restauration, donc les sauvegardes existantes (dont la sauvegarde
+de sécurité créée avant restauration) sont préservées lors d'un restore.
 
 Les payloads `POST /api/admin/events` et `PUT /api/admin/events/[id]` acceptent
 `registrationBlocks`. Les blocs avec `id` sont mis à jour, les blocs sans `id` sont créés, et les
