@@ -2,6 +2,7 @@
 
 import Image from 'next/image';
 import type { StaticImageData } from 'next/image';
+import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import LocalEventPlaceholderImage from '@/assets/hero.jpg';
 import MultiSelect from '@/components/ui/MultiSelect';
@@ -96,7 +97,8 @@ export default function ClientEvents({
   events,
   eventTypeLabels,
   publicCategoryLabels,
-}: { events: EventData[] } & DynamicLabelsProps) {
+  showingArchived = false,
+}: { events: EventData[]; showingArchived?: boolean } & DynamicLabelsProps) {
   // Use dynamic labels if provided, otherwise fall back to static defaults
   const EVENT_TYPE_LABELS = eventTypeLabels || DEFAULT_EVENT_TYPE_LABELS;
   const PUBLIC_CATEGORY_LABELS = publicCategoryLabels || DEFAULT_PUBLIC_CATEGORY_LABELS;
@@ -543,15 +545,23 @@ export default function ClientEvents({
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div>
             <h1 className="text-2xl sm:text-3xl md:text-4xl font-poppins font-semibold">
-              Événements
+              {showingArchived ? 'Archives des événements' : 'Événements'}
             </h1>
             <p className="mt-2 text-sm sm:text-base text-gray-700 font-ibm">
-              Retrouvez toutes nos propositions scolaires et associatives.
+              {showingArchived
+                ? 'Consultez les événements des saisons précédentes.'
+                : 'Retrouvez toutes nos propositions scolaires et associatives.'}
             </p>
           </div>
 
           {/* Boutons de basculement de vue */}
           <div className="flex gap-2 w-full sm:w-auto">
+            <Link
+              href={showingArchived ? '/events' : '/events?archived=1'}
+              className="flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-poppins font-semibold transition-all flex-1 sm:flex-initial text-black border border-black bg-white hover:bg-gray-50"
+            >
+              {showingArchived ? '← Événements actuels' : 'Événements passés'}
+            </Link>
             <button
               onClick={() => setViewMode('list')}
               className={`flex items-center justify-center gap-2 px-3 sm:px-4 py-2 text-xs sm:text-sm font-poppins font-semibold transition-all flex-1 sm:flex-initial ${

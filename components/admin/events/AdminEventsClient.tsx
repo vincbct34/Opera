@@ -74,6 +74,9 @@ export default function AdminEventsClient({
   const [selectedLocation, setSelectedLocation] = useState<string[]>([]);
   const [selectedPublicType, setSelectedPublicType] = useState<string[]>([]);
   const [showArchived, setShowArchived] = useState(false);
+  // Date range filter on séances (event_dates). Values are "YYYY-MM-DD" from <input type="date">.
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
 
   // Pagination
   const [currentPage, setCurrentPage] = useState(1);
@@ -324,13 +327,43 @@ export default function AdminEventsClient({
       selectedPublicType.length === 0 ||
       (event.category && event.category.some((type: string) => selectedPublicType.includes(type)));
 
-    return matchesSearch && matchesType && matchesLocation && matchesMonth && matchesPublicType;
+    // Filter by séance date range: keep events with at least one séance within [dateFrom, dateTo].
+    // Bounds are inclusive; dateFrom starts at 00:00, dateTo ends at 23:59:59.999.
+    const fromBound = dateFrom ? new Date(`${dateFrom}T00:00:00`) : null;
+    const toBound = dateTo ? new Date(`${dateTo}T23:59:59.999`) : null;
+    const matchesDateRange =
+      (!fromBound && !toBound) ||
+      (event.event_dates &&
+        event.event_dates.some((dateStr) => {
+          const eventDate = new Date(dateStr);
+          if (fromBound && eventDate < fromBound) return false;
+          if (toBound && eventDate > toBound) return false;
+          return true;
+        }));
+
+    return (
+      matchesSearch &&
+      matchesType &&
+      matchesLocation &&
+      matchesMonth &&
+      matchesPublicType &&
+      matchesDateRange
+    );
   });
 
   // Reset pagination when filters change
   useEffect(() => {
     startTransition(() => setCurrentPage(1));
-  }, [searchTerm, selectedType, selectedMonth, selectedLocation, selectedPublicType, showArchived]);
+  }, [
+    searchTerm,
+    selectedType,
+    selectedMonth,
+    selectedLocation,
+    selectedPublicType,
+    showArchived,
+    dateFrom,
+    dateTo,
+  ]);
 
   // Pagination logic
   const totalPages = Math.ceil(filteredEvents.length / ITEMS_PER_PAGE);
@@ -427,12 +460,40 @@ export default function AdminEventsClient({
                 className="w-full lg:w-48"
               />
 
+              {/* Filtre par dates de séances (plage Du / Au) */}
+              <div className="flex items-center gap-2 w-full lg:w-auto">
+                <label className="flex items-center gap-1.5 text-xs sm:text-sm text-gray-600 whitespace-nowrap">
+                  <span>Du</span>
+                  <input
+                    type="date"
+                    value={dateFrom}
+                    max={dateTo || undefined}
+                    onChange={(e) => setDateFrom(e.target.value)}
+                    aria-label="Date de séance à partir du"
+                    className="py-2 sm:py-2.5 px-2 sm:px-3 border border-gray-300 rounded-none focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent text-sm"
+                  />
+                </label>
+                <label className="flex items-center gap-1.5 text-xs sm:text-sm text-gray-600 whitespace-nowrap">
+                  <span>Au</span>
+                  <input
+                    type="date"
+                    value={dateTo}
+                    min={dateFrom || undefined}
+                    onChange={(e) => setDateTo(e.target.value)}
+                    aria-label="Date de séance jusqu'au"
+                    className="py-2 sm:py-2.5 px-2 sm:px-3 border border-gray-300 rounded-none focus:outline-none focus:ring-2 focus:ring-black focus:border-transparent text-sm"
+                  />
+                </label>
+              </div>
+
               {/* Reset Filters Button */}
               {(searchTerm ||
                 selectedType.length > 0 ||
                 selectedMonth.length > 0 ||
                 selectedLocation.length > 0 ||
-                selectedPublicType.length > 0) && (
+                selectedPublicType.length > 0 ||
+                dateFrom ||
+                dateTo) && (
                 <button
                   onClick={() => {
                     setSearchTerm('');
@@ -440,6 +501,8 @@ export default function AdminEventsClient({
                     setSelectedMonth([]);
                     setSelectedLocation([]);
                     setSelectedPublicType([]);
+                    setDateFrom('');
+                    setDateTo('');
                   }}
                   className="w-full sm:col-span-2 lg:w-auto px-4 py-2 sm:py-2.5 border border-gray-300 rounded-none hover:bg-gray-50 transition-colors cursor-pointer font-medium text-sm sm:text-base"
                 >

@@ -2,6 +2,17 @@
 
 All notable changes to the Opéra de Montpellier Registration Platform will be documented in this file.
 
+## [1.9.2] - 2026-07-31
+
+### Added
+
+- **Séance date range filter on `/events` and `/admin/events`**: both event listings gain "Du" / "Au" date inputs that filter to events with at least one séance date within the selected (inclusive) range, alongside the existing search/type/month/audience filters
+- **User-facing archive view**: `/events?archived=1` (toggle button next to the view-mode switch) now lists `ARCHIVED` events, previously only visible from **Admin → Événements → Voir les archives**. Archived events are always in the past, so they render read-only ("Voir détails") with no registration action.
+
+### Changed
+
+- `GET /events` accepts an `archived` search param; when set, the server component fetches with `getEvents(true)` filtered to `status === 'ARCHIVED'` instead of the default (non-archived) event list.
+
 ## [1.9.1] - 2026-07-10
 
 ### Changed

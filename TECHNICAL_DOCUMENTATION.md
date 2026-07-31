@@ -1,6 +1,6 @@
 # Documentation Technique - Plateforme d'Inscription de l'Opéra de Montpellier
 
-> **Version 1.7.0** | Dernière mise à jour : 30 juin 2026
+> **Version 1.9.2** | Dernière mise à jour : 31 juillet 2026
 
 ## Table des Matières
 
@@ -245,7 +245,9 @@ export function ClientEvents({ events }) {
 }
 ```
 
-La page publique `/events` garde le chargement des données côté serveur (`getEvents()`), puis délègue uniquement les interactions au client. La requête Prisma de liste utilise `select` pour limiter le payload aux champs affichés, exclut les événements `ARCHIVED` par défaut et s'appuie sur l'index `Event.status`.
+La page publique `/events` garde le chargement des données côté serveur (`getEvents()`), puis délègue uniquement les interactions au client. La requête Prisma de liste utilise `select` pour limiter le payload aux champs affichés, exclut les événements `ARCHIVED` par défaut et s'appuie sur l'index `Event.status`. Le paramètre d'URL `?archived=1` (v1.9.2) bascule vers `getEvents(true)` filtré sur `status === 'ARCHIVED'`, donnant aux utilisateurs un accès en lecture seule aux événements archivés (jusque-là visibles uniquement depuis **Admin → Événements → Voir les archives**).
+
+Filtres client (`ClientEvents.tsx` et `AdminEventsClient.tsx`, v1.9.2) : recherche par titre, type, mois, public cible, et une plage de dates de séance ("Du" / "Au", bornes inclusives) qui conserve tout événement ayant au moins une date dans l'intervalle. `AdminEventsClient` ajoute en plus un filtre par lieu et le toggle archives (`showArchived`).
 
 Optimisations de rendu de la liste :
 
@@ -1891,4 +1893,4 @@ tail -f /var/log/opera-platform/app.log
 
 ---
 
-Document mis à jour le 30 juin 2026 - Version 1.7.0
+Document mis à jour le 31 juillet 2026 - Version 1.9.2

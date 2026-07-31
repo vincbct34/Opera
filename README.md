@@ -1,6 +1,6 @@
 # Service culturel - Plateforme web
 
-> **Version 1.9.1** - Production-ready (July 10, 2026)
+> **Version 1.9.2** - Production-ready (July 31, 2026)
 
 A full-stack web application for managing school and association registrations for cultural events at the Opéra de Montpellier. Built to replace a legacy Google Forms + Excel workflow with a centralized platform featuring separate portals for institutions and administrators.
 
@@ -10,9 +10,14 @@ The system handles multi-institution user management, automated event scraping f
 
 ✅ **Production-ready** - All core features are implemented, tested, and documented. The application is in maintenance mode with bug fixes and minor enhancements.
 
-**Latest Release**: July 10, 2026 (v1.9.1)
+**Latest Release**: July 31, 2026 (v1.9.2)
 
-**Latest Release Highlights (v1.9.1)**:
+**Latest Release Highlights (v1.9.2)**:
+
+- Both `/events` and `/admin/events` now have a séance date range filter ("Du" / "Au"), alongside search/type/month/audience
+- `/events?archived=1` gives users a read-only view of archived events (previously admin-only via **Admin → Événements → Voir les archives**)
+
+**Previous Release Highlights (v1.9.1)**:
 
 - Database backups moved from local disk (`tmp/backups`) to a new `Backup` table, so they are shared across instances and survive redeploys — fixing silent data loss in the load-balanced production setup
 - The homepage hero image is now set via an on-domain HTTPS URL (validated against `opera-orchestre-montpellier.fr` and its subdomains) instead of a file upload, removing the last local-disk dependency
@@ -45,6 +50,7 @@ The system handles multi-institution user management, automated event scraping f
 
 ### Recent Releases
 
+- **v1.9.2** (Jul 31, 2026): Séance date range filter ("Du" / "Au") added to `/events` and `/admin/events`; `/events?archived=1` lets users view archived events read-only, previously admin-only
 - **v1.9.1** (Jul 10, 2026): Backups moved from local disk to a `Backup` DB table (multi-instance safe, survive redeploys); homepage hero image switched from file upload to a validated on-domain HTTPS URL (removes the `public/uploads` local-disk dependency)
 - **v1.9.0** (Jul 9, 2026): Admin-uploadable homepage hero image (stored in `public/uploads`, path in the `site_assets` config, reset to default), plus footer copy fixes (contact hours, main-site link label, X icon removed, hero caption dropped)
 - **v1.8.0** (Jul 9, 2026): Pedagogical registration block dates became start/end time slots, surfaced across admin/user views, emails, and Excel exports
@@ -407,4 +413,4 @@ This software is the exclusive property of the Opéra Orchestre National Montpel
 
 Built for the **Opéra Orchestre National Montpellier Occitanie** to modernize their event registration system for schools and cultural associations.
 
-**Version**: 1.9.1 - Production-ready (maintenance mode)
+**Version**: 1.9.2 - Production-ready (maintenance mode)
