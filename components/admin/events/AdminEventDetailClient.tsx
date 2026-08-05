@@ -186,8 +186,8 @@ export default function AdminEventDetailClient({
   const [statusFilter, setStatusFilter] = useState<RegistrationStatus | 'ALL'>('ALL');
   const [scoreFilter, setScoreFilter] = useState<'ALL' | 'HIGH' | 'MEDIUM' | 'LOW'>('ALL');
   const [repFilter, setRepFilter] = useState(false);
-  const [sortBy, setSortBy] = useState<'score' | 'date' | 'seats'>('score');
-  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [sortBy, setSortBy] = useState<'score' | 'date' | 'seats' | 'seance'>('seance');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('asc');
 
   // Pagination
   const [page, setPage] = useState(1);
@@ -550,6 +550,8 @@ export default function AdminEventDetailClient({
         comparison = new Date(a.created_at).getTime() - new Date(b.created_at).getTime();
       } else if (sortBy === 'seats') {
         comparison = a.booked_seats - b.booked_seats;
+      } else if (sortBy === 'seance') {
+        comparison = new Date(a.date).getTime() - new Date(b.date).getTime();
       }
 
       return sortOrder === 'asc' ? comparison : -comparison;
@@ -557,6 +559,16 @@ export default function AdminEventDetailClient({
 
     return currentRegistrations;
   }, [registrations, searchQuery, statusFilter, scoreFilter, repFilter, sortBy, sortOrder]);
+
+  // Number of registrations per séance date/time, used for the group headers when sorting by séance.
+  const seanceCounts = useMemo(() => {
+    const counts = new Map<number, number>();
+    for (const reg of filteredAndSortedRegistrations) {
+      const time = new Date(reg.date).getTime();
+      counts.set(time, (counts.get(time) ?? 0) + 1);
+    }
+    return counts;
+  }, [filteredAndSortedRegistrations]);
 
   // Pagination logic
   const totalPages = Math.ceil(filteredAndSortedRegistrations.length / itemsPerPage);
@@ -803,9 +815,12 @@ export default function AdminEventDetailClient({
                   <label className="block text-sm font-poppins font-medium mb-2">Trier par</label>
                   <select
                     value={sortBy}
-                    onChange={(e) => setSortBy(e.target.value as 'score' | 'date' | 'seats')}
+                    onChange={(e) =>
+                      setSortBy(e.target.value as 'score' | 'date' | 'seats' | 'seance')
+                    }
                     className="w-full px-3 py-2 border border-gray-300 bg-white text-sm font-ibm focus:outline-none focus:border-blue-500"
                   >
+                    <option value="seance">Date de séance</option>
                     <option value="score">Score</option>
                     <option value="date">Date d&apos;inscription</option>
                     <option value="seats">Nombre de places</option>
@@ -842,28 +857,52 @@ export default function AdminEventDetailClient({
               <p className="font-ibm">Aucune inscription trouvée</p>
             </div>
           ) : (
-            paginatedRegistrations.map((reg) => (
-              <RegistrationCard
-                key={reg.id}
-                registration={reg}
-                eventDate={eventDate}
-                expanded={expandedId === reg.id}
-                updating={updatingId === reg.id}
-                isArchived={isArchived}
-                onToggleExpand={() => setExpandedId(expandedId === reg.id ? null : reg.id)}
-                onConfirm={() => openConfirmModal(reg.id, 'confirm')}
-                onReject={() => openConfirmModal(reg.id, 'reject')}
-                onDelete={() => openConfirmModal(reg.id, 'delete')}
-                onMarkAttended={() => openConfirmModal(reg.id, 'attended')}
-                onMarkNoShow={() => openAbsenceModal(reg.id)}
-                onEditAttendance={() => openEditAttendanceModal(reg.id)}
-                onViewHistory={() => openHistoryModal(reg.institution.id, reg.institution.name)}
-                onEditRegistration={() => openEditRegistrationModal(reg.id)}
-                registrationStatusLabels={registrationStatusLabels}
-                accessibilityLabels={accessibilityLabels}
-                publicCategoryLabels={publicCategoryLabels}
-              />
-            ))
+            paginatedRegistrations.map((reg, idx) => {
+              const prevReg = idx > 0 ? paginatedRegistrations[idx - 1] : null;
+              const seanceTime = new Date(reg.date).getTime();
+              const showSeanceHeader =
+                sortBy === 'seance' &&
+                (!prevReg || new Date(prevReg.date).getTime() !== seanceTime);
+              const seanceCount = seanceCounts.get(seanceTime) ?? 0;
+
+              return (
+                <React.Fragment key={reg.id}>
+                  {showSeanceHeader && (
+                    <div className="sticky top-0 z-10 bg-gray-100 px-4 sm:px-5 py-2 border-b border-gray-200 text-sm font-poppins font-semibold text-gray-700">
+                      {new Date(reg.date).toLocaleString('fr-FR', {
+                        weekday: 'long',
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                      <span className="ml-2 font-normal text-gray-500">
+                        ({seanceCount} inscription{seanceCount > 1 ? 's' : ''})
+                      </span>
+                    </div>
+                  )}
+                  <RegistrationCard
+                    registration={reg}
+                    expanded={expandedId === reg.id}
+                    updating={updatingId === reg.id}
+                    isArchived={isArchived}
+                    onToggleExpand={() => setExpandedId(expandedId === reg.id ? null : reg.id)}
+                    onConfirm={() => openConfirmModal(reg.id, 'confirm')}
+                    onReject={() => openConfirmModal(reg.id, 'reject')}
+                    onDelete={() => openConfirmModal(reg.id, 'delete')}
+                    onMarkAttended={() => openConfirmModal(reg.id, 'attended')}
+                    onMarkNoShow={() => openAbsenceModal(reg.id)}
+                    onEditAttendance={() => openEditAttendanceModal(reg.id)}
+                    onViewHistory={() => openHistoryModal(reg.institution.id, reg.institution.name)}
+                    onEditRegistration={() => openEditRegistrationModal(reg.id)}
+                    registrationStatusLabels={registrationStatusLabels}
+                    accessibilityLabels={accessibilityLabels}
+                    publicCategoryLabels={publicCategoryLabels}
+                  />
+                </React.Fragment>
+              );
+            })
           )}
         </div>
 
@@ -940,7 +979,9 @@ export default function AdminEventDetailClient({
             ? registrations.find((r) => r.id === actionData.registrationId)?.institution.name || ''
             : ''
         }
-        eventTitle={`Événement du ${new Date(eventDate).toLocaleDateString('fr-FR')}`}
+        eventTitle={`Séance du ${new Date(
+          registrations.find((r) => r.id === actionData?.registrationId)?.date || eventDate,
+        ).toLocaleDateString('fr-FR')}`}
         onCancel={() => {
           setAbsenceModalOpen(false);
           setActionData(null);
@@ -959,7 +1000,9 @@ export default function AdminEventDetailClient({
             ? registrations.find((r) => r.id === actionData.registrationId)?.institution.name || ''
             : ''
         }
-        eventTitle={`Événement du ${new Date(eventDate).toLocaleDateString('fr-FR')}`}
+        eventTitle={`Séance du ${new Date(
+          registrations.find((r) => r.id === actionData?.registrationId)?.date || eventDate,
+        ).toLocaleDateString('fr-FR')}`}
         currentStatus={
           actionData
             ? (registrations.find((r) => r.id === actionData.registrationId)?.status as Extract<

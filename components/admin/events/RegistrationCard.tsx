@@ -90,7 +90,6 @@ interface RegistrationData {
 
 interface RegistrationCardProps {
   registration: RegistrationData;
-  eventDate: Date;
   expanded: boolean;
   updating: boolean;
   isArchived?: boolean;
@@ -145,7 +144,6 @@ const CRITERION_TYPE_LABELS: Record<string, string> = {
  * - History summary
  *
  * @param registration - The registration data object
- * @param eventDate - Date of the event (for determining past/future actions)
  * @param expanded - Whether the card details are expanded
  * @param updating - Whether an action is currently in progress
  * @param onToggleExpand - Handler to toggle expansion
@@ -159,7 +157,6 @@ const CRITERION_TYPE_LABELS: Record<string, string> = {
  */
 export default function RegistrationCard({
   registration,
-  eventDate,
   expanded,
   updating,
   isArchived = false,
@@ -181,7 +178,9 @@ export default function RegistrationCard({
   const ACCESSIBILITY_LABELS = accessibilityLabels || DEFAULT_ACCESSIBILITY_LABELS;
   const PUBLIC_CATEGORY_LABELS = publicCategoryLabels || DEFAULT_PUBLIC_CATEGORY_LABELS;
   const STATUS_LABELS = REGISTRATION_STATUS_LABELS;
-  const isEventPast = new Date(eventDate) < new Date();
+  // Past/future is judged per-séance: an event can have several dates, and each
+  // registration is tied to the specific séance it booked, not the event as a whole.
+  const isEventPast = new Date(registration.date) < new Date();
   const hasScore = registration.score !== null && registration.score !== undefined;
 
   const getScoreColor = (score: number) => {

@@ -279,6 +279,13 @@ export default function ClientEvents({
     eventTypeMapping,
   ]);
 
+  // An event's dates aren't stored in chronological order (admins can enter them in any
+  // order), so the event's earliest date has to be computed rather than taking event_dates[0].
+  const getEarliestEventDate = (event: EventData): number =>
+    event.event_dates.length > 0
+      ? Math.min(...event.event_dates.map((d) => new Date(d).getTime()))
+      : 0;
+
   // Separate past and future events
   const { upcomingEvents, pastEvents } = useMemo(() => {
     const now = new Date();
@@ -303,8 +310,8 @@ export default function ClientEvents({
 
     // Sort by earliest event date (ascending for upcoming, descending for past)
     const sortByFirstDate = (a: EventData, b: EventData, desc = false) => {
-      const dateA = a.event_dates.length > 0 ? new Date(a.event_dates[0]).getTime() : 0;
-      const dateB = b.event_dates.length > 0 ? new Date(b.event_dates[0]).getTime() : 0;
+      const dateA = getEarliestEventDate(a);
+      const dateB = getEarliestEventDate(b);
       return desc ? dateB - dateA : dateA - dateB;
     };
     upcoming.sort((a, b) => sortByFirstDate(a, b));
@@ -312,6 +319,24 @@ export default function ClientEvents({
 
     return { upcomingEvents: upcoming, pastEvents: past };
   }, [filteredEvents]);
+
+  // Archives view: no upcoming/past split (everything is past by definition) — instead,
+  // group by year, most recent season first, with each year's events sorted most-recent-first.
+  const archivedEventsByYear = useMemo(() => {
+    if (!showingArchived) return [];
+
+    const withDate = filteredEvents.map((ev) => ({ ev, time: getEarliestEventDate(ev) }));
+    withDate.sort((a, b) => b.time - a.time);
+
+    const groups = new Map<number, EventData[]>();
+    for (const { ev, time } of withDate) {
+      const year = time ? new Date(time).getFullYear() : 0;
+      if (!groups.has(year)) groups.set(year, []);
+      groups.get(year)!.push(ev);
+    }
+
+    return Array.from(groups.entries()).sort(([yearA], [yearB]) => yearB - yearA);
+  }, [filteredEvents, showingArchived]);
 
   // Close on ESC
   const escHandler = useCallback((e: KeyboardEvent) => {
@@ -687,7 +712,11 @@ export default function ClientEvents({
       {/* Event List or Calendar */}
 
       <section>
-        {upcomingEvents.length === 0 && pastEvents.length === 0 ? (
+        {(
+          showingArchived
+            ? archivedEventsByYear.length === 0
+            : upcomingEvents.length === 0 && pastEvents.length === 0
+        ) ? (
           <div className="text-center py-8">
             <p className="text-sm sm:text-base text-gray-600 mb-2">
               {events.length === 0
@@ -701,37 +730,56 @@ export default function ClientEvents({
             )}
           </div>
         ) : viewMode === 'list' ? (
-          <div className="space-y-8 sm:space-y-12">
-            {/* Upcoming Events */}
-            {upcomingEvents.length > 0 && (
-              <div>
-                <h2 className="text-xl sm:text-2xl font-poppins font-semibold mb-4 sm:mb-6 text-black">
-                  Événements à venir
-                  <span className="ml-2 text-xs sm:text-sm font-normal text-gray-600">
-                    ({upcomingEvents.length} événement{upcomingEvents.length > 1 ? 's' : ''})
-                  </span>
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                  {upcomingEvents.map((ev, index) => renderEventCard(ev, false, index))}
+          showingArchived ? (
+            <div className="space-y-8 sm:space-y-12">
+              {/* Archived events, grouped by year */}
+              {archivedEventsByYear.map(([year, yearEvents]) => (
+                <div key={year}>
+                  <h2 className="text-xl sm:text-2xl font-poppins font-semibold mb-4 sm:mb-6 text-gray-600 pb-2 border-b border-gray-300">
+                    {year || 'Date inconnue'}
+                    <span className="ml-2 text-xs sm:text-sm font-normal text-gray-500">
+                      ({yearEvents.length} événement{yearEvents.length > 1 ? 's' : ''})
+                    </span>
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    {yearEvents.map((ev, index) => renderEventCard(ev, true, index))}
+                  </div>
                 </div>
-              </div>
-            )}
+              ))}
+            </div>
+          ) : (
+            <div className="space-y-8 sm:space-y-12">
+              {/* Upcoming Events */}
+              {upcomingEvents.length > 0 && (
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-poppins font-semibold mb-4 sm:mb-6 text-black">
+                    Événements à venir
+                    <span className="ml-2 text-xs sm:text-sm font-normal text-gray-600">
+                      ({upcomingEvents.length} événement{upcomingEvents.length > 1 ? 's' : ''})
+                    </span>
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    {upcomingEvents.map((ev, index) => renderEventCard(ev, false, index))}
+                  </div>
+                </div>
+              )}
 
-            {/* Past Events */}
-            {pastEvents.length > 0 && (
-              <div>
-                <h2 className="text-xl sm:text-2xl font-poppins font-semibold mb-4 sm:mb-6 text-gray-600">
-                  Événements passés
-                  <span className="ml-2 text-xs sm:text-sm font-normal text-gray-500">
-                    ({pastEvents.length} événement{pastEvents.length > 1 ? 's' : ''})
-                  </span>
-                </h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-                  {pastEvents.map((ev, index) => renderEventCard(ev, true, index))}
+              {/* Past Events */}
+              {pastEvents.length > 0 && (
+                <div>
+                  <h2 className="text-xl sm:text-2xl font-poppins font-semibold mb-4 sm:mb-6 text-gray-600">
+                    Événements passés
+                    <span className="ml-2 text-xs sm:text-sm font-normal text-gray-500">
+                      ({pastEvents.length} événement{pastEvents.length > 1 ? 's' : ''})
+                    </span>
+                  </h2>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+                    {pastEvents.map((ev, index) => renderEventCard(ev, true, index))}
+                  </div>
                 </div>
-              </div>
-            )}
-          </div>
+              )}
+            </div>
+          )
         ) : (
           <CalendarView events={filteredEvents} onEventSelect={setSelectedEvent} />
         )}
