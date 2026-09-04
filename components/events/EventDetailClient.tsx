@@ -123,10 +123,6 @@ export default function EventDetailClient({
 }) {
   const event = initialData;
 
-  const sessionsByTime = new Map(
-    (event.sessions ?? []).map((s) => [new Date(s.date).getTime(), s]),
-  );
-
   return (
     <main className="p-4 sm:p-6">
       <header className="mb-4 sm:mb-6">
@@ -341,9 +337,6 @@ export default function EventDetailClient({
             <ul className="space-y-2">
               {Array.isArray(event.event_dates) && event.event_dates.length > 0 ? (
                 event.event_dates.map((d) => {
-                  const session = sessionsByTime.get(new Date(d).getTime());
-                  const remaining = session ? session.total_seats - session.booked_seats : null;
-                  const isFull = remaining !== null && remaining <= 0;
                   return (
                     <li
                       key={String(d)}
@@ -351,19 +344,6 @@ export default function EventDetailClient({
                     >
                       <Calendar size={16} className="text-gray-600 shrink-0" />
                       <span className="font-ibm">{formatDate(d)}</span>
-                      {session && (
-                        <span
-                          className={`ml-auto text-xs px-2 py-0.5 rounded-none font-ibm whitespace-nowrap ${
-                            isFull
-                              ? 'bg-red-50 text-red-700 border border-red-200'
-                              : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                          }`}
-                        >
-                          {isFull
-                            ? 'Complet'
-                            : `${remaining} place${(remaining as number) > 1 ? 's' : ''} disponible${(remaining as number) > 1 ? 's' : ''}`}
-                        </span>
-                      )}
                     </li>
                   );
                 })
