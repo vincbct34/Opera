@@ -27,6 +27,7 @@ import { HELP_CONTENTS } from '@/lib/help/helpContents';
 
 type DisplayEvent = Partial<PrismaEvent> & {
   event_dates: Array<string | Date>;
+  sessions?: Array<{ date: string | Date; total_seats: number; booked_seats: number }>;
   accessibility?: { type: AccessibilityType }[];
   grades?: SchoolGrade[];
   age_ranges?: AgeRange[];
@@ -121,6 +122,10 @@ export default function EventDetailClient({
   eventStatusLabels?: Record<string, string>;
 }) {
   const event = initialData;
+
+  const sessionsByTime = new Map(
+    (event.sessions ?? []).map((s) => [new Date(s.date).getTime(), s]),
+  );
 
   return (
     <main className="p-4 sm:p-6">
@@ -335,15 +340,33 @@ export default function EventDetailClient({
             </h3>
             <ul className="space-y-2">
               {Array.isArray(event.event_dates) && event.event_dates.length > 0 ? (
-                event.event_dates.map((d) => (
-                  <li
-                    key={String(d)}
-                    className="flex items-center gap-3 text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded-none"
-                  >
-                    <Calendar size={16} className="text-gray-600 shrink-0" />
-                    <span className="font-ibm">{formatDate(d)}</span>
-                  </li>
-                ))
+                event.event_dates.map((d) => {
+                  const session = sessionsByTime.get(new Date(d).getTime());
+                  const remaining = session ? session.total_seats - session.booked_seats : null;
+                  const isFull = remaining !== null && remaining <= 0;
+                  return (
+                    <li
+                      key={String(d)}
+                      className="flex items-center gap-3 text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded-none"
+                    >
+                      <Calendar size={16} className="text-gray-600 shrink-0" />
+                      <span className="font-ibm">{formatDate(d)}</span>
+                      {session && (
+                        <span
+                          className={`ml-auto text-xs px-2 py-0.5 rounded-none font-ibm whitespace-nowrap ${
+                            isFull
+                              ? 'bg-red-50 text-red-700 border border-red-200'
+                              : 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                          }`}
+                        >
+                          {isFull
+                            ? 'Complet'
+                            : `${remaining} place${(remaining as number) > 1 ? 's' : ''} disponible${(remaining as number) > 1 ? 's' : ''}`}
+                        </span>
+                      )}
+                    </li>
+                  );
+                })
               ) : (
                 <li className="text-sm text-gray-500 italic">Aucune date renseignée</li>
               )}

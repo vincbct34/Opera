@@ -23,6 +23,7 @@ export default async function EventDetailPage({ params }: Params) {
     include: {
       accessibility: true,
       registrationBlocks: { orderBy: { order: 'asc' } },
+      sessions: { orderBy: { date: 'asc' } },
     },
     omit: {
       booked_seats: true,
@@ -37,6 +38,7 @@ export default async function EventDetailPage({ params }: Params) {
       include: {
         accessibility: true,
         registrationBlocks: { orderBy: { order: 'asc' } },
+        sessions: { orderBy: { date: 'asc' } },
       },
     });
   }
