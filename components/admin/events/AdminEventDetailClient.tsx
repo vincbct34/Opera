@@ -122,6 +122,7 @@ export default function AdminEventDetailClient({
   eventHasFormation = false,
   eventHasPreparation = false,
   eventRegistrationBlocks = [],
+  eventSessions = [],
   registrationStatusLabels,
   accessibilityLabels,
   publicCategoryLabels,
@@ -143,6 +144,7 @@ export default function AdminEventDetailClient({
     mandatory: boolean;
     order: number;
   }>;
+  eventSessions?: Array<{ date: string | Date; total_seats: number; booked_seats: number }>;
   registrationStatusLabels?: Record<string, string>;
   accessibilityLabels?: Record<string, string>;
   publicCategoryLabels?: Record<string, string>;
@@ -570,6 +572,12 @@ export default function AdminEventDetailClient({
     return counts;
   }, [filteredAndSortedRegistrations]);
 
+  // Per-séance jauge (total_seats/booked_seats), keyed by exact date/time, for the group headers.
+  const sessionsByTime = useMemo(
+    () => new Map(eventSessions.map((s) => [new Date(s.date).getTime(), s])),
+    [eventSessions],
+  );
+
   // Pagination logic
   const totalPages = Math.ceil(filteredAndSortedRegistrations.length / itemsPerPage);
   const paginatedRegistrations = useMemo(() => {
@@ -864,6 +872,7 @@ export default function AdminEventDetailClient({
                 sortBy === 'seance' &&
                 (!prevReg || new Date(prevReg.date).getTime() !== seanceTime);
               const seanceCount = seanceCounts.get(seanceTime) ?? 0;
+              const session = sessionsByTime.get(seanceTime);
 
               return (
                 <React.Fragment key={reg.id}>
@@ -880,6 +889,11 @@ export default function AdminEventDetailClient({
                       <span className="ml-2 font-normal text-gray-500">
                         ({seanceCount} inscription{seanceCount > 1 ? 's' : ''})
                       </span>
+                      {session && (
+                        <span className="ml-2 font-normal text-gray-500">
+                          — jauge {session.booked_seats}/{session.total_seats}
+                        </span>
+                      )}
                     </div>
                   )}
                   <RegistrationCard

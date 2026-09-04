@@ -451,6 +451,7 @@ export default function EventDetailClient({
                 eventHasFormation={event.has_initial_formation ?? false}
                 eventHasPreparation={event.has_musical_preparation ?? false}
                 eventRegistrationBlocks={event.registrationBlocks ?? []}
+                eventSessions={event.sessions ?? []}
                 registrationStatusLabels={registrationStatusLabels}
                 accessibilityLabels={accessibilityLabels}
                 publicCategoryLabels={publicCategoryLabels}
