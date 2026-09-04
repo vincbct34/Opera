@@ -121,8 +121,26 @@ model Event {
   registrationBlocks      EventRegistrationBlock[]
   registrations           Registration[]
   scoringConfiguration    ScoringConfiguration?
+  sessions                EventSession[]
 
   @@index([status])
+}
+
+// Per-séance seat capacity ("jauge"): one row per (event, date), independent
+// of the event-level total_seats/booked_seats which stays a legacy,
+// whole-event figure. This is what gates registration availability per date.
+model EventSession {
+  id           String   @id @default(cuid())
+  event_id     String
+  date         DateTime
+  total_seats  Int
+  booked_seats Int      @default(0)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  event        Event    @relation(fields: [event_id], references: [id], onDelete: Cascade)
+
+  @@unique([event_id, date])
+  @@index([event_id])
 }
 
 model EventRegistrationBlock {

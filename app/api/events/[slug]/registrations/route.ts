@@ -11,6 +11,7 @@ import { CRITERIA_DEFINITIONS } from '@/lib/scoring/criteriaDefinitions';
 import type { ScoringCriterionType, ParameterValue } from '@/lib/scoring/criteriaDefinitions';
 import { UnifiedNotificationService } from '@/lib/notifications/unifiedNotificationService';
 import { findSlotEndDate, formatFormationName } from '@/lib/events/registrationBlocks';
+import { findEventSession } from '@/lib/events/eventSessions';
 
 /**
  * GET /api/events/[slug]/registrations
@@ -548,11 +549,16 @@ export async function POST(req: NextRequest, context: { params: Promise<{ slug: 
         }
       }
 
-      // Check available seats
-      const availableSeats = (event.total_seats || 0) - (event.booked_seats || 0);
+      // Check available seats for the selected séance specifically. Falls back to
+      // the event-level aggregate when this date has no EventSession yet (events
+      // predating the per-séance jauge feature).
+      const session = await findEventSession(eventId, new Date(date));
+      const availableSeats = session
+        ? session.total_seats - session.booked_seats
+        : (event.total_seats || 0) - (event.booked_seats || 0);
       if (booked_seats > availableSeats) {
         return NextResponse.json(
-          { error: `Seulement ${availableSeats} places disponibles` },
+          { error: `Seulement ${availableSeats} places disponibles pour cette séance` },
           { status: 400 },
         );
       }

@@ -273,6 +273,16 @@ export type UpdateInstitutionData = Partial<CreateInstitutionData>;
 // ============================================
 
 /**
+ * One séance (date) of an event, with its own seat capacity ("jauge"),
+ * independent of the event-level total_seats/booked_seats.
+ */
+export type EventSessionData = {
+  date: string;
+  total_seats: number;
+  booked_seats?: number;
+};
+
+/**
  * Extended Event type for admin usage, including counts and relations.
  */
 export type AdminEvent = {
@@ -290,6 +300,7 @@ export type AdminEvent = {
   total_seats?: number;
   image_url?: string;
   event_dates?: string[];
+  sessions?: EventSessionData[];
   category?: PublicCategory[];
   grades?: SchoolGrade[];
   age_ranges?: AgeRange[];

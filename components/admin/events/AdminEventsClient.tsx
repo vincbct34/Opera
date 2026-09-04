@@ -567,6 +567,39 @@ export default function AdminEventsClient({
                         <span>•</span>
                         <span>{event._count?.registrations || 0} inscriptions</span>
                       </div>
+                      {event.sessions && event.sessions.length > 0 && (
+                        <div className="mt-1.5 flex flex-wrap gap-1.5">
+                          {event.sessions
+                            .slice()
+                            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+                            .map((session) => {
+                              const booked = session.booked_seats ?? 0;
+                              const isFull = booked >= session.total_seats;
+                              return (
+                                <span
+                                  key={session.date}
+                                  title={new Date(session.date).toLocaleString('fr-FR', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                    year: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                  })}
+                                  className={`px-1.5 py-0.5 text-xs rounded-none font-ibm ${
+                                    isFull ? 'bg-red-50 text-red-700' : 'bg-gray-100 text-gray-700'
+                                  }`}
+                                >
+                                  {new Date(session.date).toLocaleDateString('fr-FR', {
+                                    day: 'numeric',
+                                    month: 'short',
+                                  })}
+                                  {' : '}
+                                  {booked}/{session.total_seats}
+                                </span>
+                              );
+                            })}
+                        </div>
+                      )}
                     </div>
                     <div className="flex gap-2 shrink-0">
                       <Link

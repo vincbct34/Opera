@@ -14,6 +14,7 @@
     "test": "jest --watchAll=false",
     "coverage": "jest --coverage",
     "db:seed": "tsx scripts/seed.ts",
+    "backfill:event-sessions": "tsx scripts/backfillEventSessions.ts",
     "ci": "npm run format:check && npm run lint && npm run typecheck && npm run test && npm run build",
     "postinstall": "node scripts/postinstall.js"
   },

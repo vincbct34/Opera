@@ -18,6 +18,13 @@ import {
   getRegistrationBlocksWithLegacyFallback,
   serializeRegistrationBlock,
 } from '@/lib/events/registrationBlocks';
+import { syncEventSessions, EventSessionInUseError } from '@/lib/events/eventSessions';
+
+// One séance (date + its own seat capacity, independent of total_seats)
+const EventSessionSchema = z.object({
+  date: z.string().datetime(),
+  total_seats: z.number().int().min(1, 'Au moins 1 place requise').max(100000, 'Trop de places'),
+});
 
 const RegistrationBlockSchema = z
   .object({
@@ -62,6 +69,7 @@ export const PROTECTABLE_FIELDS = [
   'has_initial_formation',
   'has_musical_preparation',
   'registrationBlocks',
+  'sessions',
   'slug',
   'accessibility',
 ] as const;
@@ -85,6 +93,7 @@ const EventSchema = z.object({
   has_musical_preparation: z.boolean().optional(),
   accessibility: z.array(z.string()).optional(),
   registrationBlocks: z.array(RegistrationBlockSchema).optional(),
+  sessions: z.array(EventSessionSchema).optional(),
   caretaker: z.number().min(0).optional(),
   slug: z.string().optional(),
   // NEW: Fields for managing manual edits
@@ -115,6 +124,7 @@ export async function GET(req: NextRequest, context: { params: Promise<{ id: str
               },
             },
           },
+          sessions: { orderBy: { date: 'asc' } },
           _count: {
             select: { registrations: true },
           },
@@ -162,7 +172,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
 
       const existingEvent = await prisma.event.findUnique({
         where: { id },
-        include: { accessibility: true, registrationBlocks: true },
+        include: { accessibility: true, registrationBlocks: true, sessions: true },
       });
       if (!existingEvent) {
         return NextResponse.json({ error: 'Événement non trouvé' }, { status: 404 });
@@ -199,6 +209,27 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
 
       const richTextEqual = (a: string | null | undefined, b: string | null | undefined): boolean =>
         sanitizeRichText(a) === sanitizeRichText(b);
+
+      // Helper function to compare a submitted sessions list (date + seats) to
+      // the event's current EventSession rows, order-independent.
+      const sessionsEqual = (
+        a: { date: string; total_seats: number }[] | undefined,
+        b: { date: Date; total_seats: number }[] | undefined,
+      ): boolean => {
+        if (!a && !b) return true;
+        if (!a || !b) return false;
+        if (a.length !== b.length) return false;
+        const sortedA = [...a]
+          .map((s) => ({ time: new Date(s.date).getTime(), total_seats: s.total_seats }))
+          .sort((x, y) => x.time - y.time);
+        const sortedB = [...b]
+          .map((s) => ({ time: s.date.getTime(), total_seats: s.total_seats }))
+          .sort((x, y) => x.time - y.time);
+        return sortedA.every(
+          (val, index) =>
+            val.time === sortedB[index].time && val.total_seats === sortedB[index].total_seats,
+        );
+      };
 
       const nullableStringEqual = (
         a: string | null | undefined,
@@ -285,6 +316,12 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
       ) {
         modifiedFields.push('has_initial_formation');
       }
+      if (
+        validatedData.sessions !== undefined &&
+        !sessionsEqual(validatedData.sessions, existingEvent.sessions)
+      ) {
+        modifiedFields.push('sessions');
+      }
       if (validatedData.registrationBlocks !== undefined) {
         modifiedFields.push('registrationBlocks');
         if (!modifiedFields.includes('has_initial_formation')) {
@@ -356,7 +393,15 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
         image_url: imageUrlForUpdate,
         event_dates: eventDatesForUpdate,
       };
-      const { registrationBlocks, ...sanitizedEventData } = sanitizedData;
+      const {
+        registrationBlocks,
+        sessions: submittedSessions,
+        ...sanitizedEventData
+      } = sanitizedData;
+      const sessionEntries = submittedSessions?.map((s) => ({
+        date: new Date(s.date),
+        total_seats: s.total_seats,
+      }));
       const hasRegistrationBlocks = registrationBlocks
         ? registrationBlocks.some((block) => block.enabled !== false)
         : undefined;
@@ -399,8 +444,13 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
             registrationBlocks: {
               orderBy: { order: 'asc' },
             },
+            sessions: { orderBy: { date: 'asc' } },
           },
         });
+
+        if (sessionEntries !== undefined) {
+          await syncEventSessions(id, sessionEntries, tx);
+        }
 
         if (registrationBlocks !== undefined) {
           const incomingIds = registrationBlocks
@@ -471,6 +521,7 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
           registrationBlocks: {
             orderBy: { order: 'asc' },
           },
+          sessions: { orderBy: { date: 'asc' } },
         },
       });
 
@@ -483,6 +534,9 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
     } catch (error) {
       if (error instanceof z.ZodError) {
         return NextResponse.json({ error: error.issues[0].message }, { status: 400 });
+      }
+      if (error instanceof EventSessionInUseError) {
+        return NextResponse.json({ error: error.message }, { status: 400 });
       }
       logger.error('Error updating event:', ...sanitizeLogArgs(error));
       return NextResponse.json(

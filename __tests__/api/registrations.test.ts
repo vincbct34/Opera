@@ -42,6 +42,10 @@ jest.mock('@/lib/middleware/prismaConfig', () => ({
     event: {
       update: jest.fn(),
     },
+    eventSession: {
+      updateMany: jest.fn(),
+    },
+    $transaction: jest.fn((ops: any[]) => Promise.all(ops)),
   },
 }));
 
@@ -210,6 +214,42 @@ describe('Registrations API', () => {
       expect(data.registration.id).toBe(mockRegistration.id);
     });
 
+    it('should free up event and séance seats when an admin cancels a confirmed registration', async () => {
+      const confirmedRegistration = {
+        ...mockRegistration,
+        status: 'CONFIRMED',
+        date: new Date('2026-05-01T10:00:00Z'),
+      };
+      (prisma.registration.findUnique as unknown as jest.Mock<any>)
+        .mockResolvedValueOnce(confirmedRegistration)
+        .mockResolvedValueOnce({ ...confirmedRegistration, status: 'CANCELLED' });
+
+      (prisma.registration.update as unknown as jest.Mock<any>).mockResolvedValue({
+        ...confirmedRegistration,
+        status: 'CANCELLED',
+      });
+
+      const req = createMockRequest(`http://localhost/api/registrations/${mockRegistration.id}`, {
+        method: 'PATCH',
+        body: { status: 'CANCELLED' },
+        user: { id: 'admin-1', role: Role.ADMIN },
+      });
+
+      const res = await UpdateRegistration(req, {
+        params: Promise.resolve({ id: mockRegistration.id }),
+      });
+
+      expect(res.status).toBe(200);
+      expect(prisma.event.update).toHaveBeenCalledWith({
+        where: { id: confirmedRegistration.event_id },
+        data: { booked_seats: { decrement: confirmedRegistration.booked_seats } },
+      });
+      expect(prisma.eventSession.updateMany).toHaveBeenCalledWith({
+        where: { event_id: confirmedRegistration.event_id, date: confirmedRegistration.date },
+        data: { booked_seats: { decrement: confirmedRegistration.booked_seats } },
+      });
+    });
+
     it('should prevent user from cancelling confirmed registration', async () => {
       (prisma.registration.findUnique as unknown as jest.Mock<any>).mockResolvedValue({
         ...mockRegistration,
@@ -246,6 +286,39 @@ describe('Registrations API', () => {
       });
 
       expect(res.status).toBe(200);
+    });
+
+    it('should free up event and séance seats when deleting a confirmed registration', async () => {
+      const confirmedRegistration = {
+        ...mockRegistration,
+        status: 'CONFIRMED',
+        date: new Date('2026-05-01T10:00:00Z'),
+      };
+      (prisma.registration.findUnique as unknown as jest.Mock<any>).mockResolvedValue(
+        confirmedRegistration,
+      );
+      (prisma.registration.delete as unknown as jest.Mock<any>).mockResolvedValue(
+        confirmedRegistration,
+      );
+
+      const req = createMockRequest(`http://localhost/api/registrations/${mockRegistration.id}`, {
+        method: 'DELETE',
+        user: { id: 'user-1', role: Role.USER },
+      });
+
+      const res = await DeleteRegistration(req, {
+        params: Promise.resolve({ id: mockRegistration.id }),
+      });
+
+      expect(res.status).toBe(200);
+      expect(prisma.event.update).toHaveBeenCalledWith({
+        where: { id: confirmedRegistration.event_id },
+        data: { booked_seats: { decrement: confirmedRegistration.booked_seats } },
+      });
+      expect(prisma.eventSession.updateMany).toHaveBeenCalledWith({
+        where: { event_id: confirmedRegistration.event_id, date: confirmedRegistration.date },
+        data: { booked_seats: { decrement: confirmedRegistration.booked_seats } },
+      });
     });
   });
 });

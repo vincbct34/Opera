@@ -27,6 +27,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
         registrationBlocks: {
           orderBy: { order: 'asc' },
         },
+        sessions: { orderBy: { date: 'asc' } },
       },
     });
 
@@ -39,6 +40,7 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
           registrationBlocks: {
             orderBy: { order: 'asc' },
           },
+          sessions: { orderBy: { date: 'asc' } },
         },
       });
     }
@@ -65,6 +67,11 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ slug
       created_at: event.created_at.toISOString(),
       updated_at: event.updated_at.toISOString(),
       event_dates: event.event_dates.map((d: Date) => d.toISOString()),
+      sessions: event.sessions.map((s) => ({
+        date: s.date.toISOString(),
+        total_seats: s.total_seats,
+        booked_seats: s.booked_seats,
+      })),
       accessibility: event.accessibility.map((a: { type: Accessibility }) => a.type),
       has_initial_formation: event.has_initial_formation,
       is_formation_mandatory: event.is_formation_mandatory,

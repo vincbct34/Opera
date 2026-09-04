@@ -118,6 +118,9 @@ export default function UserEventDetailClient({
   const [selectedInstitutionIds, setSelectedInstitutionIds] = useState<string[]>([]);
   const [institutionError, setInstitutionError] = useState('');
   const [eventDates, setEventDates] = useState<string[]>([]);
+  const [eventSessions, setEventSessions] = useState<
+    Record<string, { total_seats: number; booked_seats: number }>
+  >({});
   const [eventInfo, setEventInfo] = useState<{
     has_initial_formation: boolean;
     is_formation_mandatory: boolean;
@@ -175,6 +178,14 @@ export default function UserEventDetailClient({
           (block: EventRegistrationBlock) => !block.id.startsWith('legacy-'),
         );
         setEventDates(data.event.event_dates || []);
+        const sessionsByDate: Record<string, { total_seats: number; booked_seats: number }> = {};
+        for (const s of data.event.sessions || []) {
+          sessionsByDate[new Date(s.date).toISOString()] = {
+            total_seats: s.total_seats,
+            booked_seats: s.booked_seats,
+          };
+        }
+        setEventSessions(sessionsByDate);
         setEventInfo({
           has_initial_formation: data.event.has_initial_formation || false,
           is_formation_mandatory: data.event.is_formation_mandatory || false,
@@ -824,17 +835,27 @@ export default function UserEventDetailClient({
                 className="w-full p-2 sm:p-3 border border-gray-300 rounded-none text-sm focus:outline-none focus:ring-2 focus:ring-black font-ibm"
               >
                 <option value="">Sélectionner une date</option>
-                {eventDates.map((date) => (
-                  <option key={date} value={date}>
-                    {new Date(date).toLocaleString('fr-FR', {
-                      day: '2-digit',
-                      month: 'long',
-                      year: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit',
-                    })}
-                  </option>
-                ))}
+                {eventDates.map((date) => {
+                  const session = eventSessions[new Date(date).toISOString()];
+                  const remaining = session ? session.total_seats - session.booked_seats : null;
+                  const isFull = remaining !== null && remaining <= 0;
+                  return (
+                    <option key={date} value={date} disabled={isFull}>
+                      {new Date(date).toLocaleString('fr-FR', {
+                        day: '2-digit',
+                        month: 'long',
+                        year: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                      {remaining !== null
+                        ? isFull
+                          ? ' — Complet'
+                          : ` — ${remaining} place${remaining > 1 ? 's' : ''} disponible${remaining > 1 ? 's' : ''}`
+                        : ''}
+                    </option>
+                  );
+                })}
               </select>
             </div>
 

@@ -47,6 +47,10 @@ export async function GET(req: NextRequest) {
           accessibility: {
             select: { type: true },
           },
+          sessions: {
+            orderBy: { date: 'asc' },
+            select: { date: true, total_seats: true, booked_seats: true },
+          },
         },
       });
 
@@ -68,6 +72,11 @@ export async function GET(req: NextRequest) {
         created_at: e.created_at.toISOString(),
         updated_at: e.updated_at.toISOString(),
         event_dates: e.event_dates.map((d) => d.toISOString()),
+        sessions: e.sessions.map((s) => ({
+          date: s.date.toISOString(),
+          total_seats: s.total_seats,
+          booked_seats: s.booked_seats,
+        })),
         accessibility: e.accessibility.map((a) => a.type),
         has_initial_formation: e.has_initial_formation,
         is_formation_mandatory: e.is_formation_mandatory,

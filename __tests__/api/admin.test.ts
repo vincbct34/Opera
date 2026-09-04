@@ -37,6 +37,13 @@ jest.mock('@/lib/middleware/prismaConfig', () => {
       update: jest.fn(),
       create: jest.fn(),
     },
+    eventSession: {
+      findMany: jest.fn().mockResolvedValue([]),
+      create: jest.fn(),
+      createMany: jest.fn(),
+      update: jest.fn(),
+      deleteMany: jest.fn(),
+    },
     scoringConfiguration: {
       findMany: jest.fn(),
       create: jest.fn(),
@@ -160,6 +167,35 @@ describe('Admin API', () => {
       const res = await CreateEvent(req);
       expect(res.status).toBe(400);
     });
+
+    it('should create a per-séance EventSession for each submitted session', async () => {
+      const sessionDate = new Date().toISOString();
+      (prisma.event.create as unknown as jest.Mock<any>).mockResolvedValue({
+        id: 'evt-new',
+        ...validEventData,
+      });
+
+      const req = createMockRequest('http://localhost/api/admin/events', {
+        method: 'POST',
+        body: {
+          ...validEventData,
+          sessions: [{ date: sessionDate, total_seats: 42 }],
+        },
+        user: { id: 'admin-1', role: Role.ADMIN },
+      });
+
+      const res = await CreateEvent(req);
+      expect(res.status).toBe(201);
+      expect(prisma.event.create).toHaveBeenCalledWith(
+        expect.objectContaining({
+          data: expect.objectContaining({
+            sessions: {
+              create: [{ date: new Date(sessionDate), total_seats: 42, booked_seats: 0 }],
+            },
+          }),
+        }),
+      );
+    });
   });
 
   describe('PUT /api/admin/events/[id]', () => {
@@ -233,6 +269,57 @@ describe('Admin API', () => {
           }),
         }),
       );
+    });
+
+    it('should sync sessions and reject deleting one that already has bookings', async () => {
+      const keptDate = new Date('2026-09-15T10:00:00.000Z');
+      const bookedDate = new Date('2026-09-20T10:00:00.000Z');
+      const existingEvent = {
+        id: 'evt-1',
+        title: 'Existing Event',
+        description: null,
+        type: [EventType.OPERA],
+        location: 'Paris',
+        duration: 120,
+        total_seats: 100,
+        caretaker: null,
+        status: EventStatus.OPEN,
+        image_url: null,
+        event_dates: [keptDate, bookedDate],
+        category: [],
+        grades: [],
+        age_ranges: [],
+        has_initial_formation: false,
+        has_musical_preparation: false,
+        slug: null,
+        manually_edited: false,
+        protected_fields: [],
+        accessibility: [],
+        registrationBlocks: [],
+        sessions: [
+          { id: 'sess-1', date: keptDate, total_seats: 50, booked_seats: 0 },
+          { id: 'sess-2', date: bookedDate, total_seats: 50, booked_seats: 5 },
+        ],
+      };
+
+      (prisma.event.findUnique as unknown as jest.Mock<any>).mockResolvedValue(existingEvent);
+      (prisma.eventSession.findMany as unknown as jest.Mock<any>).mockResolvedValue(
+        existingEvent.sessions,
+      );
+
+      const req = createMockRequest('http://localhost/api/admin/events/evt-1', {
+        method: 'PUT',
+        body: {
+          // Only the kept session is resubmitted — bookedDate's session would be
+          // deleted, but it already has bookings so the whole update is rejected.
+          sessions: [{ date: keptDate.toISOString(), total_seats: 60 }],
+        },
+        user: { id: 'admin-1', role: Role.ADMIN },
+      });
+
+      const res = await UpdateEvent(req, { params: Promise.resolve({ id: 'evt-1' }) });
+      expect(res.status).toBe(400);
+      expect(prisma.eventSession.deleteMany).not.toHaveBeenCalled();
     });
   });
 

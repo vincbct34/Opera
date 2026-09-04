@@ -5,6 +5,7 @@ import { scrapeEvents, ApiEvent } from '@/lib/cron/eventsScraper';
 import prisma from '@/lib/middleware/prismaConfig';
 import { logger } from '@/lib/middleware/logger';
 import { HolidaysService } from '@/lib/services/holidays.service';
+import { ensureEventSessions } from '@/lib/events/eventSessions';
 
 async function insertEventsToDatabase(events: ApiEvent[]) {
   const insertedEvents = [];
@@ -88,6 +89,14 @@ async function insertEventsToDatabase(events: ApiEvent[]) {
           where: { id: existingEvent.id },
           data: updateData,
         });
+
+        // Seed a séance for any newly-discovered date, using the scraped
+        // venue capacity as its default; never touches an existing séance's
+        // capacity (manual per-séance edits are never clobbered by a rescrape).
+        if (!protectedFields.includes('sessions')) {
+          await ensureEventSessions(existingEvent.id, updatedEvent.event_dates, event.total_seats);
+        }
+
         insertedEvents.push({ ...updatedEvent, status: 'updated' });
       } else {
         // Determine status based on opening limit
@@ -120,6 +129,9 @@ async function insertEventsToDatabase(events: ApiEvent[]) {
             status: initialStatus,
           },
         });
+
+        await ensureEventSessions(newEvent.id, newEvent.event_dates, event.total_seats);
+
         insertedEvents.push({ ...newEvent, status: 'created' });
       }
     } catch (error) {

@@ -44,6 +44,9 @@ jest.mock('@/lib/middleware/prismaConfig', () => {
     registrationBlockSelection: {
       createMany: jest.fn(),
     },
+    eventSession: {
+      findUnique: jest.fn().mockResolvedValue(null),
+    },
     userInstitution: {
       findFirst: jest.fn(),
     },
@@ -127,6 +130,7 @@ describe('Events API', () => {
     is_formation_mandatory: false,
     has_musical_preparation: true,
     registrationBlocks: [],
+    sessions: [],
   };
 
   beforeEach(() => {
@@ -285,6 +289,33 @@ describe('Events API', () => {
 
       expect(res.status).toBe(201);
       expect(data.registration.id).toBe('reg-1');
+    });
+
+    it('should return 400 when the selected séance is full', async () => {
+      (prisma.event.findFirst as unknown as jest.Mock<any>).mockResolvedValue(mockEvent);
+      (prisma.userInstitution.findFirst as unknown as jest.Mock<any>).mockResolvedValue({
+        id: 'ui-1',
+      });
+      (prisma.eventSession.findUnique as unknown as jest.Mock<any>).mockResolvedValue({
+        id: 'sess-1',
+        event_id: mockEvent.id,
+        date: new Date(validRegistrationData.date),
+        total_seats: 10,
+        booked_seats: 10,
+      });
+
+      const req = createMockRequest(`http://localhost/api/events/${mockEvent.slug}/registrations`, {
+        method: 'POST',
+        body: validRegistrationData,
+        user: { id: 'user-1', role: Role.USER },
+      });
+
+      const res = await CreateRegistration(req, {
+        params: Promise.resolve({ slug: mockEvent.slug }),
+      });
+
+      expect(res.status).toBe(400);
+      expect(prisma.registration.create).not.toHaveBeenCalled();
     });
 
     it('should return 403 if user not in institution', async () => {

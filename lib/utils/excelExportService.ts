@@ -311,6 +311,25 @@ function formatEventDates(dates: Date[]): string {
     .join(' | ');
 }
 
+function formatSessionSeats(
+  sessions: { date: Date; total_seats: number; booked_seats: number }[],
+): string {
+  if (!sessions || sessions.length === 0) return 'N/A';
+  return [...sessions]
+    .sort((a, b) => a.date.getTime() - b.date.getTime())
+    .map((s) => {
+      const dateLabel = new Date(s.date).toLocaleDateString('fr-FR', {
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+      });
+      return `${dateLabel}: ${s.booked_seats}/${s.total_seats}`;
+    })
+    .join(' | ');
+}
+
 // ============================================================================
 // Anonymisation helpers
 // ============================================================================
@@ -606,6 +625,7 @@ async function addEventsSheet(
       registrationBlocks: {
         orderBy: { order: 'asc' },
       },
+      sessions: { orderBy: { date: 'asc' } },
       _count: {
         select: {
           registrations: true,
@@ -644,6 +664,7 @@ async function addEventsSheet(
     { key: 'status', width: 15 },
     { key: 'dates_count', width: 15 },
     { key: 'event_dates', width: 60 },
+    { key: 'session_seats', width: 60 },
     { key: 'created_at', width: 20 },
     { key: 'updated_at', width: 20 },
   ];
@@ -676,6 +697,7 @@ async function addEventsSheet(
     'Statut',
     'Nb Dates',
     'Dates programmées',
+    'Jauge par séance',
     'Date de création',
     'Date de modification',
   ]);
@@ -735,6 +757,7 @@ async function addEventsSheet(
       status: formatEventStatus(event.status, labels),
       dates_count: event.event_dates.length,
       event_dates: formatEventDates(event.event_dates),
+      session_seats: formatSessionSeats(event.sessions),
       created_at: formatDate(event.created_at),
       updated_at: formatDate(event.updated_at),
     });
@@ -744,7 +767,7 @@ async function addEventsSheet(
 
   worksheet.autoFilter = {
     from: 'A1',
-    to: 'AC1',
+    to: 'AD1',
   };
 }
 

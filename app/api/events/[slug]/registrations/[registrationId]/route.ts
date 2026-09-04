@@ -390,26 +390,30 @@ export async function PATCH(
           newStatus === 'CONFIRMED' &&
           (oldStatus === 'PENDING' || oldStatus === 'REJECTED' || oldStatus === 'CANCELLED')
         ) {
-          await prisma.event.update({
-            where: { id: currentRegistration.event_id },
-            data: {
-              booked_seats: {
-                increment: currentRegistration.booked_seats,
-              },
-            },
-          });
+          await prisma.$transaction([
+            prisma.event.update({
+              where: { id: currentRegistration.event_id },
+              data: { booked_seats: { increment: currentRegistration.booked_seats } },
+            }),
+            prisma.eventSession.updateMany({
+              where: { event_id: currentRegistration.event_id, date: currentRegistration.date },
+              data: { booked_seats: { increment: currentRegistration.booked_seats } },
+            }),
+          ]);
         }
 
         // Passage de CONFIRMED à CANCELLED/REJECTED : libérer les places
         if (oldStatus === 'CONFIRMED' && (newStatus === 'CANCELLED' || newStatus === 'REJECTED')) {
-          await prisma.event.update({
-            where: { id: currentRegistration.event_id },
-            data: {
-              booked_seats: {
-                decrement: currentRegistration.booked_seats,
-              },
-            },
-          });
+          await prisma.$transaction([
+            prisma.event.update({
+              where: { id: currentRegistration.event_id },
+              data: { booked_seats: { decrement: currentRegistration.booked_seats } },
+            }),
+            prisma.eventSession.updateMany({
+              where: { event_id: currentRegistration.event_id, date: currentRegistration.date },
+              data: { booked_seats: { decrement: currentRegistration.booked_seats } },
+            }),
+          ]);
         }
 
         // Invalider le cache de l'historique de l'institution quand le statut change
@@ -572,14 +576,16 @@ export async function DELETE(
 
       // Free up seats only if registration was confirmed
       if (registration.status === 'CONFIRMED') {
-        await prisma.event.update({
-          where: { id: registration.event_id },
-          data: {
-            booked_seats: {
-              decrement: registration.booked_seats,
-            },
-          },
-        });
+        await prisma.$transaction([
+          prisma.event.update({
+            where: { id: registration.event_id },
+            data: { booked_seats: { decrement: registration.booked_seats } },
+          }),
+          prisma.eventSession.updateMany({
+            where: { event_id: registration.event_id, date: registration.date },
+            data: { booked_seats: { decrement: registration.booked_seats } },
+          }),
+        ]);
       }
 
       // Invalider le cache de l'historique de l'institution

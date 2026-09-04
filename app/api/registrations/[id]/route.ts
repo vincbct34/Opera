@@ -487,14 +487,16 @@ export async function PATCH(req: NextRequest, context: { params: Promise<{ id: s
 
         // Si passage de CONFIRMED à CANCELLED : libérer les places
         if (oldStatus === 'CONFIRMED' && newStatus === 'CANCELLED') {
-          await prisma.event.update({
-            where: { id: registration.event_id },
-            data: {
-              booked_seats: {
-                decrement: registration.booked_seats,
-              },
-            },
-          });
+          await prisma.$transaction([
+            prisma.event.update({
+              where: { id: registration.event_id },
+              data: { booked_seats: { decrement: registration.booked_seats } },
+            }),
+            prisma.eventSession.updateMany({
+              where: { event_id: registration.event_id, date: registration.date },
+              data: { booked_seats: { decrement: registration.booked_seats } },
+            }),
+          ]);
         }
 
         // Send cancellation notification if user cancelled their own registration
@@ -598,14 +600,16 @@ export async function DELETE(req: NextRequest, context: { params: Promise<{ id: 
 
       // Free up seats only if registration was confirmed
       if (registration.status === 'CONFIRMED') {
-        await prisma.event.update({
-          where: { id: registration.event_id },
-          data: {
-            booked_seats: {
-              decrement: registration.booked_seats,
-            },
-          },
-        });
+        await prisma.$transaction([
+          prisma.event.update({
+            where: { id: registration.event_id },
+            data: { booked_seats: { decrement: registration.booked_seats } },
+          }),
+          prisma.eventSession.updateMany({
+            where: { event_id: registration.event_id, date: registration.date },
+            data: { booked_seats: { decrement: registration.booked_seats } },
+          }),
+        ]);
       }
 
       return NextResponse.json({ message: 'Demande supprimée avec succès' });

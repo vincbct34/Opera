@@ -34,6 +34,7 @@ const PROTECTABLE_FIELDS = [
   { key: 'total_seats', label: 'Places totales' },
   { key: 'image_url', label: "URL de l'image" },
   { key: 'event_dates', label: "Dates de l'événement" },
+  { key: 'sessions', label: 'Jauge par séance' },
   { key: 'has_initial_formation', label: 'Formation initiale' },
   { key: 'registrationBlocks', label: 'Blocs pédagogiques' },
   { key: 'has_musical_preparation', label: 'Préparation musicale' },
@@ -182,6 +183,16 @@ export default function AdminEventForm({
           ]
         : [];
 
+  // Per-séance seat capacity ("jauge"), kept as a parallel array to event_dates
+  // (same index, always mutated together) — independent of the whole-event
+  // total_seats above.
+  const initialSessionSeats: number[] = (initialData?.event_dates ?? []).map((d) => {
+    const match = initialData?.sessions?.find(
+      (s) => new Date(s.date).getTime() === new Date(d).getTime(),
+    );
+    return match?.total_seats ?? initialData?.total_seats ?? 100;
+  });
+
   const [formData, setFormData] = useState({
     title: initialData?.title ?? '',
     description: initialData?.description ?? '',
@@ -194,6 +205,7 @@ export default function AdminEventForm({
     event_dates: initialData?.event_dates
       ? initialData.event_dates.map((d: string) => utcToDatetimeLocal(d))
       : [],
+    sessionSeats: initialSessionSeats,
     category: initialData?.category ?? [],
     grades: initialData?.grades ?? [],
     age_ranges: initialData?.age_ranges ?? [],
@@ -248,6 +260,10 @@ export default function AdminEventForm({
       age_ranges: formData.age_ranges as AgeRange[],
       accessibility: formData.accessibility,
       event_dates: formData.event_dates.map((d) => datetimeLocalToUtc(d)),
+      sessions: formData.event_dates.map((d, index) => ({
+        date: datetimeLocalToUtc(d),
+        total_seats: formData.sessionSeats[index] ?? formData.total_seats,
+      })),
       has_initial_formation: hasRegistrationBlocks,
       is_formation_mandatory: hasMandatoryRegistrationBlock,
       registrationBlocks,
@@ -262,6 +278,10 @@ export default function AdminEventForm({
     setFormData((prev) => ({
       ...prev,
       event_dates: [...prev.event_dates, datetimeLocal],
+      sessionSeats: [
+        ...prev.sessionSeats,
+        prev.sessionSeats[prev.sessionSeats.length - 1] ?? prev.total_seats,
+      ],
     }));
   };
 
@@ -269,6 +289,7 @@ export default function AdminEventForm({
     setFormData((prev) => ({
       ...prev,
       event_dates: prev.event_dates.filter((_, i) => i !== index),
+      sessionSeats: prev.sessionSeats.filter((_, i) => i !== index),
     }));
   };
 
@@ -276,6 +297,13 @@ export default function AdminEventForm({
     const newDates = [...formData.event_dates];
     newDates[index] = value;
     setFormData((prev) => ({ ...prev, event_dates: newDates }));
+  };
+
+  const updateSessionSeats = (index: number, value: number) => {
+    setFormData((prev) => ({
+      ...prev,
+      sessionSeats: prev.sessionSeats.map((seats, i) => (i === index ? value : seats)),
+    }));
   };
 
   const addRegistrationBlock = () => {
@@ -570,6 +598,9 @@ export default function AdminEventForm({
             <Plus size={16} /> Ajouter une date
           </button>
         </div>
+        <p className="text-xs text-gray-500 mb-2">
+          Chaque date a sa propre jauge de places, indépendante des autres.
+        </p>
         <div className="space-y-2">
           {formData.event_dates.map((date, index) => (
             <div key={index} className="flex gap-2">
@@ -578,6 +609,15 @@ export default function AdminEventForm({
                 value={date}
                 onChange={(e) => updateDate(index, e.target.value)}
                 className="flex-1 p-2 border border-gray-300 rounded-none focus:outline-none focus:ring-2 focus:ring-black"
+                required
+              />
+              <input
+                type="number"
+                min={1}
+                value={formData.sessionSeats[index] ?? formData.total_seats}
+                onChange={(e) => updateSessionSeats(index, parseInt(e.target.value) || 0)}
+                title="Places pour cette séance"
+                className="w-28 p-2 border border-gray-300 rounded-none focus:outline-none focus:ring-2 focus:ring-black"
                 required
               />
               <button

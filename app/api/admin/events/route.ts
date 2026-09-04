@@ -19,6 +19,12 @@ import {
   serializeRegistrationBlock,
 } from '@/lib/events/registrationBlocks';
 
+// One séance (date + its own seat capacity, independent of total_seats)
+const EventSessionSchema = z.object({
+  date: z.string().datetime(),
+  total_seats: z.number().int().min(1, 'Au moins 1 place requise').max(100000, 'Trop de places'),
+});
+
 const RegistrationBlockSchema = z
   .object({
     id: z.string().optional(),
@@ -63,6 +69,7 @@ const EventSchema = z.object({
   has_musical_preparation: z.boolean().optional(),
   accessibility: z.array(z.string()).optional(), // We'll handle mapping to Accessibility enum manually if needed
   registrationBlocks: z.array(RegistrationBlockSchema).optional(),
+  sessions: z.array(EventSessionSchema).optional(),
 });
 
 /**
@@ -85,6 +92,7 @@ export async function GET(req: NextRequest) {
           registrationBlocks: {
             orderBy: { order: 'asc' },
           },
+          sessions: { orderBy: { date: 'asc' } },
           _count: {
             select: { registrations: true },
           },
@@ -167,12 +175,20 @@ export async function POST(req: NextRequest) {
               order: block.order ?? index,
             })),
           },
+          sessions: {
+            create: (validatedData.sessions || []).map((session) => ({
+              date: new Date(session.date),
+              total_seats: session.total_seats,
+              booked_seats: 0,
+            })),
+          },
         },
         include: {
           accessibility: true,
           registrationBlocks: {
             orderBy: { order: 'asc' },
           },
+          sessions: { orderBy: { date: 'asc' } },
         },
       });
 
