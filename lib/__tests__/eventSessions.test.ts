@@ -65,7 +65,7 @@ describe('lib/events/eventSessions', () => {
 
     test('uses the provided transaction client instead of the default prisma client', async () => {
       const tx = {
-        eventSession: { findMany: jest.fn().mockResolvedValue([]), createMany: jest.fn() },
+        eventSession: { findMany: jest.fn(async () => []), createMany: jest.fn() },
       };
       const date = new Date('2026-05-01T10:00:00Z');
 

@@ -45,7 +45,7 @@ jest.mock('@/lib/middleware/prismaConfig', () => {
       createMany: jest.fn(),
     },
     eventSession: {
-      findUnique: jest.fn().mockResolvedValue(null),
+      findUnique: jest.fn(),
     },
     userInstitution: {
       findFirst: jest.fn(),
@@ -135,6 +135,7 @@ describe('Events API', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    (prisma.eventSession.findUnique as unknown as jest.Mock<any>).mockResolvedValue(null);
   });
 
   describe('GET /api/events', () => {

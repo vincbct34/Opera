@@ -38,7 +38,7 @@ jest.mock('@/lib/middleware/prismaConfig', () => {
       create: jest.fn(),
     },
     eventSession: {
-      findMany: jest.fn().mockResolvedValue([]),
+      findMany: jest.fn(),
       create: jest.fn(),
       createMany: jest.fn(),
       update: jest.fn(),
@@ -98,6 +98,7 @@ const createMockRequest = (url: string, options: any = {}) => {
 describe('Admin API', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    (prisma.eventSession.findMany as unknown as jest.Mock<any>).mockResolvedValue([]);
   });
 
   describe('GET /api/admin/events', () => {
